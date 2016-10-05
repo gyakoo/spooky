@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "SpookyAdulthoodMain.h"
 #include "Common\DirectXHelper.h"
+#include "Content\LevelMap.h"
 
 using namespace SpookyAdulthood;
 using namespace Windows::Foundation;
@@ -25,6 +26,10 @@ SpookyAdulthoodMain::SpookyAdulthoodMain(const std::shared_ptr<DX::DeviceResourc
 	m_timer.SetFixedTimeStep(true);
 	m_timer.SetTargetElapsedSeconds(1.0 / 60);
 	*/
+
+    LevelMap map;
+    LevelMapGenerationSettings settings;
+    map.Generate(settings);
 }
 
 SpookyAdulthoodMain::~SpookyAdulthoodMain()

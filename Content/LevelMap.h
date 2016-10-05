@@ -8,7 +8,7 @@ using namespace DirectX;
 namespace SpookyAdulthood
 {
     struct LevelMapBSPNode;
-    typedef std::unique_ptr<LevelMapBSPNode> LevelMapBSPPtr;
+    typedef std::shared_ptr<LevelMapBSPNode> LevelMapBSPNodePtr;
 
     struct LevelMapBSPTileArea
     {
@@ -23,9 +23,12 @@ namespace SpookyAdulthood
     {
         enum NodeType{ NODE_ROOM, NODE_BLOCK, WALL_X, WALL_Y };
 
+        bool IsLeaf() const { return m_type == NODE_ROOM; }
+
         NodeType m_type;
         LevelMapBSPTileArea m_area;
-        LevelMapBSPPtr m_children[2];
+        LevelMapBSPNodePtr m_children[2];
+        LevelMapBSPNodePtr m_sibling;
     };
 
     struct LevelMapGenerationSettings
@@ -38,6 +41,7 @@ namespace SpookyAdulthood
         XMUINT2 m_minTileCount;     // minimum no in tiles for rooms
         uint32_t m_randomSeed;
         uint32_t m_minRecursiveDepth;
+        float m_probRoom; // 0..1 probabilities to be a room if other req met
         float m_charRadius;
     };
 
@@ -62,10 +66,14 @@ namespace SpookyAdulthood
 
 	private:
         void Destroy();
-        void RecursiveGenerate(LevelMapBSPPtr& node, const LevelMapGenerationSettings& settings, LevelMapBSPTileArea& area, int depth);
-        
+        void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, LevelMapBSPNodePtr& lastLeaf, int depth);
+        LevelMapBSPNodePtr FindFirstLeaf(const LevelMapBSPNodePtr node);
+        void SplitNode(const LevelMapBSPTileArea& area, uint32_t at, LevelMapBSPNode::NodeType wallDir, LevelMapBSPTileArea* outAreas);
+        bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, int depth);
+
         RandomProvider m_random;
-        std::unique_ptr<LevelMapBSPNode> m_root;		
+        LevelMapBSPNodePtr m_root;		
+        LevelMapBSPNodePtr m_firstRoom;
 	};
 }
 
