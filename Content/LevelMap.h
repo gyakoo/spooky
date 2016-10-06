@@ -62,7 +62,7 @@ namespace SpookyAdulthood
 	public:
 		LevelMap();
 		void Generate(const LevelMapGenerationSettings& settings);
-
+        void WriteToTexture();
 
 	private:
         void Destroy();

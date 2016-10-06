@@ -5,6 +5,16 @@
 using namespace SpookyAdulthood;
 using namespace DX;
 
+using namespace concurrency;
+using namespace Platform;
+using namespace Windows::Storage;
+using namespace Windows::Storage::Pickers;
+using namespace Windows::Storage::Provider;
+using namespace Windows::UI::Xaml;
+using namespace Windows::UI::Xaml::Controls;
+using namespace Windows::UI::Xaml::Navigation;
+using namespace Windows::Globalization::DateTimeFormatting;
+
 static const uint32_t RANDOM_DEFAULT_SEED = 997;
 
 LevelMapGenerationSettings::LevelMapGenerationSettings()
@@ -160,4 +170,15 @@ void LevelMap::Destroy()
 {
     m_root = nullptr;
     m_firstRoom = nullptr;
+}
+
+void LevelMap::WriteToTexture()
+{
+//     auto fold = Windows::Storage::ApplicationData::Current->LocalFolder;
+//     concurrency::task<StorageFile^> f(fold->CreateFileAsync("sample.ppm", Windows::Storage::CreationCollisionOption::ReplaceExisting));
+//     f.then([this](StorageFile^ file) 
+//     {
+//         Streams::DataWriter::
+//         FileIO::WriteBufferAsync()
+//     });
 }

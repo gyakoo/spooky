@@ -3,6 +3,7 @@ struct PixelShaderInput
 {
 	float4 pos : SV_POSITION;
 	float3 color : COLOR0;
+    float2 uv0 : TEXCOORD0;
 };
 
 // A pass-through function for the (interpolated) color data.

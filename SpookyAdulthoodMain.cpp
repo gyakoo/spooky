@@ -29,7 +29,8 @@ SpookyAdulthoodMain::SpookyAdulthoodMain(const std::shared_ptr<DX::DeviceResourc
 
     LevelMap map;
     LevelMapGenerationSettings settings;
-    map.Generate(settings);
+    map.Generate(settings);    
+    map.WriteToTexture();
 }
 
 SpookyAdulthoodMain::~SpookyAdulthoodMain()
