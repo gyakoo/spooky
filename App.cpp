@@ -49,6 +49,9 @@ void App::Initialize(CoreApplicationView^ applicationView)
 	CoreApplication::Resuming +=
 		ref new EventHandler<Platform::Object^>(this, &App::OnResuming);
 
+    m_keyboard = std::make_unique<DirectX::Keyboard>();
+    m_mouse = std::make_unique<DirectX::Mouse>();
+
 	// At this point we have access to the device. 
 	// We can create the device-dependent resources.
 	m_deviceResources = std::make_shared<DX::DeviceResources>();
@@ -77,6 +80,8 @@ void App::SetWindow(CoreWindow^ window)
 	DisplayInformation::DisplayContentsInvalidated +=
 		ref new TypedEventHandler<DisplayInformation^, Object^>(this, &App::OnDisplayContentsInvalidated);
 
+    m_keyboard->SetWindow(reinterpret_cast<ABI::Windows::UI::Core::ICoreWindow*>(window));
+    m_mouse->SetWindow(reinterpret_cast<ABI::Windows::UI::Core::ICoreWindow*>(window));
 	m_deviceResources->SetWindow(window);
 }
 
@@ -98,6 +103,11 @@ void App::Run()
 		{
 			CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
 
+            auto kb = DirectX::Keyboard::Get().GetState();
+            if (kb.Escape)
+            {
+                Windows::ApplicationModel::Core::CoreApplication::Exit();
+            }          
 			m_main->Update();
 
 			if (m_main->Render())

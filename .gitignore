@@ -1,6 +1,9 @@
 .vs/
 *.obj
-Debug/
 ipch/
 SpookyAdulthood.VC.db
 *.opendb
+*.db
+Debug/
+x64/
+SpookyAdulthood.VC.db

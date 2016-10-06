@@ -218,6 +218,8 @@ void DX::DeviceResources::CreateDeviceResources()
 			&m_d2dContext
 			)
 		);
+    m_sprites = std::make_unique<SpriteBatch>(GetD3DDeviceContext());
+    m_commonStates = std::make_unique<DirectX::CommonStates>(m_d3dDevice.Get());
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -446,6 +448,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 	// Grayscale text anti-aliasing is recommended for all Windows Store apps.
 	m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+    m_sprites->SetRotation(ComputeDisplayRotation());
 }
 
 // Determine the dimensions of the render target and whether it will be scaled down.

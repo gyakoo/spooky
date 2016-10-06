@@ -3,6 +3,7 @@
 #include "..\Common\DeviceResources.h"
 #include "ShaderStructures.h"
 #include "..\Common\StepTimer.h"
+#include "Content\LevelMap.h"
 
 namespace SpookyAdulthood
 {
@@ -24,6 +25,7 @@ namespace SpookyAdulthood
 
 	private:
 		void Rotate(float radians);
+        void UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTimer const & timer);
 
 	private:
 		// Cached pointer to device resources.
@@ -36,6 +38,8 @@ namespace SpookyAdulthood
 		Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
 		Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
 		Microsoft::WRL::ComPtr<ID3D11Buffer>		m_constantBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Texture2D>     m_texture;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureView;
 
 		// System resources for cube geometry.
 		ModelViewProjectionConstantBuffer	m_constantBufferData;
@@ -45,6 +49,11 @@ namespace SpookyAdulthood
 		bool	m_loadingComplete;
 		float	m_degreesPerSecond;
 		bool	m_tracking;
+        float   m_camRotation;
+        XMVECTOR m_camXZ;
+        LevelMap m_map;
+        LevelMapGenerationSettings m_mapSettings;
+
 	};
 }
 

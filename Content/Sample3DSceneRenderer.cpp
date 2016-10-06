@@ -14,10 +14,12 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 	m_degreesPerSecond(45),
 	m_indexCount(0),
 	m_tracking(false),
-	m_deviceResources(deviceResources)
+	m_deviceResources(deviceResources),
+    m_camRotation(0)
 {
 	CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
+    m_camXZ = XMVectorSet(0, 0, 0, 0);
 }
 
 // Initializes view parameters when the window size changes.
@@ -58,11 +60,11 @@ void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
 		);
 
 	// Eye is at (0,0.7,1.5), looking at point (0,-0.1,0) with the up-vector along the y-axis.
-	static const XMVECTORF32 eye = { 0.0f, 0.7f, 1.5f, 0.0f };
-	static const XMVECTORF32 at = { 0.0f, -0.1f, 0.0f, 0.0f };
+	static const XMVECTORF32 eye = { 0.0f, 0.50f, -4.0f, 0.0f };
+	static const XMVECTORF32 at = { 0.0f, 0.50, 0.0f, 0.0f };
 	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
-	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)));
+    XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)));
 }
 
 // Called once per frame, rotates the cube and calculates the model and view matrices.
@@ -77,13 +79,48 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 
 		Rotate(radians);
 	}
+
+    if (m_loadingComplete)
+    {
+        auto kb = DirectX::Keyboard::Get().GetState();
+        if (kb.D1)
+        {
+            m_mapSettings.m_tileCount = XMUINT2(20, 20);
+            m_mapSettings.m_minTileCount = XMUINT2(2, 2);
+            m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
+            m_map.Generate(m_mapSettings);
+            
+            D3D11_TEXTURE2D_DESC desc = { 0 };
+            desc.ArraySize = 1;
+            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            desc.CPUAccessFlags = 0;
+            desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            desc.Width = m_mapSettings.m_tileCount.x;
+            desc.Height = m_mapSettings.m_tileCount.y;
+            desc.MipLevels = 1;
+            desc.SampleDesc.Count = 1;
+            desc.SampleDesc.Quality = 0;
+            desc.Usage = D3D11_USAGE_DEFAULT;
+
+            D3D11_SUBRESOURCE_DATA initData = { 0 };
+            XMUINT2 mapSize;
+            initData.pSysMem = m_map.GetThumbTexPtr(&mapSize);
+            initData.SysMemSlicePitch = initData.SysMemPitch = sizeof(uint32_t)*mapSize.x;
+            initData.SysMemSlicePitch *= mapSize.y;
+            DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateTexture2D(&desc, &initData, m_texture.ReleaseAndGetAddressOf()));
+            DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateShaderResourceView(m_texture.Get(), nullptr, m_textureView.ReleaseAndGetAddressOf()));
+        }
+
+
+        UpdateCamera(kb, timer);        
+    }
 }
 
 // Rotate the 3D cube model a set amount of radians.
 void Sample3DSceneRenderer::Rotate(float radians)
 {
 	// Prepare to pass the updated model matrix to the shader
-	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixRotationY(radians)));
+	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixRotationY(0)));
 }
 
 void Sample3DSceneRenderer::StartTracking()
@@ -178,6 +215,11 @@ void Sample3DSceneRenderer::Render()
 		0,
 		0
 		);
+
+    auto sprites = m_deviceResources->GetSprites();
+    sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_deviceResources->GetCommonStates()->PointClamp());
+    sprites->Draw(m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(8, 8));
+    sprites->End();
 }
 
 void Sample3DSceneRenderer::CreateDeviceDependentResources()
@@ -199,9 +241,9 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 
 		static const D3D11_INPUT_ELEMENT_DESC vertexDesc [] =
 		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD0", }
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,          0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 
 		DX::ThrowIfFailed(
@@ -242,14 +284,14 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		// Load mesh vertices. Each vertex has a position and a color.
 		static const VertexPositionColor cubeVertices[] = 
 		{
-			{XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 0.0f)},
-			{XMFLOAT3(-0.5f, -0.5f,  0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f)},
-			{XMFLOAT3(-0.5f,  0.5f, -0.5f), XMFLOAT3(0.0f, 1.0f, 0.0f)},
-			{XMFLOAT3(-0.5f,  0.5f,  0.5f), XMFLOAT3(0.0f, 1.0f, 1.0f)},
-			{XMFLOAT3( 0.5f, -0.5f, -0.5f), XMFLOAT3(1.0f, 0.0f, 0.0f)},
-			{XMFLOAT3( 0.5f, -0.5f,  0.5f), XMFLOAT3(1.0f, 0.0f, 1.0f)},
-			{XMFLOAT3( 0.5f,  0.5f, -0.5f), XMFLOAT3(1.0f, 1.0f, 0.0f)},
-			{XMFLOAT3( 0.5f,  0.5f,  0.5f), XMFLOAT3(1.0f, 1.0f, 1.0f)},
+            {XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3(-0.5f, -0.5f,  0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3(-0.5f,  0.5f, -0.5f), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3(-0.5f,  0.5f,  0.5f), XMFLOAT3(0.0f, 1.0f, 1.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3( 0.5f, -0.5f, -0.5f), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3( 0.5f, -0.5f,  0.5f), XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3( 0.5f,  0.5f, -0.5f), XMFLOAT3(1.0f, 1.0f, 0.0f), XMFLOAT3(0,0,0)},
+			{XMFLOAT3( 0.5f,  0.5f,  0.5f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT3(0,0,0)},
 		};
 
 		D3D11_SUBRESOURCE_DATA vertexBufferData = {0};
@@ -307,19 +349,75 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 			);
 	});
 
-	// Once the cube is loaded, the object is ready to be rendered.
-	createCubeTask.then([this] () {
+    // after mesh, load texture from file
+    auto loadTextureTask = (createCubeTask).then([this]() 
+    {
+        DX::ThrowIfFailed(
+            DirectX::CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"assets\\windowslogo.dds",
+                (ID3D11Resource**)m_texture.ReleaseAndGetAddressOf(), m_textureView.ReleaseAndGetAddressOf())
+        );        
+    });
+
+	// Once the texture is loaded, the object is ready to be rendered.
+    loadTextureTask.then([this] () {
 		m_loadingComplete = true;
+        DirectX::Mouse::Get().SetMode(DirectX::Mouse::MODE_RELATIVE);
 	});
 }
 
 void Sample3DSceneRenderer::ReleaseDeviceDependentResources()
 {
 	m_loadingComplete = false;
+    m_texture.Reset();
+    m_textureView.Reset();
 	m_vertexShader.Reset();
 	m_inputLayout.Reset();
 	m_pixelShader.Reset();
 	m_constantBuffer.Reset();
 	m_vertexBuffer.Reset();
 	m_indexBuffer.Reset();
+}
+
+void Sample3DSceneRenderer::UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTimer const & timer)
+{
+    auto ms = DirectX::Mouse::Get().GetState();
+
+    // update cam
+    const float dt = (float)timer.GetElapsedSeconds();
+    const float rotDelta = dt*XM_PIDIV2;
+    const float movDelta = dt*2.0f;
+    
+    // rotation input
+    m_camRotation += rotDelta*ms.x;
+
+    // movement input
+    float movFw = 0.0f;
+    float movSt = 0.0f;
+    if (kb.Up||kb.W) movFw = 1.0f;
+    else if (kb.Down||kb.S) movFw = -1.0f;
+    if (kb.A||kb.Left) movSt = -1.0f;
+    else if (kb.D||kb.Right) movSt = 1.0f;
+
+    XMMATRIX ry = XMMatrixRotationY(m_camRotation);
+    if (movFw||movSt)
+    {
+        // normalize if moving two axes to avoid strafe+fw cheat
+        const float il = 1.0f/sqrtf(movFw*movFw + movSt*movSt);
+        movFw *= il*movDelta; movSt *= il*movDelta;
+        
+        // move forward and strafe
+        XMVECTOR fw = ry.r[2];
+        XMVECTOR md = XMVectorSet(movFw, movFw, movFw, movFw);
+        m_camXZ = XMVectorMultiplyAdd(fw, md, m_camXZ);        
+        XMVECTOR ri = ry.r[0];
+        md = XMVectorSet(movSt, movSt, movSt, movSt);
+        m_camXZ = XMVectorMultiplyAdd(ri, md, m_camXZ);
+    }
+
+    // rotate camera and translate
+    XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -0.5f, XMVectorGetZ(m_camXZ));
+    XMMATRIX m = XMMatrixMultiply(t, ry);
+
+    // udpate for shader
+    XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(m));
 }

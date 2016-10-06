@@ -38,6 +38,8 @@ namespace SpookyAdulthood
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
 		std::unique_ptr<SpookyAdulthoodMain> m_main;
+        std::unique_ptr<DirectX::Keyboard> m_keyboard;
+        std::unique_ptr<DirectX::Mouse> m_mouse;
 		bool m_windowClosed;
 		bool m_windowVisible;
 	};

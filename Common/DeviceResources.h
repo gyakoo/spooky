@@ -50,6 +50,8 @@ namespace DX
 		IWICImagingFactory2*		GetWicImagingFactory() const			{ return m_wicFactory.Get(); }
 		D2D1::Matrix3x2F			GetOrientationTransform2D() const		{ return m_orientationTransform2D; }
 
+        DirectX::SpriteBatch*       GetSprites() const                      { return m_sprites.get(); }
+        DirectX::CommonStates*      GetCommonStates() const                 { return m_commonStates.get(); }
 	private:
 		void CreateDeviceIndependentResources();
 		void CreateDeviceResources();
@@ -98,5 +100,8 @@ namespace DX
 
 		// The IDeviceNotify can be held directly as it owns the DeviceResources.
 		IDeviceNotify* m_deviceNotify;
+
+        std::unique_ptr<DirectX::SpriteBatch>  m_sprites;
+        std::unique_ptr<DirectX::CommonStates> m_commonStates;
 	};
 }

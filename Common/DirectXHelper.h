@@ -65,4 +65,178 @@ namespace DX
 		return SUCCEEDED(hr);
 	}
 #endif
+
+    inline uint32_t VectorColorToRGBA(DirectX::XMFLOAT4 fcolor)
+    {
+        uint32_t c = 0;
+        for (int i = 0; i < 4; ++i)
+        {
+            const int shift = 8 * (3 - i);
+            c |= uint32_t( (&fcolor.x)[i] * 255.0f) << shift;
+        }
+        return c;
+    }
+
+    inline uint32_t VectorColorToARGB(DirectX::XMFLOAT4 fcolor)
+    {
+        const float t = fcolor.x;
+        fcolor.x = fcolor.w;
+        fcolor.w = t;
+        return VectorColorToRGBA(fcolor);
+    }
+
+    inline DirectX::XMFLOAT4 GetColorAt(int ndx)
+    {
+        using namespace DirectX::Colors;
+        const DirectX::XMVECTORF32* colors[] = {
+            &AliceBlue,
+            &AntiqueWhite,
+            &Aqua,
+            &Aquamarine,
+            &Azure,
+            &Beige,
+            &Bisque,
+            &Black,
+            &BlanchedAlmond,
+            &Blue,
+            &BlueViolet,
+            &Brown,
+            &BurlyWood,
+            &CadetBlue,
+            &Chartreuse,
+            &Chocolate,
+            &Coral,
+            &CornflowerBlue,
+            &Cornsilk,
+            &Crimson,
+            &Cyan,
+            &DarkBlue,
+            &DarkCyan,
+            &DarkGoldenrod,
+            &DarkGray,
+            &DarkGreen,
+            &DarkKhaki,
+            &DarkMagenta,
+            &DarkOliveGreen,
+            &DarkOrange,
+            &DarkOrchid,
+            &DarkRed,
+            &DarkSalmon,
+            &DarkSeaGreen,
+            &DarkSlateBlue,
+            &DarkSlateGray,
+            &DarkTurquoise,
+            &DarkViolet,
+            &DeepPink,
+            &DeepSkyBlue,
+            &DimGray,
+            &DodgerBlue,
+            &Firebrick,
+            &FloralWhite,
+            &ForestGreen,
+            &Fuchsia,
+            &Gainsboro,
+            &GhostWhite,
+            &Gold,
+            &Goldenrod,
+            &Gray,
+            &Green,
+            &GreenYellow,
+            &Honeydew,
+            &HotPink,
+            &IndianRed,
+            &Indigo,
+            &Ivory,
+            &Khaki,
+            &Lavender,
+            &LavenderBlush,
+            &LawnGreen,
+            &LemonChiffon,
+            &LightBlue,
+            &LightCoral,
+            &LightCyan,
+            &LightGreen,
+            &LightGray,
+            &LightPink,
+            &LightSalmon,
+            &LightSeaGreen,
+            &LightSkyBlue,
+            &LightSlateGray,
+            &LightSteelBlue,
+            &LightYellow,
+            &Lime,
+            &LimeGreen,
+            &Linen,
+            &Magenta,
+            &Maroon,
+            &MediumAquamarine,
+            &MediumBlue,
+            &MediumOrchid,
+            &MediumPurple,
+            &MediumSeaGreen,
+            &MediumSlateBlue,
+            &MediumSpringGreen,
+            &MediumTurquoise,
+            &MediumVioletRed,
+            &MidnightBlue,
+            &MintCream,
+            &MistyRose,
+            &Moccasin,
+            &NavajoWhite,
+            &Navy,
+            &OldLace,
+            &Olive,
+            &OliveDrab,
+            &Orange,
+            &OrangeRed,
+            &Orchid,
+            &PaleGoldenrod,
+            &PaleGreen,
+            &PaleTurquoise,
+            &PaleVioletRed,
+            &PapayaWhip,
+            &PeachPuff,
+            &Peru,
+            &Pink,
+            &Plum,
+            &PowderBlue,
+            &Purple,
+            &Red,
+            &RosyBrown,
+            &RoyalBlue,
+            &SaddleBrown,
+            &Salmon,
+            &SandyBrown,
+            &SeaGreen,
+            &SeaShell,
+            &Sienna,
+            &Silver,
+            &SkyBlue,
+            &SlateBlue,
+            &SlateGray,
+            &Snow,
+            &SpringGreen,
+            &SteelBlue,
+            &Tan,
+            &Teal,
+            &Thistle,
+            &Tomato,
+            &Transparent,
+            &Turquoise,
+            &Violet,
+            &Wheat,
+            &White,
+            &WhiteSmoke,
+            &Yellow,
+            &YellowGreen
+        };
+
+        DirectX::XMFLOAT4 ret(colors[ndx]->f);
+        return ret;
+    }
+
+    inline int GetColorCount()
+    {
+        return 140;
+    }
 }
