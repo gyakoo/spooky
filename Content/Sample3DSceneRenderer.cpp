@@ -85,8 +85,8 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
         auto kb = DirectX::Keyboard::Get().GetState();
         if (kb.D1)
         {
-            m_mapSettings.m_tileCount = XMUINT2(20, 20);
-            m_mapSettings.m_minTileCount = XMUINT2(2, 2);
+            m_mapSettings.m_tileCount = XMUINT2(40, 40);
+            m_mapSettings.m_minTileCount = XMUINT2(3, 3);
             m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
             m_map.Generate(m_mapSettings);
             

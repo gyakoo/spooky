@@ -21,12 +21,13 @@ namespace SpookyAdulthood
 
     struct LevelMapBSPNode 
     {
-        enum NodeType{ NODE_ROOM, NODE_BLOCK, WALL_X, WALL_Y };
+        enum NodeType{ NODE_ROOM, NODE_EMPTY, WALL_X, WALL_Y };
 
         bool IsLeaf() const { return m_type == NODE_ROOM; }
 
         NodeType m_type;
         LevelMapBSPTileArea m_area;
+        LevelMapBSPNodePtr m_parent;
         LevelMapBSPNodePtr m_children[2];
         LevelMapBSPNodePtr m_sibling;
     };
@@ -72,15 +73,20 @@ namespace SpookyAdulthood
 
 	private:
         void Destroy();
-        void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, LevelMapBSPNodePtr& lastLeaf, LevelMapBSPNodePtr& lastBlock, uint32_t depth);
+        void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, LevelMapBSPNodePtr& lastLeaf, uint32_t depth);
         void GenerateThumbTex(XMUINT2 tcount);
-        LevelMapBSPNodePtr FindFirstNodeType(LevelMapBSPNode::NodeType ntype, const LevelMapBSPNodePtr node);
+        void GenerateVisibility();
+        bool VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
+        void VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
+        void VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
+        LevelMapBSPNodePtr FindFirstLeaf(const LevelMapBSPNodePtr node);
         void SplitNode(const LevelMapBSPTileArea& area, uint32_t at, LevelMapBSPNode::NodeType wallDir, LevelMapBSPTileArea* outAreas);
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
 
         RandomProvider m_random;
         LevelMapBSPNodePtr m_root;		
-        LevelMapBSPNodePtr m_firstRoom, m_firstBlock;
+        LevelMapBSPNodePtr m_firstLeaf;
+        uint32_t m_nLeaves;
         uint32_t* m_thumbTex;
         XMUINT2 m_thumbTexSize;
 	};

@@ -53,7 +53,7 @@ void LevelMapGenerationSettings::Validate() const
 }
 
 LevelMap::LevelMap()
-    : m_root(nullptr), m_thumbTex(nullptr)
+    : m_root(nullptr), m_thumbTex(nullptr), m_nLeaves(0)
 {
 
 }
@@ -65,32 +65,29 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
     Destroy();
 
     m_root = std::make_shared<LevelMapBSPNode>();
+    m_root->m_parent = nullptr;
     LevelMapBSPTileArea area = { 0, settings.m_tileCount.x-1, 0, settings.m_tileCount.y-1 };
     m_random.SetSeed(settings.m_randomSeed);
-    LevelMapBSPNodePtr lastRoom, lastBlock;
-    RecursiveGenerate(m_root, area, settings, lastRoom, lastBlock, 0);
-    m_firstRoom = FindFirstNodeType(LevelMapBSPNode::NODE_ROOM, m_root);
-    m_firstBlock = FindFirstNodeType(LevelMapBSPNode::NODE_BLOCK,m_root);
-
+    LevelMapBSPNodePtr lastRoom;
+    RecursiveGenerate(m_root, area, settings, lastRoom, 0);
+    m_firstLeaf = FindFirstLeaf(m_root);
     if (settings.m_generateThumbTex)
     {
         GenerateThumbTex(settings.m_tileCount);
     }
+    GenerateVisibility();
 }
 
 void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings
-    , LevelMapBSPNodePtr& lastRoom, LevelMapBSPNodePtr& lastBlock, uint32_t depth)
+    , LevelMapBSPNodePtr& lastRoom, uint32_t depth)
 {
-    // It's a BLOCK? any dimension is not large enough to be a room
+    // It's an EMPTY? any dimension is not large enough to be a room
     if (area.SizeX() < settings.m_minTileCount.x ||
         area.SizeY() < settings.m_minTileCount.y)
     {
-        node->m_type = LevelMapBSPNode::NODE_BLOCK;
+        node->m_type = LevelMapBSPNode::NODE_EMPTY;
         node->m_area = area;
         node->m_sibling = nullptr;
-        if (lastBlock)
-            lastBlock->m_sibling = node;
-        lastBlock = node;
         // leaf, no children
         return;
     }
@@ -104,6 +101,7 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         if (lastRoom)
             lastRoom->m_sibling = node;
         lastRoom = node;
+        ++m_nLeaves;
         // leaf, no children
     }
     else
@@ -113,14 +111,15 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         uint32_t at = (node->m_type == LevelMapBSPNode::WALL_X) // random division plane
             ? area.m_x0 + m_random.Get(0, area.SizeX() - 1)
             : area.m_y0 + m_random.Get(0, area.SizeY() - 1);
-        if (at == 0) at = 1;
+        //if (at == 0) at = 1;
         // get the two sub-areas and subdivide them recursively
         LevelMapBSPTileArea newAreas[2];
         SplitNode(area, at, node->m_type, newAreas);
         for (int i = 0; i < 2; ++i)
         {
             node->m_children[i] = std::make_shared<LevelMapBSPNode>();
-            RecursiveGenerate(node->m_children[i], newAreas[i], settings, lastRoom, lastBlock, depth + 1);            
+            node->m_children[i]->m_parent = node;
+            RecursiveGenerate(node->m_children[i], newAreas[i], settings, lastRoom, depth + 1);            
         }
     }
 }
@@ -160,19 +159,19 @@ bool LevelMap::CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileAr
     return dice < settings.m_probRoom;
 }
 
-LevelMapBSPNodePtr LevelMap::FindFirstNodeType(LevelMapBSPNode::NodeType ntype, const LevelMapBSPNodePtr node)
+LevelMapBSPNodePtr LevelMap::FindFirstLeaf(const LevelMapBSPNodePtr node)
 {
     if (node)
     {
-        if (node->m_type == ntype)
+        if (node->IsLeaf())
             return node;
 
         if (node->m_children[0])
         {
-            LevelMapBSPNodePtr first = FindFirstNodeType(ntype, node->m_children[0]);
+            LevelMapBSPNodePtr first = FindFirstLeaf(node->m_children[0]);
             return (first != nullptr)
                 ? first
-                : FindFirstNodeType(ntype, node->m_children[1]);
+                : FindFirstLeaf(node->m_children[1]);
         }
     }
     return nullptr;
@@ -181,8 +180,8 @@ LevelMapBSPNodePtr LevelMap::FindFirstNodeType(LevelMapBSPNode::NodeType ntype, 
 void LevelMap::Destroy()
 {
     m_root = nullptr;
-    m_firstRoom = nullptr;
-    m_firstBlock = nullptr;
+    m_firstLeaf = nullptr;
+    m_nLeaves = 0;
     if (m_thumbTex)
     {
         delete[] m_thumbTex;
@@ -204,37 +203,95 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
     uint32_t h = tcount.y;
     m_thumbTexSize = tcount;
     m_thumbTex = new uint32_t[w*h];
-    ZeroMemory(m_thumbTex, w*h * sizeof(uint32_t));
+    for (int i = w*h - 1; i >= 0; --i) m_thumbTex[i] = 0xff000000;
+    //ZeroMemory(m_thumbTex, w*h * sizeof(uint32_t));
 
     // rooms
-    LevelMapBSPNodePtr node = m_firstRoom;
+    LevelMapBSPNodePtr node = m_firstLeaf;
     int count = 0;
-    bool doingBlocks = false;
     while (node)
     {
         ++count;
         uint32_t argb;
-        if (!doingBlocks)
+        if (node->m_type == LevelMapBSPNode::NODE_ROOM)
         {
             XMFLOAT4 color = DX::GetColorAt(m_random.Get(0, DX::GetColorCount() - 1));
             argb = DX::VectorColorToARGB(color);
-        }
-        else
-        {
-            argb = 0xff00ffff;
         }
 
         for (uint32_t y = node->m_area.m_y0; y <= node->m_area.m_y1; ++y)
             for (uint32_t x = node->m_area.m_x0; x <= node->m_area.m_x1; ++x)
                 m_thumbTex[y*w + x] = argb;
-        node = node->m_sibling;
-        if ( !node && !doingBlocks )
-        { 
-            doingBlocks = true;
-            node = m_firstBlock;
-        }
+        node = node->m_sibling;        
     }
     count = count;
+}
 
+// I know, I know...
+void LevelMap::GenerateVisibility()
+{
+    DX::ThrowIfFalse(m_nLeaves > 0);
     
+    // put leaves in an array
+    std::vector<LevelMapBSPNodePtr> leaves;
+    leaves.reserve(m_nLeaves);
+    LevelMapBSPNodePtr node = m_firstLeaf;
+    while (node) { leaves.push_back(node);  node = node->m_sibling; }
+
+    // for each leaf (room) see if any of the processed connects with me
+    LevelMapBSPNodePtr curRoom, otherRoom;
+    for (int i = 1; i < m_nLeaves; ++i)
+    {
+        curRoom = leaves[i];
+        bool portalGenerated = false;
+        for (int j = i-1; j >= 0; --j)
+        {
+            otherRoom = leaves[j];
+            if (VisRoomAreContiguous(otherRoom, curRoom))
+            {
+                // are contiguous, generate portal
+                VisGeneratePortal(curRoom, otherRoom);
+                portalGenerated = true;
+                break;
+            }            
+        }
+
+        // we found a room that's not connected/contiguous to any other
+        if (!portalGenerated)
+        {
+            // generate tele-port instead
+            VisGenerateTeleport(curRoom, leaves[i - 1]);
+        }
+    }
+}
+
+bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
+{
+    // early exit, shortcut if are siblings
+    if (roomA->m_parent == roomB->m_parent)
+        return true;
+
+    int diffX = 0;
+    if (roomA->m_area.m_x0 <= roomB->m_area.m_x0)
+        diffX = roomB->m_area.m_x0 - roomA->m_area.m_x1;
+    else
+        diffX = roomA->m_area.m_x0 - roomB->m_area.m_x1;
+
+    int diffY = 0;
+    if (roomA->m_area.m_y0 <= roomB->m_area.m_y0)
+        diffY = roomB->m_area.m_y0 - roomA->m_area.m_y1;
+    else
+        diffY = roomA->m_area.m_y0 - roomB->m_area.m_y1;
+
+    return (diffX+diffY) <= 1;
+}
+
+void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
+{
+
+}
+
+void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
+{
+
 }
