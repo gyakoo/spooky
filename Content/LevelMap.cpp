@@ -270,19 +270,19 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 
 bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
-    // shortcut
-//     if (roomA->m_parent == roomB->m_parent)
-//         return true;
+    auto& areaA = roomA->m_area;
+    auto& areaB = roomB->m_area;
 
-    const int diffX = (roomA->m_area.m_x0 <= roomB->m_area.m_x0)
-        ? roomB->m_area.m_x0 - roomA->m_area.m_x1
-        : roomA->m_area.m_x0 - roomB->m_area.m_x1;
-    const int diffY = (roomA->m_area.m_y0 <= roomB->m_area.m_y0)
-        ? roomB->m_area.m_y0 - roomA->m_area.m_y1
-        : roomA->m_area.m_y0 - roomB->m_area.m_y1;
+    const int diffX = (areaA.m_x0 <= areaB.m_x0)
+        ? areaB.m_x0 - areaA.m_x1
+        : areaA.m_x0 - areaB.m_x1;
 
-    bool checkboardPat = diffX == 1 && diffY == 1;
-    if ((diffX >= 2 || diffY >= 2) || checkboardPat )
+    const int diffY = (areaA.m_y0 <= areaB.m_y0)
+        ? areaB.m_y0 - areaA.m_y1
+        : areaA.m_y0 - areaB.m_y1;
+
+    const bool touchingCorners = diffX == 1 && diffY == 1;
+    if ((diffX >= 2 || diffY >= 2) || touchingCorners )
         return false;
 
     return true;
@@ -290,7 +290,6 @@ bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const Level
 
 void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
-    //LevelMapBSPPortal portal = { {roomA, roomB},  }
     LevelMapBSPNodePtr parent = roomA->m_parent;
     while (parent)
     {

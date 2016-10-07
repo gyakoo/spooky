@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "SampleFpsTextRenderer.h"
+#include "UIRenderer.h"
 
 #include "Common/DirectXHelper.h"
 
@@ -7,7 +7,7 @@ using namespace SpookyAdulthood;
 using namespace Microsoft::WRL;
 
 // Initializes D2D resources used for text rendering.
-SampleFpsTextRenderer::SampleFpsTextRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources) : 
+UIRenderer::UIRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources) : 
 	m_text(L""),
 	m_deviceResources(deviceResources)
 {
@@ -44,7 +44,7 @@ SampleFpsTextRenderer::SampleFpsTextRenderer(const std::shared_ptr<DX::DeviceRes
 }
 
 // Updates the text to be displayed.
-void SampleFpsTextRenderer::Update(DX::StepTimer const& timer)
+void UIRenderer::Update(DX::StepTimer const& timer)
 {
 	// Update display text.
 	uint32 fps = timer.GetFramesPerSecond();
@@ -73,7 +73,7 @@ void SampleFpsTextRenderer::Update(DX::StepTimer const& timer)
 }
 
 // Renders a frame to the screen.
-void SampleFpsTextRenderer::Render()
+void UIRenderer::Render()
 {
 	ID2D1DeviceContext* context = m_deviceResources->GetD2DDeviceContext();
 	Windows::Foundation::Size logicalSize = m_deviceResources->GetLogicalSize();
@@ -110,13 +110,13 @@ void SampleFpsTextRenderer::Render()
 	context->RestoreDrawingState(m_stateBlock.Get());
 }
 
-void SampleFpsTextRenderer::CreateDeviceDependentResources()
+void UIRenderer::CreateDeviceDependentResources()
 {
 	DX::ThrowIfFailed(
 		m_deviceResources->GetD2DDeviceContext()->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_whiteBrush)
 		);
 }
-void SampleFpsTextRenderer::ReleaseDeviceDependentResources()
+void UIRenderer::ReleaseDeviceDependentResources()
 {
 	m_whiteBrush.Reset();
 }

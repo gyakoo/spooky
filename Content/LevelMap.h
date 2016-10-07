@@ -86,7 +86,7 @@ namespace SpookyAdulthood
         uint32_t m_lastSeed, m_seed;
     };
 
-	// This sample renderer instantiates a basic rendering pipeline.
+	// Well, BSP generation and LevelMap are highly coupled...improve it!
 	class LevelMap
 	{
 	public:

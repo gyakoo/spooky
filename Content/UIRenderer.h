@@ -7,10 +7,10 @@
 namespace SpookyAdulthood
 {
 	// Renders the current FPS value in the bottom right corner of the screen using Direct2D and DirectWrite.
-	class SampleFpsTextRenderer
+	class UIRenderer
 	{
 	public:
-		SampleFpsTextRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources);
+		UIRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources);
 		void CreateDeviceDependentResources();
 		void ReleaseDeviceDependentResources();
 		void Update(DX::StepTimer const& timer);
