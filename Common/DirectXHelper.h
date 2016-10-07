@@ -88,7 +88,7 @@ namespace DX
     inline DirectX::XMFLOAT4 GetColorAt(int ndx)
     {
         using namespace DirectX::Colors;
-        const DirectX::XMVECTORF32* colors[] = {
+        static const DirectX::XMVECTORF32* colors[] = {
             &AliceBlue,
             &AntiqueWhite,
             &Aqua,
@@ -221,7 +221,6 @@ namespace DX
             &Teal,
             &Thistle,
             &Tomato,
-            &Transparent,
             &Turquoise,
             &Violet,
             &Wheat,
@@ -237,6 +236,6 @@ namespace DX
 
     inline int GetColorCount()
     {
-        return 140;
+        return 139;
     }
 }

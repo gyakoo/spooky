@@ -50,6 +50,7 @@ namespace SpookyAdulthood
 		float	m_degreesPerSecond;
 		bool	m_tracking;
         float   m_camRotation;
+        double  m_timeUntilNextGen;
         XMVECTOR m_camXZ;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;

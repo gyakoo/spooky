@@ -15,7 +15,8 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 	m_indexCount(0),
 	m_tracking(false),
 	m_deviceResources(deviceResources),
-    m_camRotation(0)
+    m_camRotation(0),
+    m_timeUntilNextGen(0.0)
 {
 	CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
@@ -83,9 +84,11 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
     if (m_loadingComplete)
     {
         auto kb = DirectX::Keyboard::Get().GetState();
-        if (kb.D1)
+        m_timeUntilNextGen -= timer.GetElapsedSeconds();
+        if (kb.D1 && m_timeUntilNextGen <= 0.0)
         {
-            m_mapSettings.m_tileCount = XMUINT2(40, 40);
+            m_timeUntilNextGen = 0.25;
+            m_mapSettings.m_tileCount = XMUINT2(20, 20);
             m_mapSettings.m_minTileCount = XMUINT2(3, 3);
             m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
             m_map.Generate(m_mapSettings);
@@ -218,7 +221,7 @@ void Sample3DSceneRenderer::Render()
 
     auto sprites = m_deviceResources->GetSprites();
     sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_deviceResources->GetCommonStates()->PointClamp());
-    sprites->Draw(m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(8, 8));
+    sprites->Draw(m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(16, 16));
     sprites->End();
 }
 

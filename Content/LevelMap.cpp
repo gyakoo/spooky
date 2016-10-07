@@ -53,7 +53,7 @@ void LevelMapGenerationSettings::Validate() const
 }
 
 LevelMap::LevelMap()
-    : m_root(nullptr), m_thumbTex(nullptr), m_nLeaves(0)
+    : m_root(nullptr), m_thumbTex(nullptr)
 {
 
 }
@@ -65,21 +65,16 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
     Destroy();
 
     m_root = std::make_shared<LevelMapBSPNode>();
-    m_root->m_parent = nullptr;
-    LevelMapBSPTileArea area = { 0, settings.m_tileCount.x-1, 0, settings.m_tileCount.y-1 };
+    LevelMapBSPTileArea area(0, settings.m_tileCount.x - 1, 0, settings.m_tileCount.y - 1);
     m_random.SetSeed(settings.m_randomSeed);
     LevelMapBSPNodePtr lastRoom;
-    RecursiveGenerate(m_root, area, settings, lastRoom, 0);
-    m_firstLeaf = FindFirstLeaf(m_root);
+    RecursiveGenerate(m_root, area, settings, 0);        
+    GenerateVisibility(settings);
     if (settings.m_generateThumbTex)
-    {
         GenerateThumbTex(settings.m_tileCount);
-    }
-    GenerateVisibility();
 }
 
-void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings
-    , LevelMapBSPNodePtr& lastRoom, uint32_t depth)
+void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth)
 {
     // It's an EMPTY? any dimension is not large enough to be a room
     if (area.SizeX() < settings.m_minTileCount.x ||
@@ -87,7 +82,6 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
     {
         node->m_type = LevelMapBSPNode::NODE_EMPTY;
         node->m_area = area;
-        node->m_sibling = nullptr;
         // leaf, no children
         return;
     }
@@ -97,11 +91,8 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
     {
         node->m_type = LevelMapBSPNode::NODE_ROOM;
         node->m_area = area;
-        node->m_sibling = nullptr;
-        if (lastRoom)
-            lastRoom->m_sibling = node;
-        lastRoom = node;
-        ++m_nLeaves;
+        node->m_leafNdx = (int)m_leaves.size();
+        m_leaves.push_back(node);
         // leaf, no children
     }
     else
@@ -119,7 +110,7 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         {
             node->m_children[i] = std::make_shared<LevelMapBSPNode>();
             node->m_children[i]->m_parent = node;
-            RecursiveGenerate(node->m_children[i], newAreas[i], settings, lastRoom, depth + 1);            
+            RecursiveGenerate(node->m_children[i], newAreas[i], settings, depth + 1);            
         }
     }
 }
@@ -159,29 +150,11 @@ bool LevelMap::CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileAr
     return dice < settings.m_probRoom;
 }
 
-LevelMapBSPNodePtr LevelMap::FindFirstLeaf(const LevelMapBSPNodePtr node)
-{
-    if (node)
-    {
-        if (node->IsLeaf())
-            return node;
-
-        if (node->m_children[0])
-        {
-            LevelMapBSPNodePtr first = FindFirstLeaf(node->m_children[0]);
-            return (first != nullptr)
-                ? first
-                : FindFirstLeaf(node->m_children[1]);
-        }
-    }
-    return nullptr;
-}
-
 void LevelMap::Destroy()
 {
     m_root = nullptr;
-    m_firstLeaf = nullptr;
-    m_nLeaves = 0;
+    m_leaves.clear();
+    m_teleports.clear();
     if (m_thumbTex)
     {
         delete[] m_thumbTex;
@@ -203,95 +176,224 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
     uint32_t h = tcount.y;
     m_thumbTexSize = tcount;
     m_thumbTex = new uint32_t[w*h];
-    for (int i = w*h - 1; i >= 0; --i) m_thumbTex[i] = 0xff000000;
-    //ZeroMemory(m_thumbTex, w*h * sizeof(uint32_t));
+    //for (int i = w*h - 1; i >= 0; --i) m_thumbTex[i] = 0xff000000;
+    ZeroMemory(m_thumbTex, w*h * sizeof(uint32_t));
+
+    // randomize colors
+    std::vector<XMFLOAT4> allColors(DX::GetColorCount());
+    for (int i = 0; i < DX::GetColorCount(); ++i) allColors[i] = DX::GetColorAt(i);
+    std::random_shuffle(allColors.begin(), allColors.end());
+    int curColor = 0;
 
     // rooms
-    LevelMapBSPNodePtr node = m_firstLeaf;
-    int count = 0;
-    while (node)
+    for (auto node : m_leaves )
     {
-        ++count;
-        uint32_t argb;
-        if (node->m_type == LevelMapBSPNode::NODE_ROOM)
-        {
-            XMFLOAT4 color = DX::GetColorAt(m_random.Get(0, DX::GetColorCount() - 1));
-            argb = DX::VectorColorToARGB(color);
-        }
+        const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
+        const uint32_t argb = DX::VectorColorToARGB(color);
 
         for (uint32_t y = node->m_area.m_y0; y <= node->m_area.m_y1; ++y)
             for (uint32_t x = node->m_area.m_x0; x <= node->m_area.m_x1; ++x)
                 m_thumbTex[y*w + x] = argb;
-        node = node->m_sibling;        
     }
-    count = count;
+
+    // teleports
+    for (auto tp : m_teleports)
+    {
+        const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
+        const uint32_t argb = DX::VectorColorToARGB(color);
+        for (int i = 0; i < 2; ++i)
+        {
+            m_thumbTex[tp.m_positions[i].y*w + tp.m_positions[i].x] = argb;
+        }
+    }
+}
+
+inline bool VisIsVisible(const bool* vm, int n, int i, int j)
+{
+    return vm[n*j + i];
+}
+
+inline void VisSetVisible(bool* vm, int n, int i, int j, bool v)
+{
+    vm[n*j + i] = v;
 }
 
 // I know, I know...
-void LevelMap::GenerateVisibility()
+void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 {
-    DX::ThrowIfFalse(m_nLeaves > 0);
-    
-    // put leaves in an array
-    std::vector<LevelMapBSPNodePtr> leaves;
-    leaves.reserve(m_nLeaves);
-    LevelMapBSPNodePtr node = m_firstLeaf;
-    while (node) { leaves.push_back(node);  node = node->m_sibling; }
+    if (m_leaves.size() <= 1) 
+        return;
 
-    // for each leaf (room) see if any of the processed connects with me
+    const int nLeaves = (int)m_leaves.size();
+
+    
+    // vis matrix (i know, should be a bitset only storing half the matrix, whatever...)
+    bool* visMatrix = new bool[nLeaves*nLeaves];
+    ZeroMemory(visMatrix, sizeof(bool)*nLeaves*nLeaves);
     LevelMapBSPNodePtr curRoom, otherRoom;
-    for (int i = 1; i < m_nLeaves; ++i)
+    for (int i = 0; i < nLeaves; ++i)
     {
-        curRoom = leaves[i];
-        bool portalGenerated = false;
-        for (int j = i-1; j >= 0; --j)
+        VisSetVisible(visMatrix, nLeaves, i, i, true); // diag
+
+        curRoom = m_leaves[i];
+        for (int j = i - 1; j >= 0; --j)
         {
-            otherRoom = leaves[j];
+            otherRoom = m_leaves[j];
             if (VisRoomAreContiguous(otherRoom, curRoom))
             {
-                // are contiguous, generate portal
-                VisGeneratePortal(curRoom, otherRoom);
-                portalGenerated = true;
-                break;
-            }            
-        }
-
-        // we found a room that's not connected/contiguous to any other
-        if (!portalGenerated)
-        {
-            // generate tele-port instead
-            VisGenerateTeleport(curRoom, leaves[i - 1]);
+                VisSetVisible(visMatrix, nLeaves, i, j, true);
+                VisSetVisible(visMatrix, nLeaves, j, i, true);
+            }
         }
     }
+
+
+    // generate portals
+    for (int i = 1; i < nLeaves; ++i)
+    {
+        for (int j = i - 1; j >= 0; --j)
+        {
+            if (VisIsVisible(visMatrix, nLeaves, i, j))
+            {
+                // generate portal
+                VisGeneratePortal(curRoom, otherRoom);
+                break;
+            }
+        }
+    }
+
+    // generate disjoint sets
+    GenerateTeleports(visMatrix);
+
+    delete []visMatrix;
 }
 
 bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
-    // early exit, shortcut if are siblings
+    // shortcut
     if (roomA->m_parent == roomB->m_parent)
         return true;
 
-    int diffX = 0;
-    if (roomA->m_area.m_x0 <= roomB->m_area.m_x0)
-        diffX = roomB->m_area.m_x0 - roomA->m_area.m_x1;
-    else
-        diffX = roomA->m_area.m_x0 - roomB->m_area.m_x1;
+    int diff = (roomA->m_area.m_x0 <= roomB->m_area.m_x0)
+        ? roomB->m_area.m_x0 - roomA->m_area.m_x1
+        : roomA->m_area.m_x0 - roomB->m_area.m_x1;
+    if (diff >= 2) 
+        return false;
 
-    int diffY = 0;
-    if (roomA->m_area.m_y0 <= roomB->m_area.m_y0)
-        diffY = roomB->m_area.m_y0 - roomA->m_area.m_y1;
-    else
-        diffY = roomA->m_area.m_y0 - roomB->m_area.m_y1;
+    diff = (roomA->m_area.m_y0 <= roomB->m_area.m_y0)
+        ? roomB->m_area.m_y0 - roomA->m_area.m_y1
+        : roomA->m_area.m_y0 - roomB->m_area.m_y1;
+    if (diff >= 2)
+        return false;
 
-    return (diffX+diffY) <= 1;
-}
-
-void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
-{
-
+    return true;
 }
 
 void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
+    //LevelMapBSPPortal portal = { {roomA, roomB},  }
+    LevelMapBSPNodePtr parent = roomA->m_parent;
+    while (parent)
+    {
+        if (HasNode(parent, roomB))
+        {
+            // generate portal for node 'parent' which should be a WALL_X or WALL_Y
+            DX::ThrowIfFalse(parent->IsWall());
+            LevelMapBSPPortal portal = 
+            {
+                { roomA, roomB },
+                parent->m_type,
+                VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type )
+            };
+            break;
+        }
+        parent = parent->m_parent;
+    }
+}
 
+void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
+{
+    DX::ThrowIfFailed(roomA->IsLeaf() && roomB->IsLeaf());
+
+    LevelMapBSPTeleport tport =
+        {
+            {roomA, roomB},
+            {GetRandomInArea(roomA->m_area), GetRandomInArea(roomB->m_area) }
+        };
+    const int ndx = (int)m_teleports.size();
+    m_teleports.push_back(tport);
+    roomA->m_teleportNdx = roomB->m_teleportNdx = ndx;
+}
+
+bool LevelMap::HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr& lookFor)
+{
+    if (node == lookFor)
+        return true;
+
+    if (!node||node->IsLeaf())
+        return false;
+    
+    for (int i = 0; i < 2; ++i)
+    {
+        auto child = node->m_children[i];
+        if (HasNode(child, lookFor)) 
+            return true;
+    }
+    return false;
+}
+
+int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& area1, const LevelMapBSPTileArea& area2, LevelMapBSPNode::NodeType wallDir)
+{
+    return 0;
+}
+
+XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area)
+{
+    return XMUINT2(m_random.Get(area.m_x0, area.m_x1), m_random.Get(area.m_y0, area.m_y1));
+}
+
+void LevelMap::GenerateTeleports(const bool* visMatrix)
+{
+    const size_t nLeaves = m_leaves.size();
+    if (nLeaves <= 1)
+        return;
+    
+    // generate disjoint sets
+    typedef std::set<size_t> RoomSet;
+    typedef std::vector<RoomSet> AllRoomSets;
+
+    RoomSet initialSet; for (size_t i = 0; i < nLeaves; ++i) initialSet.insert(i);
+    AllRoomSets allRoomSets;
+    while (!initialSet.empty())
+    {
+        size_t roomNdx = *initialSet.begin(); initialSet.erase(initialSet.begin());
+        
+        std::queue<size_t> q;
+        q.push(roomNdx);
+        RoomSet roomSet;
+        while (!q.empty()/* && !initialSet.empty()*/)
+        {
+            roomNdx = q.front(); q.pop();
+            roomSet.insert(roomNdx);
+            for (size_t i = 0; i < nLeaves; ++i)
+            {
+                if (i == roomNdx) continue;
+                if (VisIsVisible(visMatrix, (int)nLeaves, (int)roomNdx, (int)i) && roomSet.find(i) == roomSet.end())
+                {
+                    initialSet.erase(i);
+                    q.push(i);
+                    roomSet.insert(i);
+                }
+            }
+        }
+
+        if (!roomSet.empty())
+            allRoomSets.push_back(roomSet);
+    }
+
+    // if nº sets == 1 return (no teleports, all well communicated)
+    if (allRoomSets.size() <= 1) 
+        return;
+
+    // generate telports between sets 2-by-2
 }

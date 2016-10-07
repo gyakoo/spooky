@@ -14,7 +14,8 @@
 #include <memory>
 #include <agile.h>
 #include <concrt.h>
-
+#include <algorithm>
+#include <queue>
 
 
 // directxtk
