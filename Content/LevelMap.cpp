@@ -271,19 +271,18 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
     // shortcut
-    if (roomA->m_parent == roomB->m_parent)
-        return true;
+//     if (roomA->m_parent == roomB->m_parent)
+//         return true;
 
-    int diff = (roomA->m_area.m_x0 <= roomB->m_area.m_x0)
+    const int diffX = (roomA->m_area.m_x0 <= roomB->m_area.m_x0)
         ? roomB->m_area.m_x0 - roomA->m_area.m_x1
         : roomA->m_area.m_x0 - roomB->m_area.m_x1;
-    if (diff >= 2) 
-        return false;
-
-    diff = (roomA->m_area.m_y0 <= roomB->m_area.m_y0)
+    const int diffY = (roomA->m_area.m_y0 <= roomB->m_area.m_y0)
         ? roomB->m_area.m_y0 - roomA->m_area.m_y1
         : roomA->m_area.m_y0 - roomB->m_area.m_y1;
-    if (diff >= 2)
+
+    bool checkboardPat = diffX == 1 && diffY == 1;
+    if ((diffX >= 2 || diffY >= 2) || checkboardPat )
         return false;
 
     return true;
@@ -352,6 +351,15 @@ XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area)
     return XMUINT2(m_random.Get(area.m_x0, area.m_x1), m_random.Get(area.m_y0, area.m_y1));
 }
 
+// random element in a set
+template<typename T>
+size_t RandomRoomInSet(const T& roomset, RandomProvider& rnd)
+{
+    T::const_iterator it = roomset.begin();
+    std::advance(it, rnd.Get(0, roomset.size() - 1));
+    return *it;
+}
+
 void LevelMap::GenerateTeleports(const bool* visMatrix)
 {
     const size_t nLeaves = m_leaves.size();
@@ -395,5 +403,17 @@ void LevelMap::GenerateTeleports(const bool* visMatrix)
     if (allRoomSets.size() <= 1) 
         return;
 
-    // generate telports between sets 2-by-2
+    // generate teleports between sets 2-by-2    
+    for (size_t i = 1; i < allRoomSets.size(); ++i)
+    {
+        const RoomSet& a = allRoomSets[i - 1];
+        const RoomSet& b = allRoomSets[i];
+        
+        // gets a random room in both sets
+        const size_t roomANdx = RandomRoomInSet(a, m_random);
+        const size_t roomBNdx = RandomRoomInSet(b, m_random);
+
+        // todo: don't allow to put two teleports in the same room!
+        this->VisGenerateTeleport(m_leaves[roomANdx], m_leaves[roomBNdx]);
+    }
 }

@@ -88,7 +88,7 @@ void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
         if (kb.D1 && m_timeUntilNextGen <= 0.0)
         {
             m_timeUntilNextGen = 0.25;
-            m_mapSettings.m_tileCount = XMUINT2(20, 20);
+            m_mapSettings.m_tileCount = XMUINT2(50, 50);
             m_mapSettings.m_minTileCount = XMUINT2(3, 3);
             m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
             m_map.Generate(m_mapSettings);
