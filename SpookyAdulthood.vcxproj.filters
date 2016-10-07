@@ -62,9 +62,6 @@
     <Image Include="Assets\Wide310x150Logo.scale-200.png">
       <Filter>Assets</Filter>
     </Image>
-    <Filter Include="DirectXTK">
-      <UniqueIdentifier>{08088257-7b68-40b8-a0a6-fab18445a38d}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
@@ -81,63 +78,6 @@
     <ClInclude Include="Content\LevelMap.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\DDSTextureLoader.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\DirectXHelpers.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Effects.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\GamePad.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\GeometricPrimitive.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\GraphicsMemory.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Keyboard.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Model.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Mouse.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\PrimitiveBatch.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\ScreenGrab.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\SimpleMath.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\SpriteBatch.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\SpriteFont.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\VertexTypes.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\WICTextureLoader.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\XboxDDSTextureLoader.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\Audio.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTK\Inc\CommonStates.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">
@@ -152,8 +92,5 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SpookyAdulthood_TemporaryKey.pfx" />
-    <None Include="DirectXTK\Inc\SimpleMath.inl">
-      <Filter>DirectXTK</Filter>
-    </None>
   </ItemGroup>
 </Project>
