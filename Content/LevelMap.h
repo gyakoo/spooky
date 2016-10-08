@@ -1,16 +1,21 @@
 ﻿#pragma once
-#include <utility>
 #include <DirectXMath.h>
 #include <random>
 
 using namespace DirectX;
 
+namespace DX { class DeviceResources; }
+
 namespace SpookyAdulthood
 {
     struct LevelMapBSPNode;
+    struct NodeDXResources;
     struct VisMatrix;
+    struct Camera;
+    
 
     typedef std::shared_ptr<LevelMapBSPNode> LevelMapBSPNodePtr;
+    typedef std::shared_ptr<NodeDXResources> NodeDXResourcesPtr;
 
     struct LevelMapBSPTileArea
     {
@@ -35,13 +40,35 @@ namespace SpookyAdulthood
 
         bool IsLeaf() const { return m_type == NODE_ROOM; }
         bool IsWall() const { return m_type == WALL_VERT || m_type == WALL_HORIZ;  }
+        void CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device);
+        void ReleaseDeviceDependentResources();
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;
         LevelMapBSPNodePtr m_parent;
         LevelMapBSPNodePtr m_children[2];
+        NodeDXResourcesPtr m_dx; // only valid when IsLeaf()
         int m_teleportNdx;
         int m_leafNdx;
+    };
+
+    struct NodeDXResources
+    {
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_vertexBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_indexBuffer;
+        size_t                                      m_indexCount;
+    };
+
+    struct MapDXResources // common
+    {
+        void CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device);
+        void ReleaseDeviceDependentResources();
+
+        Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
+        Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
+        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_constantBuffer;
+
     };
 
     struct LevelMapBSPPortal
@@ -94,10 +121,13 @@ namespace SpookyAdulthood
 	class LevelMap
 	{
 	public:
-		LevelMap();
+		LevelMap(const std::shared_ptr<DX::DeviceResources>& device);
         ~LevelMap() { Destroy(); }
 		void Generate(const LevelMapGenerationSettings& settings);
         uint32_t* GetThumbTexPtr(XMUINT2* size) const { *size = m_thumbTexSize;  return m_thumbTex; }
+        void CreateDeviceDependentResources();
+        void ReleaseDeviceDependentResources();
+        void Render(const Camera& camera);
 
 	private:
         void Destroy();
@@ -113,6 +143,7 @@ namespace SpookyAdulthood
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
+        void RenderSetCommonState(const Camera& camera);
 
         RandomProvider m_random;
         LevelMapBSPNodePtr m_root;
@@ -121,6 +152,11 @@ namespace SpookyAdulthood
         std::vector<LevelMapBSPPortal> m_portals;
         uint32_t* m_thumbTex;
         XMUINT2 m_thumbTexSize;
+        XMFLOAT4X4 m_levelTransform;
+
+        // dx resources
+        std::shared_ptr<DX::DeviceResources> m_device;
+        std::unique_ptr<MapDXResources> m_dxCommon;
 	};
 }
 

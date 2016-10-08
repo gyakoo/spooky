@@ -200,6 +200,7 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Common\DeviceResources.h" />
+    <ClInclude Include="Content\Camera.h" />
     <ClInclude Include="Content\LevelMap.h" />
     <ClInclude Include="SpookyAdulthoodMain.h" />
     <ClInclude Include="Common\DirectXHelper.h" />
@@ -212,6 +213,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Common\DeviceResources.cpp" />
+    <ClCompile Include="Content\Camera.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />
     <ClCompile Include="SpookyAdulthoodMain.cpp" />
     <ClCompile Include="Content\UIRenderer.cpp" />

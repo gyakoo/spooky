@@ -64,6 +64,9 @@
     <ClCompile Include="Content\UIRenderer.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="Content\Camera.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -76,6 +79,9 @@
       <Filter>Content</Filter>
     </ClInclude>
     <ClInclude Include="Content\UIRenderer.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Camera.h">
       <Filter>Content</Filter>
     </ClInclude>
   </ItemGroup>

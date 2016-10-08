@@ -4,6 +4,7 @@
 #include "ShaderStructures.h"
 #include "..\Common\StepTimer.h"
 #include "Content\LevelMap.h"
+#include "Content\Camera.h"
 
 namespace SpookyAdulthood
 {
@@ -25,7 +26,6 @@ namespace SpookyAdulthood
 
 	private:
 		void Rotate(float radians);
-        void UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTimer const & timer);
 
 	private:
 		// Cached pointer to device resources.
@@ -49,9 +49,8 @@ namespace SpookyAdulthood
 		bool	m_loadingComplete;
 		float	m_degreesPerSecond;
 		bool	m_tracking;
-        XMFLOAT2 m_camRotation;
         double  m_timeUntilNextGen;
-        XMVECTOR m_camXZ;
+        Camera  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;
 

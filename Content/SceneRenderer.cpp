@@ -15,12 +15,11 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_indexCount(0),
 	m_tracking(false),
 	m_deviceResources(deviceResources),
-    m_camRotation(0,0),
-    m_timeUntilNextGen(0.0)
+    m_timeUntilNextGen(0.0),
+    m_map(deviceResources)
 {
-	CreateDeviceDependentResources();
+    CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
-    m_camXZ = XMVectorSet(0, 0, 0, 0);
 }
 
 // Initializes view parameters when the window size changes.
@@ -28,44 +27,15 @@ void SceneRenderer::CreateWindowSizeDependentResources()
 {
 	Size outputSize = m_deviceResources->GetOutputSize();
 	float aspectRatio = outputSize.Width / outputSize.Height;
-	float fovAngleY = 70.0f * XM_PI / 180.0f;
+	float fovAngleY = 50.0f * XM_PI / 180.0f;
 
-	// This is a simple example of change that can be made when the app is in
-	// portrait or snapped view.
+	// This is a simple example of change that can be made when the app is in portrait or snapped view.
 	if (aspectRatio < 1.0f)
 	{
 		fovAngleY *= 2.0f;
 	}
-
-	// Note that the OrientationTransform3D matrix is post-multiplied here
-	// in order to correctly orient the scene to match the display orientation.
-	// This post-multiplication step is required for any draw calls that are
-	// made to the swap chain render target. For draw calls to other targets,
-	// this transform should not be applied.
-
-	// This sample makes use of a right-handed coordinate system using row-major matrices.
-	XMMATRIX perspectiveMatrix = XMMatrixPerspectiveFovRH(
-		fovAngleY,
-		aspectRatio,
-		0.01f,
-		100.0f
-		);
-
-	XMFLOAT4X4 orientation = m_deviceResources->GetOrientationTransform3D();
-
-	XMMATRIX orientationMatrix = XMLoadFloat4x4(&orientation);
-
-	XMStoreFloat4x4(
-		&m_constantBufferData.projection,
-		XMMatrixTranspose(perspectiveMatrix * orientationMatrix)
-		);
-
-	// Eye is at (0,0.7,1.5), looking at point (0,-0.1,0) with the up-vector along the y-axis.
-	static const XMVECTORF32 eye = { 0.0f, 0.50f, -4.0f, 0.0f };
-	static const XMVECTORF32 at = { 0.0f, 0.50, 0.0f, 0.0f };
-	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-
-    XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)));
+    m_camera.ComputeProjection(fovAngleY, aspectRatio, 0.01f, 100.0f, m_deviceResources->GetOrientationTransform3D());
+    m_camera.ComputeViewLookAt(XMFLOAT3(0.0f, 0.50f, -4.0f), XMFLOAT3(0.0f, 0.50, 0.0f), XMFLOAT3(0.0f, 1.0f, 0.0f));
 }
 
 // Called once per frame, rotates the cube and calculates the model and view matrices.
@@ -83,6 +53,10 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
 
     if (m_loadingComplete)
     {
+        m_camera.Update(timer);
+        m_constantBufferData.projection = m_camera.m_projection;
+        m_constantBufferData.view = m_camera.m_view;
+
         auto kb = DirectX::Keyboard::Get().GetState();
         m_timeUntilNextGen -= timer.GetElapsedSeconds();
         if (kb.D1 && m_timeUntilNextGen <= 0.0)
@@ -113,9 +87,6 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
             DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateTexture2D(&desc, &initData, m_texture.ReleaseAndGetAddressOf()));
             DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateShaderResourceView(m_texture.Get(), nullptr, m_textureView.ReleaseAndGetAddressOf()));
         }
-
-
-        UpdateCamera(kb, timer);        
     }
 }
 
@@ -219,6 +190,9 @@ void SceneRenderer::Render()
 		0
 		);
 
+    // LEVEL rendering
+    m_map.Render(m_camera);
+
     auto sprites = m_deviceResources->GetSprites();
     sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_deviceResources->GetCommonStates()->PointClamp());
     sprites->Draw(m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(16, 16));
@@ -227,6 +201,12 @@ void SceneRenderer::Render()
 
 void SceneRenderer::CreateDeviceDependentResources()
 {
+    // device resource of map
+    auto mapCreateTask = concurrency::create_task([this] 
+    {
+        m_map.CreateDeviceDependentResources(); 
+    });
+
 	// Load shaders asynchronously.
 	auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
 	auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
@@ -362,7 +342,7 @@ void SceneRenderer::CreateDeviceDependentResources()
     });
 
 	// Once the texture is loaded, the object is ready to be rendered.
-    loadTextureTask.then([this] () {
+    (loadTextureTask && mapCreateTask).then([this] () {
 		m_loadingComplete = true;
         DirectX::Mouse::Get().SetMode(DirectX::Mouse::MODE_RELATIVE);
 	});
@@ -371,6 +351,7 @@ void SceneRenderer::CreateDeviceDependentResources()
 void SceneRenderer::ReleaseDeviceDependentResources()
 {
 	m_loadingComplete = false;
+    m_map.CreateDeviceDependentResources();
     m_texture.Reset();
     m_textureView.Reset();
 	m_vertexShader.Reset();
@@ -379,53 +360,4 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 	m_constantBuffer.Reset();
 	m_vertexBuffer.Reset();
 	m_indexBuffer.Reset();
-}
-
-void SceneRenderer::UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTimer const & timer)
-{
-    auto ms = DirectX::Mouse::Get().GetState();
-
-    // update cam
-    const float dt = (float)timer.GetElapsedSeconds();
-    const float rotDelta = dt*XM_PIDIV2;
-    const float movDelta = dt*2.0f;
-    
-    // rotation input
-    m_camRotation.y += rotDelta*ms.x;
-    m_camRotation.x += rotDelta*0.5f*ms.y;
-    if (m_camRotation.x > XM_PIDIV4) m_camRotation.x = XM_PIDIV4;
-    if (m_camRotation.x < -XM_PIDIV4) m_camRotation.x = -XM_PIDIV4;
-
-    // movement input
-    float movFw = 0.0f;
-    float movSt = 0.0f;
-    if (kb.Up||kb.W) movFw = 1.0f;
-    else if (kb.Down||kb.S) movFw = -1.0f;
-    if (kb.A||kb.Left) movSt = -1.0f;
-    else if (kb.D||kb.Right) movSt = 1.0f;
-
-    XMMATRIX ry = XMMatrixRotationY(m_camRotation.y);
-    XMMATRIX rx = XMMatrixRotationX(m_camRotation.x);
-    if (movFw||movSt)
-    {
-        // normalize if moving two axes to avoid strafe+fw cheat
-        const float il = 1.0f/sqrtf(movFw*movFw + movSt*movSt);
-        movFw *= il*movDelta; movSt *= il*movDelta;
-        
-        // move forward and strafe
-        XMVECTOR fw = ry.r[2];
-        XMVECTOR md = XMVectorSet(movFw, movFw, movFw, movFw);
-        m_camXZ = XMVectorMultiplyAdd(fw, md, m_camXZ);        
-        XMVECTOR ri = ry.r[0];
-        md = XMVectorSet(movSt, movSt, movSt, movSt);
-        m_camXZ = XMVectorMultiplyAdd(ri, md, m_camXZ);
-    }
-
-    // rotate camera and translate
-    XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -0.5f, XMVectorGetZ(m_camXZ));
-    XMMATRIX m = XMMatrixMultiply(ry, rx);
-    m = XMMatrixMultiply(t, m);
-
-    // udpate for shader
-    XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(m));
 }

@@ -1,6 +1,9 @@
 ﻿#include "pch.h"
 #include "LevelMap.h"
 #include <../Common/DirectXHelper.h>
+#include "ShaderStructures.h"
+#include <../Common/DeviceResources.h>
+#include "Camera.h"
 
 using namespace SpookyAdulthood;
 using namespace DX;
@@ -25,7 +28,6 @@ LevelMapGenerationSettings::LevelMapGenerationSettings()
     , m_probRoom(0.05f), m_generateThumbTex(true)
     , m_maxTileCount(8,8)
 {
-
 }
 
 void RandomProvider::SetSeed(uint32_t seed)
@@ -52,10 +54,11 @@ void LevelMapGenerationSettings::Validate() const
     DX::ThrowIfFalse(m_minTileCount.x >= 2 && m_minTileCount.y >= 2);
 }
 
-LevelMap::LevelMap()
+LevelMap::LevelMap(const std::shared_ptr<DX::DeviceResources>& device)
     : m_root(nullptr), m_thumbTex(nullptr)
+    , m_device(device)
 {
-
+    XMStoreFloat4x4(&m_levelTransform, XMMatrixIdentity());
 }
 
 void LevelMap::Generate(const LevelMapGenerationSettings& settings)
@@ -72,6 +75,7 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
     GenerateVisibility(settings);
     if (settings.m_generateThumbTex)
         GenerateThumbTex(settings.m_tileCount);
+    CreateDeviceDependentResources();
 }
 
 void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth)
@@ -159,6 +163,7 @@ bool LevelMap::CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileAr
 
 void LevelMap::Destroy()
 {
+    ReleaseDeviceDependentResources();
     m_root = nullptr;
     m_leaves.clear();
     m_teleports.clear();
@@ -406,7 +411,7 @@ XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNot
     
     if (checkNotInPortal)
     {
-        XMUINT2 ppos, oppos;
+        XMUINT2 ppos;
         for (int i=0;i<(int)m_portals.size(); ++i)
         {
             const auto& p = m_portals[i];
@@ -521,3 +526,220 @@ XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
     return pos;
 }
 
+void LevelMap::CreateDeviceDependentResources()
+{
+    if (!m_root) return;
+    // common stuff (shaders, textures, etc...)
+    if (!m_dxCommon)
+    {
+        m_dxCommon = std::make_unique<MapDXResources>();
+        m_dxCommon->CreateDeviceDependentResources(m_device);
+    }
+
+    // buffers for each room
+    std::vector< concurrency::task<void> > tasks; 
+    tasks.reserve(m_leaves.size());
+    for (auto& leaf : m_leaves)
+    {
+        tasks.push_back( 
+            concurrency::create_task([this, leaf]() {
+                leaf->CreateDeviceDependentResources(m_device); 
+        }));
+    }
+
+}
+
+void LevelMap::ReleaseDeviceDependentResources()
+{
+    // common stuff (shaders, textures, etc...)
+    if (m_dxCommon)
+    {
+        m_dxCommon->ReleaseDeviceDependentResources();
+        m_dxCommon = nullptr;
+    }
+
+    // buffers for each room
+    for (auto& leaf : m_leaves)
+    {
+        leaf->ReleaseDeviceDependentResources();
+    }
+}
+
+void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
+{
+    if (m_dx || !IsLeaf())
+        return;
+    m_dx = std::make_shared<NodeDXResources>();
+
+    std::vector<VertexPositionColor> vertices;
+    std::vector<unsigned short> indices;
+    {
+        static const float EP = 0.99f;
+        VertexPositionColor floorVerts[4];
+        const auto& area = m_area;
+        unsigned short curInd = 0;
+        for (uint32_t y = area.m_y0; y <= area.m_y1; ++y)
+        {
+            for (uint32_t x = area.m_x0; x <= area.m_x1; ++x)
+            {
+                // floor tile
+                floorVerts[0].Set(float(x), 0.0f, float(y), 0.5f,0.5f,0.5f, 0,0);
+                floorVerts[1].Set(float(x+EP), 0.0f, float(y), 0.5f,0.5f,0.5f, 0,0);
+                floorVerts[2].Set(float(x+EP), 0.0f, float(y+EP), 0.5f,0.5f,0.5f, 0,0);
+                floorVerts[3].Set(float(x), 0.0f, float(y+EP), 0.5f,0.5f,0.5f, 0,0);
+                std::copy(floorVerts, floorVerts + 4, std::back_inserter(vertices));
+                unsigned short inds[6] = { curInd, curInd + 1, curInd + 2, curInd, curInd + 2, curInd + 3 };
+                curInd += 4;
+                std::copy(inds, inds + 6, std::back_inserter(indices));
+            }
+        }
+    }
+    m_dx->m_indexCount = indices.size();
+    DX::ThrowIfFalse(!vertices.empty() && !indices.empty());
+
+    // VB
+    D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+    vertexBufferData.pSysMem = vertices.data();
+    vertexBufferData.SysMemPitch = 0;
+    vertexBufferData.SysMemSlicePitch = 0;
+    const UINT vbsize = UINT(sizeof(VertexPositionColor)*vertices.size());
+    CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
+    DX::ThrowIfFailed(
+        device->GetD3DDevice()->CreateBuffer(
+            &vertexBufferDesc,
+            &vertexBufferData,
+            &m_dx->m_vertexBuffer
+        )
+    );
+
+    // IB
+    D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+    indexBufferData.pSysMem = indices.data();
+    indexBufferData.SysMemPitch = 0;
+    indexBufferData.SysMemSlicePitch = 0;
+    CD3D11_BUFFER_DESC indexBufferDesc(UINT(sizeof(unsigned short)*indices.size()), D3D11_BIND_INDEX_BUFFER);
+    DX::ThrowIfFailed(
+        device->GetD3DDevice()->CreateBuffer(
+            &indexBufferDesc,
+            &indexBufferData,
+            &m_dx->m_indexBuffer
+        )
+    );
+
+}
+
+void LevelMapBSPNode::ReleaseDeviceDependentResources()
+{
+    if (!m_dx) return;
+    m_dx->m_vertexBuffer.Reset();
+    m_dx->m_indexBuffer.Reset();
+    m_dx->m_indexCount = 0;
+}
+
+
+void MapDXResources::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
+{
+    // vertex shader and input layout
+    auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
+    auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
+
+    loadVSTask.then([this, device](const std::vector<byte>& fileData) {
+
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateVertexShader(
+                &fileData[0],
+                fileData.size(),
+                nullptr,
+                &m_vertexShader
+            )
+        );
+
+        static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,          0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+        };
+
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateInputLayout(
+                vertexDesc,
+                ARRAYSIZE(vertexDesc),
+                &fileData[0],
+                fileData.size(),
+                &m_inputLayout
+            )
+        );
+    });
+
+    loadPSTask.then([this,device](const std::vector<byte>& fileData) {
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreatePixelShader(
+                &fileData[0],
+                fileData.size(),
+                nullptr,
+                &m_pixelShader
+            )
+        );
+
+        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateBuffer(
+                &constantBufferDesc,
+                nullptr,
+                &m_constantBuffer
+            )
+        );
+    });
+}
+
+void MapDXResources::ReleaseDeviceDependentResources()
+{
+    m_vertexShader.Reset();
+    m_pixelShader.Reset();
+    m_constantBuffer.Reset();
+    m_inputLayout.Reset();
+}
+
+void LevelMap::Render(const Camera& camera)
+{
+    if (!m_root || !m_dxCommon || !m_dxCommon->m_constantBuffer)
+        return;
+
+    RenderSetCommonState(camera);
+
+    // render all rooms (improve with visibity comp)
+    auto context = m_device->GetD3DDeviceContext();
+    for (const auto& room : m_leaves)
+    {
+        if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
+            continue;
+
+        UINT stride = sizeof(VertexPositionColor);
+        UINT offset = 0;
+        context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(),&stride, &offset);
+        context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(),DXGI_FORMAT_R16_UINT, 0);
+        context->DrawIndexed( room->m_dx->m_indexCount,0,0);
+    }
+}
+
+void LevelMap::RenderSetCommonState(const Camera& camera)
+{
+    // common render state for all rooms
+    ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
+    auto context = m_device->GetD3DDeviceContext();
+    context->UpdateSubresource1(
+        m_dxCommon->m_constantBuffer.Get(),
+        0,
+        NULL,
+        &cbData,
+        0,
+        0,
+        0
+    );
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    context->IASetInputLayout(m_dxCommon->m_inputLayout.Get());
+    context->VSSetShader(m_dxCommon->m_vertexShader.Get(), nullptr, 0);
+    context->VSSetConstantBuffers1(0, 1, m_dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
+    context->PSSetShader(m_dxCommon->m_pixelShader.Get(), nullptr, 0);
+}

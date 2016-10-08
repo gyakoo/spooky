@@ -1,0 +1,91 @@
+﻿#include "pch.h"
+#include "Camera.h"
+
+using namespace SpookyAdulthood;
+
+Camera::Camera()
+: m_camRotation(0, 0)
+{
+    m_camXZ = XMVectorSet(0, 0, 0, 0);
+    XMFLOAT4X4 id;
+    XMStoreFloat4x4(&id, XMMatrixIdentity());
+    ComputeProjection(50.0f*XM_PI / 180.0f, 1.0f, 0.01f, 100.0f, id);
+    m_view = id; //view identity
+}
+
+void Camera::ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix)
+{
+    // Note that the OrientationTransform3D matrix is post-multiplied here
+    // in order to correctly orient the scene to match the display orientation.
+    // This post-multiplication step is required for any draw calls that are
+    // made to the swap chain render target. For draw calls to other targets,
+    // this transform should not be applied.
+    XMMATRIX perspectiveMatrix = 
+        XMMatrixPerspectiveFovRH(fovAngleYRad,aspectRatio,Near, Far );
+
+    XMMATRIX xmmOrientation = XMLoadFloat4x4(&orientationMatrix);
+
+    XMStoreFloat4x4(
+        &m_projection,
+        XMMatrixTranspose(perspectiveMatrix * xmmOrientation)
+    );
+}
+
+void Camera::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up)
+{
+    XMVECTOR _eye = XMLoadFloat3(&eye);
+    XMVECTOR _at = XMLoadFloat3(&at);
+    XMVECTOR _up = XMLoadFloat3(&up);
+    XMStoreFloat4x4(&m_view, XMMatrixTranspose(XMMatrixLookAtRH(_eye, _at, _up)));
+}
+
+// there are better(faster) ways to do this, anyways
+void Camera::Update(DX::StepTimer const& timer)
+{
+    auto ms = DirectX::Mouse::Get().GetState();
+    auto kb = DirectX::Keyboard::Get().GetState();
+
+    // update cam
+    const float dt = (float)timer.GetElapsedSeconds();
+    const float rotDelta = dt*XM_PIDIV2;
+    const float movDelta = dt*2.0f * (kb.LeftShift?6.0f:1.0f);
+
+    // rotation input
+    m_camRotation.y += rotDelta*ms.x;
+    m_camRotation.x += rotDelta*0.5f*ms.y;
+    if (m_camRotation.x > XM_PIDIV4) m_camRotation.x = XM_PIDIV4;
+    if (m_camRotation.x < -XM_PIDIV4) m_camRotation.x = -XM_PIDIV4;
+
+    // movement input
+    float movFw = 0.0f;
+    float movSt = 0.0f;
+    if (kb.Up || kb.W) movFw = 1.0f;
+    else if (kb.Down || kb.S) movFw = -1.0f;
+    if (kb.A || kb.Left) movSt = -1.0f;
+    else if (kb.D || kb.Right) movSt = 1.0f;
+
+    XMMATRIX ry = XMMatrixRotationY(m_camRotation.y);
+    XMMATRIX rx = XMMatrixRotationX(m_camRotation.x);
+    if (movFw || movSt)
+    {
+        // normalize if moving two axes to avoid strafe+fw cheat
+        const float il = 1.0f / sqrtf(movFw*movFw + movSt*movSt);
+        movFw *= il*movDelta; movSt *= il*movDelta;
+
+        // move forward and strafe
+        XMVECTOR fw = ry.r[2];
+        XMVECTOR md = XMVectorSet(movFw, movFw, movFw, movFw);
+        m_camXZ = XMVectorMultiplyAdd(fw, md, m_camXZ);
+        XMVECTOR ri = ry.r[0];
+        md = XMVectorSet(movSt, movSt, movSt, movSt);
+        m_camXZ = XMVectorMultiplyAdd(ri, md, m_camXZ);
+    }
+
+    // rotate camera and translate
+    XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -0.5f, XMVectorGetZ(m_camXZ));
+    XMMATRIX m = XMMatrixMultiply(ry, rx);
+    m = XMMatrixMultiply(t, m);
+
+    // udpate view mat
+    XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
+}
