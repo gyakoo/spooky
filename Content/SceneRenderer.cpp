@@ -15,7 +15,7 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_indexCount(0),
 	m_tracking(false),
 	m_deviceResources(deviceResources),
-    m_camRotation(0),
+    m_camRotation(0,0),
     m_timeUntilNextGen(0.0)
 {
 	CreateDeviceDependentResources();
@@ -391,7 +391,10 @@ void SceneRenderer::UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTim
     const float movDelta = dt*2.0f;
     
     // rotation input
-    m_camRotation += rotDelta*ms.x;
+    m_camRotation.y += rotDelta*0.5f*ms.x;
+    m_camRotation.x += rotDelta*0.5f*ms.y;
+    if (m_camRotation.x > XM_PIDIV4) m_camRotation.x = XM_PIDIV4;
+    if (m_camRotation.x < -XM_PIDIV4) m_camRotation.x = -XM_PIDIV4;
 
     // movement input
     float movFw = 0.0f;
@@ -401,7 +404,8 @@ void SceneRenderer::UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTim
     if (kb.A||kb.Left) movSt = -1.0f;
     else if (kb.D||kb.Right) movSt = 1.0f;
 
-    XMMATRIX ry = XMMatrixRotationY(m_camRotation);
+    XMMATRIX ry = XMMatrixRotationY(m_camRotation.y);
+    XMMATRIX rx = XMMatrixRotationX(m_camRotation.x);
     if (movFw||movSt)
     {
         // normalize if moving two axes to avoid strafe+fw cheat
@@ -419,7 +423,8 @@ void SceneRenderer::UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTim
 
     // rotate camera and translate
     XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -0.5f, XMVectorGetZ(m_camXZ));
-    XMMATRIX m = XMMatrixMultiply(t, ry);
+    XMMATRIX m = XMMatrixMultiply(ry, rx);
+    m = XMMatrixMultiply(t, m);
 
     // udpate for shader
     XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(m));

@@ -49,7 +49,7 @@ namespace SpookyAdulthood
 		bool	m_loadingComplete;
 		float	m_degreesPerSecond;
 		bool	m_tracking;
-        float   m_camRotation;
+        XMFLOAT2 m_camRotation;
         double  m_timeUntilNextGen;
         XMVECTOR m_camXZ;
         LevelMap m_map;
