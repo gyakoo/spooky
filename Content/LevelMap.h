@@ -31,11 +31,10 @@ namespace SpookyAdulthood
     {
         LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1) {}
 
-        enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_X, WALL_Y };
+        enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_VERT, WALL_HORIZ };
 
         bool IsLeaf() const { return m_type == NODE_ROOM; }
-        bool IsWall() const { return m_type == WALL_X || m_type == WALL_Y;  }
-        const LevelMapBSPNodePtr GetSibling()const;
+        bool IsWall() const { return m_type == WALL_VERT || m_type == WALL_HORIZ;  }
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;
@@ -48,7 +47,10 @@ namespace SpookyAdulthood
     struct LevelMapBSPPortal
     {
         LevelMapBSPNodePtr  m_leaves[2];
-        LevelMapBSPNode::NodeType m_wallDir; // must be WALL_X or WALL_Y
+        LevelMapBSPNodePtr  m_wallNode; // must be WALL_X or WALL_Y
+
+        XMUINT2 GetPortalPosition(XMUINT2* opposite=nullptr) const;
+
         int m_index;
     };
 
@@ -110,12 +112,13 @@ namespace SpookyAdulthood
         void SplitNode(const LevelMapBSPTileArea& area, uint32_t at, LevelMapBSPNode::NodeType wallDir, LevelMapBSPTileArea* outAreas);
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateTeleports(const VisMatrix& visMatrix);
-        XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area);
+        XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
 
         RandomProvider m_random;
         LevelMapBSPNodePtr m_root;
         std::vector<LevelMapBSPNodePtr> m_leaves;
         std::vector<LevelMapBSPTeleport> m_teleports;
+        std::vector<LevelMapBSPPortal> m_portals;
         uint32_t* m_thumbTex;
         XMUINT2 m_thumbTexSize;
 	};

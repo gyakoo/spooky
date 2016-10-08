@@ -76,12 +76,12 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
 
 void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth)
 {
+    node->m_area = area;
     // It's an EMPTY? any dimension is not large enough to be a room
     if (area.SizeX() < settings.m_minTileCount.x ||
         area.SizeY() < settings.m_minTileCount.y)
     {
         node->m_type = LevelMapBSPNode::NODE_EMPTY;
-        node->m_area = area;
         // leaf, no children
         return;
     }
@@ -90,7 +90,6 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
     if ( CanBeRoom(node, area, settings, depth) )
     {
         node->m_type = LevelMapBSPNode::NODE_ROOM;
-        node->m_area = area;
         node->m_leafNdx = (int)m_leaves.size();
         m_leaves.push_back(node);
         // leaf, no children
@@ -98,10 +97,18 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
     else
     {
         // WALL node (split)
-        node->m_type = (LevelMapBSPNode::NodeType)(LevelMapBSPNode::WALL_X + (depth % 2)); // each depth alternate wall dir
-        uint32_t at = (node->m_type == LevelMapBSPNode::WALL_X) // random division plane
-            ? area.m_x0 + m_random.Get(0, area.SizeX() - 1)
-            : area.m_y0 + m_random.Get(0, area.SizeY() - 1);
+        node->m_type = (LevelMapBSPNode::NodeType)(LevelMapBSPNode::WALL_VERT + (depth % 2)); // each depth alternate wall dir
+        uint32_t at = 0;
+        if (node->m_type == LevelMapBSPNode::WALL_VERT) // random division plane
+        {
+            at = area.m_x0 + m_random.Get(0, area.SizeX() - 1);
+            node->m_area.m_x0 = node->m_area.m_x1 = at;
+        }
+        else
+        {
+            at = area.m_y0 + m_random.Get(0, area.SizeY() - 1);
+            node->m_area.m_y0 = node->m_area.m_y1 = at;
+        }
         //if (at == 0) at = 1;
         // get the two sub-areas and subdivide them recursively
         LevelMapBSPTileArea newAreas[2];
@@ -117,17 +124,17 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
 
 void LevelMap::SplitNode(const LevelMapBSPTileArea& area, uint32_t at, LevelMapBSPNode::NodeType wallDir, LevelMapBSPTileArea* outAreas)
 {
-    DX::ThrowIfFalse(wallDir == LevelMapBSPNode::WALL_X || wallDir == LevelMapBSPNode::WALL_Y);
+    DX::ThrowIfFalse(wallDir == LevelMapBSPNode::WALL_VERT || wallDir == LevelMapBSPNode::WALL_HORIZ);
     outAreas[0] = outAreas[1] = area;
     switch (wallDir)
     {
-    case LevelMapBSPNode::WALL_X:
+    case LevelMapBSPNode::WALL_VERT:
         DX::ThrowIfFalse(at <= area.m_x1);
         outAreas[0].m_x0 = area.m_x0; outAreas[0].m_x1 = at - 1;
         outAreas[1].m_x0 = at; outAreas[1].m_x1 = area.m_x1;
         break;
 
-    case LevelMapBSPNode::WALL_Y:
+    case LevelMapBSPNode::WALL_HORIZ:
         DX::ThrowIfFalse(at <= area.m_y1);
         outAreas[0].m_y0 = area.m_y0; outAreas[0].m_y1 = at - 1;
         outAreas[1].m_y0 = at; outAreas[1].m_y1 = area.m_y1;
@@ -155,6 +162,7 @@ void LevelMap::Destroy()
     m_root = nullptr;
     m_leaves.clear();
     m_teleports.clear();
+    m_portals.clear();
     if (m_thumbTex)
     {
         delete[] m_thumbTex;
@@ -197,7 +205,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
     }
 
     // teleports
-    for (auto tp : m_teleports)
+    for (const auto& tp : m_teleports)
     {
         const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
         const uint32_t argb = DX::VectorColorToARGB(color);
@@ -206,6 +214,22 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
             m_thumbTex[tp.m_positions[i].y*w + tp.m_positions[i].x] = argb;
         }
     }
+
+    // portals
+    for (const auto& p : m_portals)
+    {
+        XMUINT2 pos = p.GetPortalPosition();
+        for (int i = 0; i < 2; ++i)
+        {
+            m_thumbTex[pos.y*w + pos.x] = 0xff000000;
+            switch (p.m_wallNode->m_type)
+            {
+            case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
+            case LevelMapBSPNode::WALL_VERT: --pos.x; break;
+            }
+        }
+    }
+
 }
 
 struct SpookyAdulthood::VisMatrix
@@ -266,7 +290,7 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
             if (visMatrix.IsVisible(nLeaves, i, j))
             {
                 // generate portal
-                VisGeneratePortal(curRoom, otherRoom);
+                VisGeneratePortal(m_leaves[i], m_leaves[j]);
                 break;
             }
         }
@@ -308,20 +332,36 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
             LevelMapBSPPortal portal = 
             {
                 { roomA, roomB },
-                parent->m_type,
+                parent,
                 VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type )
             };
+
+            m_portals.push_back(portal);
             break;
         }
         parent = parent->m_parent;
     }
 }
 
-int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& area1, const LevelMapBSPTileArea& area2, LevelMapBSPNode::NodeType wallDir)
+// we assume area1 and area2 are contiguous and wallDir in {WALL_X, WALL_Y}
+int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& areaA, const LevelMapBSPTileArea& areaB, LevelMapBSPNode::NodeType wallDir)
 {
-    // we assume area1 and area2 are contiguous
+    // get the intersection range
+    uint32_t a = 0, b = 0;
+    switch (wallDir)
+    {
+    case LevelMapBSPNode::WALL_HORIZ:
+        a = (std::max)(areaA.m_x0, areaB.m_x0);
+        b = (std::min)(areaA.m_x1, areaB.m_x1);
+        break;
+    case LevelMapBSPNode::WALL_VERT:
+        a = (std::max)(areaA.m_y0, areaB.m_y0);
+        b = (std::min)(areaA.m_y1, areaB.m_y1);
+        break;
+    }
 
-    return 0;
+    // random cell along the wallDir
+    return m_random.Get(a, b);
 }
 
 void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
@@ -355,9 +395,40 @@ bool LevelMap::HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr&
     return false;
 }
 
-XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area)
+bool operator ==(const XMUINT2& a, const XMUINT2& b)
 {
-    return XMUINT2(m_random.Get(area.m_x0, area.m_x1), m_random.Get(area.m_y0, area.m_y1));
+    return a.x == b.x && a.y == b.y;
+}
+
+XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal/*=true*/)
+{
+    XMUINT2 rndPos(m_random.Get(area.m_x0, area.m_x1), m_random.Get(area.m_y0, area.m_y1));
+    
+    if (checkNotInPortal)
+    {
+        XMUINT2 ppos, oppos;
+        for (int i=0;i<(int)m_portals.size(); ++i)
+        {
+            const auto& p = m_portals[i];
+            ppos = p.GetPortalPosition();
+            if (rndPos == ppos)
+            {
+                switch (p.m_wallNode->m_type)
+                {
+                case LevelMapBSPNode::WALL_VERT:
+                    ++rndPos.y; 
+                    if (rndPos.y > area.m_y1) rndPos.y = area.m_y0;
+                    break;
+                case LevelMapBSPNode::WALL_HORIZ:
+                    ++rndPos.x;
+                    if (rndPos.x > area.m_x1) rndPos.x = area.m_x0;
+                    break;
+                }
+                break;
+            }
+        }
+    }
+    return rndPos;
 }
 
 // random element in a set
@@ -426,3 +497,27 @@ void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
         this->VisGenerateTeleport(m_leaves[roomANdx], m_leaves[roomBNdx]);
     }
 }
+
+XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
+{
+    DX::ThrowIfFalse(m_wallNode->m_type == LevelMapBSPNode::WALL_VERT || m_wallNode->m_type == LevelMapBSPNode::WALL_HORIZ);
+
+    XMUINT2 pos(0, 0);
+    switch (m_wallNode->m_type)
+    {
+    case LevelMapBSPNode::WALL_VERT:
+        pos.x = m_wallNode->m_area.m_x0;
+        pos.y = m_index;
+        if (opposite)
+            *opposite = XMUINT2(pos.x - 1, pos.y);
+        break;
+    case LevelMapBSPNode::WALL_HORIZ:
+        pos.x = m_index;
+        pos.y = m_wallNode->m_area.m_y0;
+        if (opposite)
+            *opposite = XMUINT2(pos.x, pos.y - 1);
+        break;
+    }
+    return pos;
+}
+
