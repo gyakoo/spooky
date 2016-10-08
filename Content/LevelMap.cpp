@@ -309,6 +309,11 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
     }
 }
 
+int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& area1, const LevelMapBSPTileArea& area2, LevelMapBSPNode::NodeType wallDir)
+{
+    return 0;
+}
+
 void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
     DX::ThrowIfFailed(roomA->IsLeaf() && roomB->IsLeaf());
@@ -338,11 +343,6 @@ bool LevelMap::HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr&
             return true;
     }
     return false;
-}
-
-int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& area1, const LevelMapBSPTileArea& area2, LevelMapBSPNode::NodeType wallDir)
-{
-    return 0;
 }
 
 XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area)
