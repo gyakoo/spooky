@@ -8,6 +8,8 @@ using namespace DirectX;
 namespace SpookyAdulthood
 {
     struct LevelMapBSPNode;
+    struct VisMatrix;
+
     typedef std::shared_ptr<LevelMapBSPNode> LevelMapBSPNodePtr;
 
     struct LevelMapBSPTileArea
@@ -107,7 +109,7 @@ namespace SpookyAdulthood
         bool HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr& lookFor);
         void SplitNode(const LevelMapBSPTileArea& area, uint32_t at, LevelMapBSPNode::NodeType wallDir, LevelMapBSPTileArea* outAreas);
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
-        void GenerateTeleports(const bool* visMatrix);
+        void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area);
 
         RandomProvider m_random;

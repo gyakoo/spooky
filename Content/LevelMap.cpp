@@ -208,15 +208,27 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
     }
 }
 
-inline bool VisIsVisible(const bool* vm, int n, int i, int j)
+struct SpookyAdulthood::VisMatrix
 {
-    return vm[n*j + i];
-}
+    std::vector<bool> matrix;
 
-inline void VisSetVisible(bool* vm, int n, int i, int j, bool v)
-{
-    vm[n*j + i] = v;
-}
+    VisMatrix(int nLeaves)
+    {
+        matrix.resize(nLeaves*nLeaves, false);
+    }
+
+    inline bool IsVisible( int n, int i, int j) const
+    {
+        return matrix[n*j + i];
+    }
+
+    inline void SetVisible(int n, int i, int j, bool v)
+    {
+        matrix [n*j + i] = v;
+    }
+};
+
+
 
 // I know, I know...
 void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
@@ -226,14 +238,12 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 
     const int nLeaves = (int)m_leaves.size();
 
-    
     // vis matrix (i know, should be a bitset only storing half the matrix, whatever...)
-    bool* visMatrix = new bool[nLeaves*nLeaves];
-    ZeroMemory(visMatrix, sizeof(bool)*nLeaves*nLeaves);
+    VisMatrix visMatrix(nLeaves);
     LevelMapBSPNodePtr curRoom, otherRoom;
     for (int i = 0; i < nLeaves; ++i)
     {
-        VisSetVisible(visMatrix, nLeaves, i, i, true); // diag
+        visMatrix.SetVisible(nLeaves, i, i, true); // diag
 
         curRoom = m_leaves[i];
         for (int j = i - 1; j >= 0; --j)
@@ -241,8 +251,8 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
             otherRoom = m_leaves[j];
             if (VisRoomAreContiguous(otherRoom, curRoom))
             {
-                VisSetVisible(visMatrix, nLeaves, i, j, true);
-                VisSetVisible(visMatrix, nLeaves, j, i, true);
+                visMatrix.SetVisible(nLeaves, i, j, true);
+                visMatrix.SetVisible(nLeaves, j, i, true);
             }
         }
     }
@@ -253,7 +263,7 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
     {
         for (int j = i - 1; j >= 0; --j)
         {
-            if (VisIsVisible(visMatrix, nLeaves, i, j))
+            if (visMatrix.IsVisible(nLeaves, i, j))
             {
                 // generate portal
                 VisGeneratePortal(curRoom, otherRoom);
@@ -264,8 +274,6 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 
     // generate disjoint sets
     GenerateTeleports(visMatrix);
-
-    delete []visMatrix;
 }
 
 bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
@@ -311,6 +319,8 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
 
 int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& area1, const LevelMapBSPTileArea& area2, LevelMapBSPNode::NodeType wallDir)
 {
+    // we assume area1 and area2 are contiguous
+
     return 0;
 }
 
@@ -355,11 +365,11 @@ template<typename T>
 size_t RandomRoomInSet(const T& roomset, RandomProvider& rnd)
 {
     T::const_iterator it = roomset.begin();
-    std::advance(it, rnd.Get(0, roomset.size() - 1));
+    std::advance(it, rnd.Get(0, (uint32_t)roomset.size() - 1));
     return *it;
 }
 
-void LevelMap::GenerateTeleports(const bool* visMatrix)
+void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
 {
     const size_t nLeaves = m_leaves.size();
     if (nLeaves <= 1)
@@ -385,7 +395,7 @@ void LevelMap::GenerateTeleports(const bool* visMatrix)
             for (size_t i = 0; i < nLeaves; ++i)
             {
                 if (i == roomNdx) continue;
-                if (VisIsVisible(visMatrix, (int)nLeaves, (int)roomNdx, (int)i) && roomSet.find(i) == roomSet.end())
+                if (visMatrix.IsVisible((int)nLeaves, (int)roomNdx, (int)i) && roomSet.find(i) == roomSet.end())
                 {
                     initialSet.erase(i);
                     q.push(i);

@@ -88,7 +88,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         if (kb.D1 && m_timeUntilNextGen <= 0.0)
         {
             m_timeUntilNextGen = 0.25;
-            m_mapSettings.m_tileCount = XMUINT2(50, 50);
+            m_mapSettings.m_tileCount = XMUINT2(30, 30);
             m_mapSettings.m_minTileCount = XMUINT2(3, 3);
             m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
             m_map.Generate(m_mapSettings);
@@ -391,7 +391,7 @@ void SceneRenderer::UpdateCamera(const DirectX::Keyboard::State& kb, DX::StepTim
     const float movDelta = dt*2.0f;
     
     // rotation input
-    m_camRotation.y += rotDelta*0.5f*ms.x;
+    m_camRotation.y += rotDelta*ms.x;
     m_camRotation.x += rotDelta*0.5f*ms.y;
     if (m_camRotation.x > XM_PIDIV4) m_camRotation.x = XM_PIDIV4;
     if (m_camRotation.x < -XM_PIDIV4) m_camRotation.x = -XM_PIDIV4;
