@@ -3,7 +3,7 @@
 #include <../Common/DirectXHelper.h>
 #include "ShaderStructures.h"
 #include <../Common/DeviceResources.h>
-#include "Camera.h"
+#include "CameraFirstPerson.h"
 
 using namespace SpookyAdulthood;
 using namespace DX;
@@ -57,6 +57,7 @@ void LevelMapGenerationSettings::Validate() const
 LevelMap::LevelMap(const std::shared_ptr<DX::DeviceResources>& device)
     : m_root(nullptr)
     , m_device(device)
+    , m_thumbTexRender(THUMBMAP_FIXED)
 {
     XMStoreFloat4x4(&m_levelTransform, XMMatrixIdentity());
 }
@@ -168,10 +169,11 @@ void LevelMap::Destroy()
     m_leaves.clear();
     m_teleports.clear();
     m_portals.clear();
+    m_leavePortals.clear();
     m_thumbTex.Destroy();
 }
 
-void LevelMap::GenerateThumbTex(XMUINT2 tcount, XMUINT2 playerPos)
+void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 {
     if (!m_root) return;
 
@@ -228,7 +230,8 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, XMUINT2 playerPos)
     }
 
     // character
-    m_thumbTex.SetAt(playerPos.x, playerPos.y, 0xffff00ff);
+    if ( playerPos)
+        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0xffff00ff);
 
     // create DX resources for rendering
     m_thumbTex.CreateDeviceDependentResources(m_device);
@@ -335,6 +338,9 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
                 parent,
                 VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type )
             };
+            uint32_t portalNdx = (uint32_t)m_portals.size();
+            m_leavePortals.insert(std::make_pair(roomA.get(), portalNdx));
+            m_leavePortals.insert(std::make_pair(roomB.get(), portalNdx));
             m_portals.push_back(portal);
             break;
         }
@@ -537,7 +543,7 @@ void LevelMap::CreateDeviceDependentResources()
     {
         tasks.push_back( 
             concurrency::create_task([this, leaf]() {
-                leaf->CreateDeviceDependentResources(m_device); 
+                leaf->CreateDeviceDependentResources(*this, m_device); 
         }));
     }
 
@@ -559,7 +565,36 @@ void LevelMap::ReleaseDeviceDependentResources()
     }
 }
 #pragma warning(disable:4838)
-void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
+
+
+LevelMapBSPNode::PortalDir LevelMapBSPNode::GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y)
+{
+    const XMUINT2 xy(x, y);
+    XMUINT2 ppos[2];
+    auto rang = lmap.m_leavePortals.equal_range(this);
+    for (auto it = rang.first; it != rang.second; ++it)
+    {
+        const auto& portal = lmap.m_portals[it->second];
+        ppos[0] = portal.GetPortalPosition(ppos+1);
+        for (int i = 0; i < 2; ++i)
+        {
+            if (xy == ppos[i])
+            {
+                const XMUINT2& opp = ppos[(i + 1) % 2];
+                if (opp.y == y - 1) return NORTH;
+                else if (opp.y == y + 1) return SOUTH;
+                else if (opp.x == x - 1) return WEST;
+                else if (opp.x == x + 1) return EAST;
+                DX::ThrowIfFalse(false);
+            }
+        }
+    }
+    return NONE;
+}
+
+
+
+void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device)
 {
     if (m_dx || !IsLeaf())
         return;
@@ -613,8 +648,9 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
 
                 // walls
                 {
+                    auto portalDir = GetPortalDirAt(lmap, _x, _z);
                     bool addWallTile = false;
-                    if (_z == m_area.m_y0)
+                    if (_z == m_area.m_y0 && portalDir != NORTH)              // wall north
                     {
                         quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
                         quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
@@ -623,7 +659,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
                         addWallTile = true;
                     }
-                    else if (_z == m_area.m_y1)
+                    else if (_z == m_area.m_y1 && portalDir != SOUTH)         // wall south
                     {
                         quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
                         quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z + EP);
@@ -640,7 +676,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
                         cvi += 4; // 
                         std::copy(inds, inds + 6, std::back_inserter(indices));
                     }
-                    if (_x == m_area.m_x0)
+                    if (_x == m_area.m_x0 && portalDir != WEST)              // wall west
                     {
                         quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
                         quadVerts[1].position = XMFLOAT3(x, 0.0f, z);
@@ -649,7 +685,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
                         addWallTile = true;
                     }
-                    else if (_x == m_area.m_x1)
+                    else if (_x == m_area.m_x1 && portalDir != EAST)         // wall east
                     {
                         quadVerts[0].position = XMFLOAT3(x+EP, 0.0f, z + EP);
                         quadVerts[3].position = XMFLOAT3(x+EP, 0.0f, z);
@@ -712,7 +748,6 @@ void LevelMapBSPNode::ReleaseDeviceDependentResources()
     m_dx->m_indexCount = 0;
 }
 
-
 void MapDXResources::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
 {
     // vertex shader and input layout
@@ -770,7 +805,7 @@ void MapDXResources::ReleaseDeviceDependentResources()
     m_inputLayout.Reset();
 }
 
-void LevelMap::Render(const Camera& camera)
+void LevelMap::Render(const CameraFirstPerson& camera)
 {
     if (!m_root || !m_dxCommon || !m_dxCommon->m_constantBuffer)
         return;
@@ -794,11 +829,25 @@ void LevelMap::Render(const Camera& camera)
     // UI rendering
     auto sprites = m_device->GetSprites();
     sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetCommonStates()->PointClamp());
-    sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(8, 8));
+    switch (m_thumbTexRender)
+    {
+    case THUMBMAP_FIXED:
+        sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(4, 4));
+        break;
+    case THUMBMAP_ORIENTATED:
+        {
+        float dx = (float)m_thumbTex.m_dim.x;
+        float dy = (float)m_thumbTex.m_dim.y;
+        XMFLOAT2 texPos(dx * 2, dy * 2);
+        XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
+        sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
+        }
+        break;
+    }
     sprites->End();
 }
 
-void LevelMap::RenderSetCommonState(const Camera& camera)
+void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
 {
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
@@ -869,7 +918,7 @@ XMUINT2 LevelMap::GetRandomPosition()
 {
     if (!m_root || m_leaves.empty())
         return XMUINT2(0, 0);
-    const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size())];
+    const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size()-1)];
     return GetRandomInArea(r->m_area, true);
 }
 

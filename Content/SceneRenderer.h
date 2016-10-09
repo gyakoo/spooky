@@ -4,7 +4,7 @@
 #include "ShaderStructures.h"
 #include "..\Common\StepTimer.h"
 #include "Content\LevelMap.h"
-#include "Content\Camera.h"
+#include "Content\CameraFirstPerson.h"
 
 namespace SpookyAdulthood
 {
@@ -31,7 +31,7 @@ namespace SpookyAdulthood
 		bool	m_loadingComplete;
 		float	m_degreesPerSecond;
         double  m_timeUntilNextGen;
-        Camera  m_camera;
+        CameraFirstPerson  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;
 

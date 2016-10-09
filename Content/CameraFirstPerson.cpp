@@ -1,10 +1,11 @@
 ﻿#include "pch.h"
-#include "Camera.h"
+#include "CameraFirstPerson.h"
 
+#define CAM_DEFAULT_HEIGHT 0.65f
 using namespace SpookyAdulthood;
 
-Camera::Camera(float fovYDeg)
-: m_pitchYaw(0,XM_PI)
+CameraFirstPerson::CameraFirstPerson(float fovYDeg)
+: m_pitchYaw(0,XM_PI), m_height(CAM_DEFAULT_HEIGHT)
 {
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;
@@ -13,7 +14,7 @@ Camera::Camera(float fovYDeg)
     m_view = id; //view identity
 }
 
-void Camera::ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix)
+void CameraFirstPerson::ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix)
 {
     // Note that the OrientationTransform3D matrix is post-multiplied here
     // in order to correctly orient the scene to match the display orientation.
@@ -31,7 +32,7 @@ void Camera::ComputeProjection(float fovAngleYRad, float aspectRatio, float Near
     );
 }
 
-void Camera::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up)
+void CameraFirstPerson::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up)
 {
     XMVECTOR _eye = XMLoadFloat3(&eye);
     XMVECTOR _at = XMLoadFloat3(&at);
@@ -40,7 +41,7 @@ void Camera::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XM
 }
 
 // there are better(faster) ways to do this, anyways
-void Camera::Update(DX::StepTimer const& timer)
+void CameraFirstPerson::Update(DX::StepTimer const& timer)
 {
     if (!IsPlaying()) 
         return;
@@ -85,9 +86,9 @@ void Camera::Update(DX::StepTimer const& timer)
     }
 
     // rotate camera and translate
-    XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -0.5f, XMVectorGetZ(m_camXZ));
+    XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -m_height, XMVectorGetZ(m_camXZ));
     XMStoreFloat3(&m_xyz, m_camXZ);
-    m_xyz.y = 0.5f;
+    m_xyz.y = m_height;
     m_xyz.z = -m_xyz.z;
     XMMATRIX m = XMMatrixMultiply(ry, rx);
     m = XMMatrixMultiply(t, m);
@@ -96,18 +97,19 @@ void Camera::Update(DX::StepTimer const& timer)
     XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
 }
 
-void Camera::SetPosition(const XMFLOAT3& p)
+void CameraFirstPerson::SetPosition(const XMFLOAT3& p)
 {
     XMFLOAT3 _p(p.x, 0, -p.z);
     m_camXZ = XMLoadFloat3(&_p);
 }
 
-void Camera::SetPlayingMode(bool playingMode)
+void CameraFirstPerson::SetPlayingMode(bool playingMode)
 {
-    DirectX::Mouse::Get().SetMode( playingMode ? DirectX::Mouse::MODE_RELATIVE: DirectX::Mouse::MODE_ABSOLUTE);
+    //DirectX::Mouse::Get().SetMode( playingMode ? DirectX::Mouse::MODE_RELATIVE: DirectX::Mouse::MODE_ABSOLUTE);
 }
-bool Camera::IsPlaying()const
+bool CameraFirstPerson::IsPlaying()const
 {
-    auto pm = DirectX::Mouse::Get().GetState().positionMode;
-    return pm == DirectX::Mouse::MODE_RELATIVE;
+    return true;
+    //auto pm = DirectX::Mouse::Get().GetState().positionMode;
+    //return pm == DirectX::Mouse::MODE_RELATIVE;
 }

@@ -6,9 +6,9 @@ namespace DX { class StepTimer;  }
 
 namespace SpookyAdulthood
 {
-    struct Camera
+    struct CameraFirstPerson
     {
-        Camera(float fovYDeg=60.0f);
+        CameraFirstPerson(float fovYDeg=60.0f);
         void ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix);
         void ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up = XMFLOAT3(0, 1, 0));
         void Update(DX::StepTimer const& timer);
@@ -20,7 +20,7 @@ namespace SpookyAdulthood
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_view;
         XMFLOAT2 m_pitchYaw;
-    
+        float m_height;
     private:
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;

@@ -11,7 +11,8 @@ namespace SpookyAdulthood
     struct LevelMapBSPNode;
     struct NodeDXResources;
     struct VisMatrix;
-    struct Camera;
+    struct CameraFirstPerson;
+    class LevelMap;
     
 
     typedef std::shared_ptr<LevelMapBSPNode> LevelMapBSPNodePtr;
@@ -41,8 +42,10 @@ namespace SpookyAdulthood
 
         bool IsLeaf() const { return m_type == NODE_ROOM; }
         bool IsWall() const { return m_type == WALL_VERT || m_type == WALL_HORIZ;  }
-        void CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device);
+        void CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device);
         void ReleaseDeviceDependentResources();
+        enum PortalDir{NONE,NORTH,SOUTH,WEST,EAST};
+        PortalDir GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y);
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;
@@ -138,17 +141,21 @@ namespace SpookyAdulthood
 	class LevelMap
 	{
 	public:
+        enum ThumbMapRender{ THUMBMAP_NONE, THUMBMAP_FIXED, THUMBMAP_ORIENTATED, THUMBMAP_MAX};
 		LevelMap(const std::shared_ptr<DX::DeviceResources>& device);
         ~LevelMap() { Destroy(); }
 		void Generate(const LevelMapGenerationSettings& settings);
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
-        void Render(const Camera& camera);
-        void GenerateThumbTex(XMUINT2 tcount, XMUINT2 playerPos= XMUINT2(0, 0));
+        void Render(const CameraFirstPerson& camera);
+        void GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos=nullptr);
         XMUINT2 GetRandomPosition();
         XMUINT2 ConvertToMapPosition(const XMFLOAT3& xyz) const;
+        void SetThumbMapRender(ThumbMapRender tmr) { m_thumbTexRender = tmr; }
+        ThumbMapRender GetThumbMapRender() { return m_thumbTexRender; }
 
 	private:
+        friend struct LevelMapBSPNode;
         void Destroy();
         void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateVisibility(const LevelMapGenerationSettings& settings);
@@ -161,15 +168,16 @@ namespace SpookyAdulthood
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
-        void RenderSetCommonState(const Camera& camera);
+        void RenderSetCommonState(const CameraFirstPerson& camera);
 
         RandomProvider m_random;
         LevelMapBSPNodePtr m_root;
         std::vector<LevelMapBSPNodePtr> m_leaves;
         std::vector<LevelMapBSPTeleport> m_teleports;
         std::vector<LevelMapBSPPortal> m_portals;
-        LevelMapThumbTexture m_thumbTex;
-
+        std::multimap<LevelMapBSPNode*, uint32_t> m_leavePortals;
+        LevelMapThumbTexture m_thumbTex;        
+        ThumbMapRender m_thumbTexRender;
         XMFLOAT4X4 m_levelTransform;
 
         // dx resources

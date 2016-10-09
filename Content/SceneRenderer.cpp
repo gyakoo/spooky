@@ -19,7 +19,7 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 
-    m_mapSettings.m_tileCount = XMUINT2(40, 40);
+    m_mapSettings.m_tileCount = XMUINT2(20, 20);
     m_mapSettings.m_minTileCount = XMUINT2(3, 3);
     m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
     m_map.Generate(m_mapSettings);
@@ -74,7 +74,8 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     if (timer.GetFrameCount() % 30 == 0)
     {
         XMUINT2 ppos = m_map.ConvertToMapPosition(m_camera.GetPosition());
-        m_map.GenerateThumbTex(m_mapSettings.m_tileCount,ppos);
+        m_map.GenerateThumbTex(m_mapSettings.m_tileCount,(timer.GetFrameCount() % 60)?&ppos:nullptr);
+
     }
 }
 
@@ -124,9 +125,11 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 
 void SceneRenderer::OnKeyDown(Windows::System::VirtualKey virtualKey)
 {
-    if (virtualKey==Windows::System::VirtualKey::Space)
+    switch (virtualKey)
     {
-        m_camera.SetPlayingMode(!m_camera.IsPlaying());
+        case Windows::System::VirtualKey::Space:
+            m_map.SetThumbMapRender((LevelMap::ThumbMapRender)(((int)m_map.GetThumbMapRender() + 1) % LevelMap::THUMBMAP_MAX));
+        break;
     }
 }
 
