@@ -569,17 +569,17 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
     m_dx = std::make_shared<NodeDXResources>();
 
     const auto& area = m_area;
-    std::vector<VertexPositionColor> vertices; vertices.reserve(area.CountTiles()*4);
+    std::vector<VertexPositionNormalColorTexture> vertices; vertices.reserve(area.CountTiles()*4);
     std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
     {
-        static const float EP = 0.999f;
+        static const float EP = 1.0f;
         static const float FH = 2.0f;
         XMFLOAT4 argb = DX::ColorConversion(m_tag); // we kept color in m_tag
-        VertexPositionColor quadVerts[4];
+        VertexPositionNormalColorTexture quadVerts[4];
         for (int i = 0; i < 4; ++i)
         {
-            quadVerts[i].color = XMFLOAT3(argb.y, argb.z, argb.w);
-            quadVerts[i].uvw= XMFLOAT3(0,0,0);
+            quadVerts[i].color = argb;
+            quadVerts[i].textureCoordinate = XMFLOAT2(0,0);
         }
         unsigned short cvi = 0; // current vertex index
         float x, z;
@@ -590,10 +590,11 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
                 x = float(_x); z = float(_z);
                 // floor tile
                 {
-                    quadVerts[0].Set(x, 0.0f, z);
-                    quadVerts[1].Set(x + EP, 0.0f, z);
-                    quadVerts[2].Set(x + EP, 0.0f, z + EP);
-                    quadVerts[3].Set(x, 0.0f, z + EP);
+                    quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
+                    quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
+                    quadVerts[2].position = XMFLOAT3(x + EP, 0.0f, z + EP);
+                    quadVerts[3].position = XMFLOAT3(x, 0.0f, z + EP);
+                    for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 1, 0); }
                     std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
                     const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
                     cvi += 4; // 
@@ -602,10 +603,11 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
 
                 // ceiling tile
                 {
-                    quadVerts[0].Set(x, FH, z);
-                    quadVerts[3].Set(x + EP, FH, z);
-                    quadVerts[2].Set(x + EP, FH, z + EP);
-                    quadVerts[1].Set(x, FH, z + EP);
+                    quadVerts[0].position = XMFLOAT3(x, FH, z);
+                    quadVerts[3].position = XMFLOAT3(x + EP, FH, z);
+                    quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
+                    quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
+                    for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, -1, 0); }
                     std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
                     const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
                     cvi += 4; // 
@@ -617,18 +619,20 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
                     bool addWallTile = false;
                     if (_z == m_area.m_y0)
                     {
-                        quadVerts[0].Set(x, 0.0f, z);
-                        quadVerts[1].Set(x + EP, 0.0f, z);
-                        quadVerts[2].Set(x + EP, FH, z);
-                        quadVerts[3].Set(x, FH, z);
+                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
+                        quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
+                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
+                        quadVerts[3].position = XMFLOAT3(x, FH, z);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
                         addWallTile = true;
                     }
                     else if (_z == m_area.m_y1)
                     {
-                        quadVerts[0].Set(x, 0.0f, z + EP);
-                        quadVerts[3].Set(x + EP, 0.0f, z + EP);
-                        quadVerts[2].Set(x + EP, FH, z + EP);
-                        quadVerts[1].Set(x, FH, z + EP);
+                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
+                        quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z + EP);
+                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
+                        quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, -1); }
                         addWallTile = true;
                     }
 
@@ -641,18 +645,20 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
                     }
                     if (_x == m_area.m_x0)
                     {
-                        quadVerts[0].Set(x, 0.0f, z + EP);
-                        quadVerts[1].Set(x, 0.0f, z);
-                        quadVerts[2].Set(x, FH, z);
-                        quadVerts[3].Set(x, FH, z + EP);
+                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
+                        quadVerts[1].position = XMFLOAT3(x, 0.0f, z);
+                        quadVerts[2].position = XMFLOAT3(x, FH, z);
+                        quadVerts[3].position = XMFLOAT3(x, FH, z + EP);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
                         addWallTile = true;
                     }
                     else if (_x == m_area.m_x1)
                     {
-                        quadVerts[0].Set(x, 0.0f, z + EP);
-                        quadVerts[3].Set(x, 0.0f, z);
-                        quadVerts[2].Set(x, FH, z);
-                        quadVerts[1].Set(x, FH, z + EP);
+                        quadVerts[0].position = XMFLOAT3(x+EP, 0.0f, z + EP);
+                        quadVerts[3].position = XMFLOAT3(x+EP, 0.0f, z);
+                        quadVerts[2].position = XMFLOAT3(x+EP, FH, z);
+                        quadVerts[1].position = XMFLOAT3(x+EP, FH, z + EP);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(-1, 0, 0); }
                         addWallTile = true;
                     }
                     if (addWallTile)
@@ -674,7 +680,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
     vertexBufferData.pSysMem = vertices.data();
     vertexBufferData.SysMemPitch = 0;
     vertexBufferData.SysMemSlicePitch = 0;
-    const UINT vbsize = UINT(sizeof(VertexPositionColor)*vertices.size());
+    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTexture)*vertices.size());
     CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
     DX::ThrowIfFailed(
         device->GetD3DDevice()->CreateBuffer(
@@ -727,17 +733,17 @@ void MapDXResources::CreateDeviceDependentResources(const std::shared_ptr<DX::De
             )
         );
 
-        static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-        {
-            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,          0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-        };
+        //static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
+        //{
+        //    { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        //    { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,          0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        //    { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+        //};
 
         DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreateInputLayout(
-                vertexDesc,
-                ARRAYSIZE(vertexDesc),
+            device->GetD3DDevice()->CreateInputLayout(                
+                VertexPositionNormalColorTexture::InputElements,
+                VertexPositionNormalColorTexture::InputElementCount,
                 &fileData[0],
                 fileData.size(),
                 &m_inputLayout
@@ -788,7 +794,7 @@ void LevelMap::Render(const Camera& camera)
         if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
             continue;
 
-        UINT stride = sizeof(VertexPositionColor);
+        UINT stride = sizeof(VertexPositionNormalColorTexture);
         UINT offset = 0;
         context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(),&stride, &offset);
         context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(),DXGI_FORMAT_R16_UINT, 0);
@@ -879,7 +885,7 @@ XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const
 {
     UINT tx = m_thumbTex.m_dim.x;
     UINT ty = m_thumbTex.m_dim.y;
-    XMVECTOR maxMap = XMVectorSet((float)tx, 0, (float)ty, 0);
+    XMVECTOR maxMap = XMVectorSet((float)tx-1, 0, (float)ty-1, 0);
     XMVECTOR camXZ = XMLoadFloat3(&xyz);
     camXZ = XMVectorClamp(camXZ, XMVectorZero(), maxMap);
     XMUINT2 ppos((UINT)XMVectorGetX(camXZ), (UINT)XMVectorGetZ(camXZ));

@@ -1,11 +1,12 @@
-
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
-	float4 pos : SV_POSITION;
-	float3 color : COLOR0;
-    float3 uvw0 : TEXCOORD0;
+    float4 pos : SV_POSITION;
+    float3 normal : NORMAL;
+    float4 color : COLOR0;
+    float2 uv : TEXCOORD0;
 };
+
 Texture2D texDiffuse;
 SamplerState samPoint
 {
@@ -17,5 +18,8 @@ SamplerState samPoint
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-	return float4(input.color, 1.0f);
+    float3 lightDir=float3(0.4,-1,-0.4);
+    float3 L = normalize(-lightDir);
+    float d = abs(dot(input.normal, L));
+	return float4(input.color.xyz*d, 1.0f);
 }
