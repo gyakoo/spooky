@@ -3,13 +3,13 @@
 
 using namespace SpookyAdulthood;
 
-Camera::Camera()
+Camera::Camera(float fovYDeg)
 : m_pitchYaw(0,XM_PI)
 {
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;
     XMStoreFloat4x4(&id, XMMatrixIdentity());
-    ComputeProjection(50.0f*XM_PI / 180.0f, 1.0f, 0.01f, 100.0f, id);
+    ComputeProjection(fovYDeg*XM_PI / 180.0f, 1.0f, 0.01f, 100.0f, id);
     m_view = id; //view identity
 }
 
@@ -42,6 +42,9 @@ void Camera::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XM
 // there are better(faster) ways to do this, anyways
 void Camera::Update(DX::StepTimer const& timer)
 {
+    if (!IsPlaying()) 
+        return;
+
     auto ms = DirectX::Mouse::Get().GetState();
     auto kb = DirectX::Keyboard::Get().GetState();
 
@@ -97,4 +100,14 @@ void Camera::SetPosition(const XMFLOAT3& p)
 {
     XMFLOAT3 _p(p.x, 0, -p.z);
     m_camXZ = XMLoadFloat3(&_p);
+}
+
+void Camera::SetPlayingMode(bool playingMode)
+{
+    DirectX::Mouse::Get().SetMode( playingMode ? DirectX::Mouse::MODE_RELATIVE: DirectX::Mouse::MODE_ABSOLUTE);
+}
+bool Camera::IsPlaying()const
+{
+    auto pm = DirectX::Mouse::Get().GetState().positionMode;
+    return pm == DirectX::Mouse::MODE_RELATIVE;
 }

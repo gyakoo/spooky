@@ -120,3 +120,13 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 	m_loadingComplete = false;
     m_map.CreateDeviceDependentResources();
 }
+
+
+void SceneRenderer::OnKeyDown(Windows::System::VirtualKey virtualKey)
+{
+    if (virtualKey==Windows::System::VirtualKey::Space)
+    {
+        m_camera.SetPlayingMode(!m_camera.IsPlaying());
+    }
+}
+

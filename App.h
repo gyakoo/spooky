@@ -35,6 +35,7 @@ namespace SpookyAdulthood
 		void OnOrientationChanged(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
 		void OnDisplayContentsInvalidated(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
 
+        void OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Windows::UI::Core::KeyEventArgs ^args);
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
 		std::unique_ptr<SpookyAdulthoodMain> m_main;
@@ -42,7 +43,8 @@ namespace SpookyAdulthood
         std::unique_ptr<DirectX::Mouse> m_mouse;
 		bool m_windowClosed;
 		bool m_windowVisible;
-	};
+        
+    };
 }
 
 ref class Direct3DApplicationSource sealed : Windows::ApplicationModel::Core::IFrameworkViewSource

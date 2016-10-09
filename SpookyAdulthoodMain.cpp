@@ -98,3 +98,15 @@ void SpookyAdulthoodMain::OnDeviceRestored()
 	m_fpsTextRenderer->CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 }
+
+void SpookyAdulthoodMain::OnKeyDown(Windows::System::VirtualKey virtualKey)
+{
+    switch (virtualKey)
+    {
+    case Windows::System::VirtualKey::Escape:
+        Windows::ApplicationModel::Core::CoreApplication::Exit();
+        break;
+    }
+    m_sceneRenderer->OnKeyDown(virtualKey);
+}
+

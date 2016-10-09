@@ -318,8 +318,8 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 		DX::ThrowIfFailed(
 			swapChain.As(&m_swapChain)
 			);
-
-		// Ensure that DXGI does not queue more than one frame at a time. This both reduces latency and
+        
+        // Ensure that DXGI does not queue more than one frame at a time. This both reduces latency and
 		// ensures that the application will only render after each VSync, minimizing power consumption.
 		DX::ThrowIfFailed(
 			dxgiDevice->SetMaximumFrameLatency(1)

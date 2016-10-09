@@ -16,6 +16,7 @@ namespace SpookyAdulthood
 		void CreateWindowSizeDependentResources();
 		void Update();
 		bool Render();
+        void OnKeyDown(Windows::System::VirtualKey virtualKey);
 
 		// IDeviceNotify
 		virtual void OnDeviceLost();

@@ -254,8 +254,6 @@ struct SpookyAdulthood::VisMatrix
     }
 };
 
-
-
 // I know, I know...
 void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 {
@@ -337,7 +335,6 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
                 parent,
                 VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type )
             };
-
             m_portals.push_back(portal);
             break;
         }
@@ -733,13 +730,6 @@ void MapDXResources::CreateDeviceDependentResources(const std::shared_ptr<DX::De
             )
         );
 
-        //static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-        //{
-        //    { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        //    { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,          0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        //    { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-        //};
-
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateInputLayout(                
                 VertexPositionNormalColorTexture::InputElements,
@@ -830,6 +820,8 @@ void LevelMap::RenderSetCommonState(const Camera& camera)
     context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
 }
 
+// so bad! it destroys/creates the texture and texture view rather than update
+// todo: change that!
 void LevelMapThumbTexture::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
 {
     D3D11_TEXTURE2D_DESC desc = { 0 };

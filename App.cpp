@@ -69,6 +69,9 @@ void App::SetWindow(CoreWindow^ window)
 	window->Closed += 
 		ref new TypedEventHandler<CoreWindow^, CoreWindowEventArgs^>(this, &App::OnWindowClosed);
 
+    window->KeyDown += 
+        ref new Windows::Foundation::TypedEventHandler<Windows::UI::Core::CoreWindow ^, Windows::UI::Core::KeyEventArgs ^>(this, &App::OnKeyDown);
+
 	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
 	currentDisplayInformation->DpiChanged +=
@@ -103,12 +106,7 @@ void App::Run()
 		if (m_windowVisible)
 		{
 			CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
-
-            auto kb = DirectX::Keyboard::Get().GetState();
-            if (kb.Escape)
-            {
-                Windows::ApplicationModel::Core::CoreApplication::Exit();
-            }          
+            
 			m_main->Update();
 
 			if (m_main->Render())
@@ -204,4 +202,9 @@ void App::OnOrientationChanged(DisplayInformation^ sender, Object^ args)
 void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 {
 	m_deviceResources->ValidateDevice();
+}
+
+void SpookyAdulthood::App::OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Windows::UI::Core::KeyEventArgs ^args)
+{
+    m_main->OnKeyDown(args->VirtualKey);
 }

@@ -18,7 +18,8 @@ namespace SpookyAdulthood
 		void ReleaseDeviceDependentResources();
 		void Update(DX::StepTimer const& timer);
 		void Render();
-    
+        void OnKeyDown(Windows::System::VirtualKey virtualKey);
+
     private:
         void SpawnPlayer();
 
