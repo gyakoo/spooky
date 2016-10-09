@@ -183,31 +183,20 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     uint32_t h = tcount.y;
     m_thumbTex.m_dim = tcount;
     m_thumbTex.m_sysMem = new uint32_t[w*h];
-    //for (int i = w*h - 1; i >= 0; --i) m_thumbTex[i] = 0xff000000;
     ZeroMemory(m_thumbTex.m_sysMem, w*h * sizeof(uint32_t));
-
-    // randomize colors
-    std::vector<XMFLOAT4> allColors(DX::GetColorCount());
-    for (int i = 0; i < DX::GetColorCount(); ++i) allColors[i] = DX::GetColorAt(i);
-    std::random_shuffle(allColors.begin(), allColors.end());
-    int curColor = 0;
 
     // rooms
     for (auto& room : m_leaves )
     {
-        const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
-        const uint32_t argb = !room->m_tag ? DX::VectorColorToARGB(color) : room->m_tag;
-        room->m_tag = argb;
         for (uint32_t y = room->m_area.m_y0; y <= room->m_area.m_y1; ++y)
             for (uint32_t x = room->m_area.m_x0; x <= room->m_area.m_x1; ++x)
-                m_thumbTex.SetAt(x, y, argb);
+                m_thumbTex.SetAt(x, y, room->m_tag);
     }
 
     // teleports
     for (const auto& tp : m_teleports)
     {
-        const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
-        const uint32_t argb = 0xff00ffff;// DX::VectorColorToARGB(color);
+        const uint32_t argb = 0xff00ff00;
         for (int i = 0; i < 2; ++i)
         {
             m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
@@ -231,7 +220,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 
     // character
     if ( playerPos)
-        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0xffff00ff);
+        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0x0000ffff);
 
     // create DX resources for rendering
     m_thumbTex.CreateDeviceDependentResources(m_device);
@@ -606,7 +595,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     {
         static const float EP = 1.0f;
         static const float FH = 2.0f;
-        XMFLOAT4 argb = DX::ColorConversion(m_tag); // we kept color in m_tag
+        XMFLOAT4 argb(DirectX::Colors::Magenta.f);
         VertexPositionNormalColorTexture quadVerts[4];
         for (int i = 0; i < 4; ++i)
         {
@@ -812,7 +801,10 @@ void LevelMap::Render(const CameraFirstPerson& camera)
 
     RenderSetCommonState(camera);
 
-    // render all rooms (improve with visibity comp)
+    // where am I?
+    auto& leaf = GetLeafAt(camera.GetPosition());
+
+    // render all rooms (improve this with visibity !)
     auto context = m_device->GetD3DDeviceContext();
     for (const auto& room : m_leaves)
     {
@@ -867,6 +859,23 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->VSSetConstantBuffers1(0, 1, m_dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
     context->PSSetShader(m_dxCommon->m_pixelShader.Get(), nullptr, 0);
     context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
+}
+
+LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)
+{
+    LevelMapBSPNodePtr retRoom;
+    // linear search (this works so far, do the BSP search later with more time)
+    XMUINT2 ipos((UINT)pos.x, (UINT)pos.z);
+    for (auto room : m_leaves)
+    {
+        if (room->m_area.Contains(ipos) )
+        { 
+            retRoom = room;
+            room->m_tag = 0x00ff00ff;
+            break;
+        }
+    }
+    return retRoom;
 }
 
 // so bad! it destroys/creates the texture and texture view rather than update

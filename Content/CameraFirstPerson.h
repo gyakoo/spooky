@@ -6,9 +6,11 @@ namespace DX { class StepTimer;  }
 
 namespace SpookyAdulthood
 {
+#define CAM_DEFAULT_HEIGHT 0.65f
+#define CAM_DEFAULT_FOVY 70.0f
     struct CameraFirstPerson
     {
-        CameraFirstPerson(float fovYDeg=60.0f);
+        CameraFirstPerson(float fovYDeg= CAM_DEFAULT_FOVY);
         void ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix);
         void ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up = XMFLOAT3(0, 1, 0));
         void Update(DX::StepTimer const& timer);

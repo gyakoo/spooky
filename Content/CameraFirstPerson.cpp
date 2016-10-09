@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "CameraFirstPerson.h"
 
-#define CAM_DEFAULT_HEIGHT 0.65f
 using namespace SpookyAdulthood;
 
 CameraFirstPerson::CameraFirstPerson(float fovYDeg)
