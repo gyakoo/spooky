@@ -36,6 +36,9 @@ namespace SpookyAdulthood
 		void OnDisplayContentsInvalidated(Windows::Graphics::Display::DisplayInformation^ sender, Platform::Object^ args);
 
         void OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Windows::UI::Core::KeyEventArgs ^args);
+
+        void ChangeToFullscreen();
+
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
 		std::unique_ptr<SpookyAdulthoodMain> m_main;

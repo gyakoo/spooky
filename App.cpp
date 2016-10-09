@@ -33,6 +33,7 @@ App::App() :
 	m_windowClosed(false),
 	m_windowVisible(true)
 {
+    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
 }
 
 // The first method called when the IFrameworkView is being created.
@@ -96,6 +97,17 @@ void App::Load(Platform::String^ entryPoint)
 	{
 		m_main = std::unique_ptr<SpookyAdulthoodMain>(new SpookyAdulthoodMain(m_deviceResources));
 	}
+}
+
+void App::ChangeToFullscreen()
+{
+    auto av = Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
+    if (!av->IsFullScreenMode)
+        if (av->TryEnterFullScreenMode())
+        {
+            av->PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
+            av->FullScreenSystemOverlayMode = Windows::UI::ViewManagement::FullScreenSystemOverlayMode::Minimal;
+        }
 }
 
 // This method is called after the window becomes active.
