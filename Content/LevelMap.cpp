@@ -2,6 +2,7 @@
 #include "LevelMap.h"
 #include <../Common/DirectXHelper.h>
 #include "ShaderStructures.h"
+#include <../Common/FPSCDAndSolving.h>
 #include <../Common/DeviceResources.h>
 #include "CameraFirstPerson.h"
 
@@ -97,6 +98,7 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         node->m_type = LevelMapBSPNode::NODE_ROOM;
         node->m_leafNdx = (int)m_leaves.size();
         m_leaves.push_back(node);
+        node->ComputeCollisionSegments();
         // leaf, no children
     }
     else
@@ -166,6 +168,7 @@ void LevelMap::Destroy()
 {
     ReleaseDeviceDependentResources();
     m_root = nullptr;
+    m_cameraCurLeaf = nullptr;
     m_leaves.clear();
     m_teleports.clear();
     m_portals.clear();
@@ -794,15 +797,19 @@ void MapDXResources::ReleaseDeviceDependentResources()
     m_inputLayout.Reset();
 }
 
+void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camera)
+{
+    m_cameraCurLeaf = GetLeafAt(camera.GetPosition());
+    if (m_cameraCurLeaf)
+        m_cameraCurLeaf->m_tag = 0x00ff00ff;
+}
+
 void LevelMap::Render(const CameraFirstPerson& camera)
 {
     if (!m_root || !m_dxCommon || !m_dxCommon->m_constantBuffer)
         return;
 
     RenderSetCommonState(camera);
-
-    // where am I?
-    auto& leaf = GetLeafAt(camera.GetPosition());
 
     // render all rooms (improve this with visibity !)
     auto context = m_device->GetD3DDeviceContext();
@@ -863,19 +870,16 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
 
 LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)
 {
-    LevelMapBSPNodePtr retRoom;
     // linear search (this works so far, do the BSP search later with more time)
     XMUINT2 ipos((UINT)pos.x, (UINT)pos.z);
     for (auto room : m_leaves)
     {
         if (room->m_area.Contains(ipos) )
         { 
-            retRoom = room;
-            room->m_tag = 0x00ff00ff;
-            break;
+            return room;
         }
     }
-    return retRoom;
+    return nullptr;
 }
 
 // so bad! it destroys/creates the texture and texture view rather than update
@@ -940,5 +944,17 @@ XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const
     camXZ = XMVectorClamp(camXZ, XMVectorZero(), maxMap);
     XMUINT2 ppos((UINT)XMVectorGetX(camXZ), (UINT)XMVectorGetZ(camXZ));
     return ppos;
+}
+
+void LevelMapBSPNode::ComputeCollisionSegments()
+{
+    m_collisionSegments = std::make_shared<SegmentList>();
+
+}
+
+const SegmentList* LevelMap::GetCurrentCollisionSegments()
+{
+    if (!m_cameraCurLeaf) return nullptr;
+    return m_cameraCurLeaf->m_collisionSegments.get();
 }
 

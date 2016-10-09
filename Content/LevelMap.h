@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <DirectXMath.h>
 #include <random>
+#include <../Common/FPSCDAndSolving.h>
 
 using namespace DirectX;
 
@@ -14,10 +15,14 @@ namespace SpookyAdulthood
     struct CameraFirstPerson;
     class LevelMap;
     
+    
 
     typedef std::shared_ptr<LevelMapBSPNode> LevelMapBSPNodePtr;
     typedef std::shared_ptr<NodeDXResources> NodeDXResourcesPtr;
 
+    //* ***************************************************************** *//
+    //* LevelMapBSPTileArea
+    //* ***************************************************************** *//
     struct LevelMapBSPTileArea
     {
         LevelMapBSPTileArea(uint32_t x0=0, uint32_t x1=0, uint32_t y0=0, uint32_t y1=0) 
@@ -37,7 +42,10 @@ namespace SpookyAdulthood
         uint32_t m_y0, m_y1;
     };
 
-    struct LevelMapBSPNode 
+    //* ***************************************************************** *//
+    //* LevelMapBSPNode
+    //* ***************************************************************** *//
+    struct LevelMapBSPNode
     {
         LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(0xffffffff){}
 
@@ -49,12 +57,14 @@ namespace SpookyAdulthood
         void CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device);
         void ReleaseDeviceDependentResources();
         PortalDir GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y);
+        void ComputeCollisionSegments();
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;
         LevelMapBSPNodePtr m_parent;
         LevelMapBSPNodePtr m_children[2];
         NodeDXResourcesPtr m_dx; // only valid when IsLeaf()
+        std::shared_ptr<SegmentList> m_collisionSegments;
         int m_teleportNdx;
         int m_leafNdx;
         uint32_t m_tag;
@@ -67,6 +77,9 @@ namespace SpookyAdulthood
         size_t                                      m_indexCount;
     };
 
+    //* ***************************************************************** *//
+    //* MapDXResources
+    //* ***************************************************************** *//
     struct MapDXResources // common
     {
         void CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device);
@@ -79,6 +92,9 @@ namespace SpookyAdulthood
 
     };
 
+    //* ***************************************************************** *//
+    //* LevelMapBSPPortal
+    //* ***************************************************************** *//
     struct LevelMapBSPPortal
     {
         LevelMapBSPNodePtr  m_leaves[2];
@@ -89,12 +105,18 @@ namespace SpookyAdulthood
         int m_index;
     };
 
+    //* ***************************************************************** *//
+    //* LevelMapBSPTeleport
+    //* ***************************************************************** *//
     struct LevelMapBSPTeleport
     {
         LevelMapBSPNodePtr m_leaves[2];
         XMUINT2 m_positions[2];
     };
 
+    //* ***************************************************************** *//
+    //* LevelMapGenerationSettings
+    //* ***************************************************************** *//
     struct LevelMapGenerationSettings
     {
         LevelMapGenerationSettings();        
@@ -112,6 +134,9 @@ namespace SpookyAdulthood
         bool m_generateThumbTex;
     };
 
+    //* ***************************************************************** *//
+    //* RandomProvider
+    //* ***************************************************************** *//
     class RandomProvider
     {
     public:
@@ -125,6 +150,9 @@ namespace SpookyAdulthood
         uint32_t m_lastSeed, m_seed;
     };
 
+    //* ***************************************************************** *//
+    //* LevelMapThumbTexture
+    //* ***************************************************************** *//
     struct LevelMapThumbTexture
     {
         LevelMapThumbTexture() : m_sysMem(nullptr), m_dim(0,0) {}
@@ -140,7 +168,10 @@ namespace SpookyAdulthood
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureView;
     };
 
-	// Well, BSP generation and LevelMap are highly coupled...improve it!
+    //* ***************************************************************** *//
+    //* LevelMap
+    //* Well, BSP generation and LevelMap are highly coupled :(
+    //* ***************************************************************** *//
 	class LevelMap
 	{
 	public:
@@ -150,6 +181,7 @@ namespace SpookyAdulthood
 		void Generate(const LevelMapGenerationSettings& settings);
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
+        void Update(const DX::StepTimer& timer, const CameraFirstPerson& camera);
         void Render(const CameraFirstPerson& camera);
         void GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos=nullptr);
         XMUINT2 GetRandomPosition();
@@ -157,6 +189,7 @@ namespace SpookyAdulthood
         void SetThumbMapRender(ThumbMapRender tmr) { m_thumbTexRender = tmr; }
         ThumbMapRender GetThumbMapRender() { return m_thumbTexRender; }
         LevelMapBSPNodePtr GetLeafAt(const XMFLOAT3& pos);
+        const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
 
 	private:
         friend struct LevelMapBSPNode;
@@ -174,6 +207,7 @@ namespace SpookyAdulthood
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
         void RenderSetCommonState(const CameraFirstPerson& camera);
 
+    private:
         RandomProvider m_random;
         LevelMapBSPNodePtr m_root;
         std::vector<LevelMapBSPNodePtr> m_leaves;
@@ -183,8 +217,9 @@ namespace SpookyAdulthood
         LevelMapThumbTexture m_thumbTex;        
         ThumbMapRender m_thumbTexRender;
         XMFLOAT4X4 m_levelTransform;
+        LevelMapBSPNodePtr m_cameraCurLeaf;
 
-        // dx resources
+        // DX resources
         std::shared_ptr<DX::DeviceResources> m_device;
         std::unique_ptr<MapDXResources> m_dxCommon;
 	};

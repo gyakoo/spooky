@@ -44,14 +44,3 @@ void CameraFirstPerson::SetPosition(const XMFLOAT3& p)
     XMFLOAT3 _p(p.x, 0, -p.z);
     m_camXZ = XMLoadFloat3(&_p);
 }
-
-void CameraFirstPerson::SetPlayingMode(bool playingMode)
-{
-    //DirectX::Mouse::Get().SetMode( playingMode ? DirectX::Mouse::MODE_RELATIVE: DirectX::Mouse::MODE_ABSOLUTE);
-}
-bool CameraFirstPerson::IsPlaying()const
-{
-    return true;
-    //auto pm = DirectX::Mouse::Get().GetState().positionMode;
-    //return pm == DirectX::Mouse::MODE_RELATIVE;
-}

@@ -67,6 +67,9 @@
     <ClCompile Include="Content\CameraFirstPerson.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="Common\FPSCDAndSolving.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -83,6 +86,9 @@
     </ClInclude>
     <ClInclude Include="Content\CameraFirstPerson.h">
       <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\FPSCDAndSolving.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

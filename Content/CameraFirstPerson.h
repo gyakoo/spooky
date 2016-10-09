@@ -17,8 +17,6 @@ namespace SpookyAdulthood
         void Update(DX::StepTimer const& timer, T& collisionFun);
         XMFLOAT3 GetPosition() const { return m_xyz; }
         void SetPosition(const XMFLOAT3& p);
-        void SetPlayingMode(bool playingMode);
-        bool IsPlaying()const;
 
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_view;
@@ -33,9 +31,6 @@ namespace SpookyAdulthood
     template<typename T>
     void CameraFirstPerson::Update(DX::StepTimer const& timer, T& collisionFun)
     {
-        if (!IsPlaying())
-            return;
-
         auto ms = DirectX::Mouse::Get().GetState();
         auto kb = DirectX::Keyboard::Get().GetState();
 

@@ -2,6 +2,7 @@
 #include "SceneRenderer.h"
 
 #include "..\Common\DirectXHelper.h"
+#include <../Common/FPSCDAndSolving.h>
 
 using namespace SpookyAdulthood;
 
@@ -54,10 +55,18 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     if (!m_loadingComplete)
         return;
 
-    m_camera.Update(timer, [](XMVECTOR inVec)->XMVECTOR { 
-        return inVec;
+    // Update map and camera (input, collisions and visibility)
+    m_map.Update(timer, m_camera);
+
+    m_camera.Update(timer, [this](XMVECTOR inVec)->XMVECTOR 
+    { 
+        XMFLOAT2 inVec2D(XMVectorGetX(inVec), XMVectorGetZ(inVec));
+        XMFLOAT2 solved2D = FPSCDAndSolving2D(m_map.GetCurrentCollisionSegments(), inVec2D);
+        XMVECTOR solved3D = XMVectorSet(solved2D.x, XMVectorGetY(inVec), solved2D.y, 0.0f);
+        return solved3D;
     });
 
+    // some other input
     auto kb = DirectX::Keyboard::Get().GetState();
     m_timeUntilNextGen -= timer.GetElapsedSeconds();
     if (kb.D1 && m_timeUntilNextGen <= 0.0)
@@ -73,11 +82,11 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         SpawnPlayer();
     }
 
+    // thumbnail map update
     if (timer.GetFrameCount() % 30 == 0)
     {
         XMUINT2 ppos = m_map.ConvertToMapPosition(m_camera.GetPosition());
         m_map.GenerateThumbTex(m_mapSettings.m_tileCount,(timer.GetFrameCount() % 60)?&ppos:nullptr);
-
     }
 }
 

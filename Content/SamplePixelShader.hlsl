@@ -27,7 +27,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
     const float4 fogColor = float4(0, 0, 0, 1.0f);
     const float fogStart = 0.5f;
     const float fogEnd = 7.0f;
-    const float fogDensity = 0.6f;
+    const float fogDensity = 0.4f;
 
     float3 L = normalize(-lightDir);
     float d = abs(dot(input.normal, L));
