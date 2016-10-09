@@ -24,6 +24,7 @@ namespace SpookyAdulthood
         {}
         uint32_t SizeX() const { return m_x1 - m_x0 + 1; }
         uint32_t SizeY() const { return m_y1 - m_y0 + 1; }
+        uint32_t CountTiles() const { return SizeX() * SizeY(); }
         bool operator ==(const LevelMapBSPTileArea& rhs) const {
             return m_x0 == rhs.m_x0 && m_x1 == rhs.m_x1 && m_y0 == rhs.m_y0 && m_y1 == rhs.m_y1;
         }
@@ -34,7 +35,7 @@ namespace SpookyAdulthood
 
     struct LevelMapBSPNode 
     {
-        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1) {}
+        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(0){}
 
         enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_VERT, WALL_HORIZ };
 
@@ -50,6 +51,7 @@ namespace SpookyAdulthood
         NodeDXResourcesPtr m_dx; // only valid when IsLeaf()
         int m_teleportNdx;
         int m_leafNdx;
+        uint32_t m_tag;
     };
 
     struct NodeDXResources
@@ -117,6 +119,21 @@ namespace SpookyAdulthood
         uint32_t m_lastSeed, m_seed;
     };
 
+    struct LevelMapThumbTexture
+    {
+        LevelMapThumbTexture() : m_sysMem(nullptr), m_dim(0,0) {}
+        ~LevelMapThumbTexture() { Destroy(); }
+        void Destroy();
+        void CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device);
+        void ReleaseDeviceDependentResources();
+        void SetAt(uint32_t x, uint32_t y, uint32_t value);
+
+        uint32_t* m_sysMem;
+        XMUINT2 m_dim;
+        Microsoft::WRL::ComPtr<ID3D11Texture2D>  m_texture;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureView;
+    };
+
 	// Well, BSP generation and LevelMap are highly coupled...improve it!
 	class LevelMap
 	{
@@ -124,15 +141,16 @@ namespace SpookyAdulthood
 		LevelMap(const std::shared_ptr<DX::DeviceResources>& device);
         ~LevelMap() { Destroy(); }
 		void Generate(const LevelMapGenerationSettings& settings);
-        uint32_t* GetThumbTexPtr(XMUINT2* size) const { *size = m_thumbTexSize;  return m_thumbTex; }
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
         void Render(const Camera& camera);
+        void GenerateThumbTex(XMUINT2 tcount, XMUINT2 playerPos= XMUINT2(0, 0));
+        XMUINT2 GetRandomPosition();
+        XMUINT2 ConvertToMapPosition(const XMFLOAT3& xyz) const;
 
 	private:
         void Destroy();
         void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
-        void GenerateThumbTex(XMUINT2 tcount);
         void GenerateVisibility(const LevelMapGenerationSettings& settings);
         bool VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
         void VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
@@ -150,8 +168,8 @@ namespace SpookyAdulthood
         std::vector<LevelMapBSPNodePtr> m_leaves;
         std::vector<LevelMapBSPTeleport> m_teleports;
         std::vector<LevelMapBSPPortal> m_portals;
-        uint32_t* m_thumbTex;
-        XMUINT2 m_thumbTexSize;
+        LevelMapThumbTexture m_thumbTex;
+
         XMFLOAT4X4 m_levelTransform;
 
         // dx resources

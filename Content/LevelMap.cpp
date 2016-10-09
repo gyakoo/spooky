@@ -55,7 +55,7 @@ void LevelMapGenerationSettings::Validate() const
 }
 
 LevelMap::LevelMap(const std::shared_ptr<DX::DeviceResources>& device)
-    : m_root(nullptr), m_thumbTex(nullptr)
+    : m_root(nullptr)
     , m_device(device)
 {
     XMStoreFloat4x4(&m_levelTransform, XMMatrixIdentity());
@@ -168,29 +168,21 @@ void LevelMap::Destroy()
     m_leaves.clear();
     m_teleports.clear();
     m_portals.clear();
-    if (m_thumbTex)
-    {
-        delete[] m_thumbTex;
-        m_thumbTex = nullptr;
-    }
+    m_thumbTex.Destroy();
 }
 
-void LevelMap::GenerateThumbTex(XMUINT2 tcount)
+void LevelMap::GenerateThumbTex(XMUINT2 tcount, XMUINT2 playerPos)
 {
-    DX::ThrowIfFalse(m_root != nullptr);
-    
-    if (m_thumbTex)
-    {
-        delete[] m_thumbTex;
-        m_thumbTex = nullptr;
-    }
+    if (!m_root) return;
+
+    m_thumbTex.Destroy();
 
     uint32_t w = tcount.x;
     uint32_t h = tcount.y;
-    m_thumbTexSize = tcount;
-    m_thumbTex = new uint32_t[w*h];
+    m_thumbTex.m_dim = tcount;
+    m_thumbTex.m_sysMem = new uint32_t[w*h];
     //for (int i = w*h - 1; i >= 0; --i) m_thumbTex[i] = 0xff000000;
-    ZeroMemory(m_thumbTex, w*h * sizeof(uint32_t));
+    ZeroMemory(m_thumbTex.m_sysMem, w*h * sizeof(uint32_t));
 
     // randomize colors
     std::vector<XMFLOAT4> allColors(DX::GetColorCount());
@@ -199,24 +191,24 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
     int curColor = 0;
 
     // rooms
-    for (auto node : m_leaves )
+    for (auto& room : m_leaves )
     {
         const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
-        const uint32_t argb = DX::VectorColorToARGB(color);
-
-        for (uint32_t y = node->m_area.m_y0; y <= node->m_area.m_y1; ++y)
-            for (uint32_t x = node->m_area.m_x0; x <= node->m_area.m_x1; ++x)
-                m_thumbTex[y*w + x] = argb;
+        const uint32_t argb = !room->m_tag ? DX::VectorColorToARGB(color) : room->m_tag;
+        room->m_tag = argb;
+        for (uint32_t y = room->m_area.m_y0; y <= room->m_area.m_y1; ++y)
+            for (uint32_t x = room->m_area.m_x0; x <= room->m_area.m_x1; ++x)
+                m_thumbTex.SetAt(x, y, argb);
     }
 
     // teleports
     for (const auto& tp : m_teleports)
     {
         const XMFLOAT4 color = allColors[(curColor++) % DX::GetColorCount()];
-        const uint32_t argb = DX::VectorColorToARGB(color);
+        const uint32_t argb = 0xff00ffff;// DX::VectorColorToARGB(color);
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex[tp.m_positions[i].y*w + tp.m_positions[i].x] = argb;
+            m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
         }
     }
 
@@ -226,7 +218,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
         XMUINT2 pos = p.GetPortalPosition();
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex[pos.y*w + pos.x] = 0xff000000;
+            m_thumbTex.SetAt(pos.x, pos.y, 0xff000000);
             switch (p.m_wallNode->m_type)
             {
             case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
@@ -235,6 +227,11 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount)
         }
     }
 
+    // character
+    m_thumbTex.SetAt(playerPos.x, playerPos.y, 0xffff00ff);
+
+    // create DX resources for rendering
+    m_thumbTex.CreateDeviceDependentResources(m_device);
 }
 
 struct SpookyAdulthood::VisMatrix
@@ -376,7 +373,7 @@ void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelM
     LevelMapBSPTeleport tport =
         {
             {roomA, roomB},
-            {GetRandomInArea(roomA->m_area), GetRandomInArea(roomB->m_area) }
+            {GetRandomInArea(roomA->m_area), GetRandomInArea(roomB->m_area) },
         };
     const int ndx = (int)m_teleports.size();
     m_teleports.push_back(tport);
@@ -564,33 +561,108 @@ void LevelMap::ReleaseDeviceDependentResources()
         leaf->ReleaseDeviceDependentResources();
     }
 }
-
+#pragma warning(disable:4838)
 void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
 {
     if (m_dx || !IsLeaf())
         return;
     m_dx = std::make_shared<NodeDXResources>();
 
-    std::vector<VertexPositionColor> vertices;
-    std::vector<unsigned short> indices;
+    const auto& area = m_area;
+    std::vector<VertexPositionColor> vertices; vertices.reserve(area.CountTiles()*4);
+    std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
     {
-        static const float EP = 0.99f;
-        VertexPositionColor floorVerts[4];
-        const auto& area = m_area;
-        unsigned short curInd = 0;
-        for (uint32_t y = area.m_y0; y <= area.m_y1; ++y)
+        static const float EP = 0.999f;
+        static const float FH = 2.0f;
+        XMFLOAT4 argb = DX::ColorConversion(m_tag); // we kept color in m_tag
+        VertexPositionColor quadVerts[4];
+        for (int i = 0; i < 4; ++i)
         {
-            for (uint32_t x = area.m_x0; x <= area.m_x1; ++x)
+            quadVerts[i].color = XMFLOAT3(argb.y, argb.z, argb.w);
+            quadVerts[i].uvw= XMFLOAT3(0,0,0);
+        }
+        unsigned short cvi = 0; // current vertex index
+        float x, z;
+        for (uint32_t _z = area.m_y0; _z <= area.m_y1; ++_z)
+        {
+            for (uint32_t _x = area.m_x0; _x <= area.m_x1; ++_x)
             {
+                x = float(_x); z = float(_z);
                 // floor tile
-                floorVerts[0].Set(float(x), 0.0f, float(y), 0.5f,0.5f,0.5f, 0,0);
-                floorVerts[1].Set(float(x+EP), 0.0f, float(y), 0.5f,0.5f,0.5f, 0,0);
-                floorVerts[2].Set(float(x+EP), 0.0f, float(y+EP), 0.5f,0.5f,0.5f, 0,0);
-                floorVerts[3].Set(float(x), 0.0f, float(y+EP), 0.5f,0.5f,0.5f, 0,0);
-                std::copy(floorVerts, floorVerts + 4, std::back_inserter(vertices));
-                unsigned short inds[6] = { curInd, curInd + 1, curInd + 2, curInd, curInd + 2, curInd + 3 };
-                curInd += 4;
-                std::copy(inds, inds + 6, std::back_inserter(indices));
+                {
+                    quadVerts[0].Set(x, 0.0f, z);
+                    quadVerts[1].Set(x + EP, 0.0f, z);
+                    quadVerts[2].Set(x + EP, 0.0f, z + EP);
+                    quadVerts[3].Set(x, 0.0f, z + EP);
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
+                    cvi += 4; // 
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // ceiling tile
+                {
+                    quadVerts[0].Set(x, FH, z);
+                    quadVerts[3].Set(x + EP, FH, z);
+                    quadVerts[2].Set(x + EP, FH, z + EP);
+                    quadVerts[1].Set(x, FH, z + EP);
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
+                    cvi += 4; // 
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // walls
+                {
+                    bool addWallTile = false;
+                    if (_z == m_area.m_y0)
+                    {
+                        quadVerts[0].Set(x, 0.0f, z);
+                        quadVerts[1].Set(x + EP, 0.0f, z);
+                        quadVerts[2].Set(x + EP, FH, z);
+                        quadVerts[3].Set(x, FH, z);
+                        addWallTile = true;
+                    }
+                    else if (_z == m_area.m_y1)
+                    {
+                        quadVerts[0].Set(x, 0.0f, z + EP);
+                        quadVerts[3].Set(x + EP, 0.0f, z + EP);
+                        quadVerts[2].Set(x + EP, FH, z + EP);
+                        quadVerts[1].Set(x, FH, z + EP);
+                        addWallTile = true;
+                    }
+
+                    if (addWallTile)
+                    {
+                        std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                        const unsigned short inds[6] = { /*tri0*/cvi, cvi + 2, cvi + 1, /*tri1*/cvi, cvi + 3, cvi + 2 };
+                        cvi += 4; // 
+                        std::copy(inds, inds + 6, std::back_inserter(indices));
+                    }
+                    if (_x == m_area.m_x0)
+                    {
+                        quadVerts[0].Set(x, 0.0f, z + EP);
+                        quadVerts[1].Set(x, 0.0f, z);
+                        quadVerts[2].Set(x, FH, z);
+                        quadVerts[3].Set(x, FH, z + EP);
+                        addWallTile = true;
+                    }
+                    else if (_x == m_area.m_x1)
+                    {
+                        quadVerts[0].Set(x, 0.0f, z + EP);
+                        quadVerts[3].Set(x, 0.0f, z);
+                        quadVerts[2].Set(x, FH, z);
+                        quadVerts[1].Set(x, FH, z + EP);
+                        addWallTile = true;
+                    }
+                    if (addWallTile)
+                    {
+                        std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                        const unsigned short inds[6] = { /*tri0*/cvi, cvi + 2, cvi + 1, /*tri1*/cvi, cvi + 3, cvi + 2 };
+                        cvi += 4; // 
+                        std::copy(inds, inds + 6, std::back_inserter(indices));
+                    }
+                }
             }
         }
     }
@@ -627,6 +699,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const std::shared_ptr<DX::D
     );
 
 }
+#pragma warning(default:4838)
 
 void LevelMapBSPNode::ReleaseDeviceDependentResources()
 {
@@ -719,8 +792,14 @@ void LevelMap::Render(const Camera& camera)
         UINT offset = 0;
         context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(),&stride, &offset);
         context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(),DXGI_FORMAT_R16_UINT, 0);
-        context->DrawIndexed( room->m_dx->m_indexCount,0,0);
+        context->DrawIndexed( (UINT)room->m_dx->m_indexCount,0,0);
     }
+
+    // UI rendering
+    auto sprites = m_device->GetSprites();
+    sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetCommonStates()->PointClamp());
+    sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(8, 8));
+    sprites->End();
 }
 
 void LevelMap::RenderSetCommonState(const Camera& camera)
@@ -742,4 +821,68 @@ void LevelMap::RenderSetCommonState(const Camera& camera)
     context->VSSetShader(m_dxCommon->m_vertexShader.Get(), nullptr, 0);
     context->VSSetConstantBuffers1(0, 1, m_dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
     context->PSSetShader(m_dxCommon->m_pixelShader.Get(), nullptr, 0);
+    context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
 }
+
+void LevelMapThumbTexture::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
+{
+    D3D11_TEXTURE2D_DESC desc = { 0 };
+    desc.ArraySize = 1;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    desc.CPUAccessFlags = 0;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.Width = m_dim.x;
+    desc.Height = m_dim.y;
+    desc.MipLevels = 1;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+
+    D3D11_SUBRESOURCE_DATA initData = { 0 };
+    initData.pSysMem = m_sysMem;
+    initData.SysMemSlicePitch = initData.SysMemPitch = sizeof(uint32_t)*m_dim.x;
+    initData.SysMemSlicePitch *= m_dim.y;
+    DX::ThrowIfFailed(device->GetD3DDevice()->CreateTexture2D(&desc, &initData, m_texture.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(device->GetD3DDevice()->CreateShaderResourceView(m_texture.Get(), nullptr, m_textureView.ReleaseAndGetAddressOf()));
+}
+
+void LevelMapThumbTexture::ReleaseDeviceDependentResources()
+{
+    m_texture.Reset();
+    m_textureView.Reset();
+}
+
+void LevelMapThumbTexture::Destroy()
+{
+    if (m_sysMem)
+    {
+        delete[] m_sysMem;
+        m_sysMem = nullptr;
+    }
+    ReleaseDeviceDependentResources();
+}
+
+void LevelMapThumbTexture::SetAt(uint32_t x, uint32_t y, uint32_t value)
+{
+    m_sysMem[m_dim.y*y + x] = value;
+}
+
+XMUINT2 LevelMap::GetRandomPosition()
+{
+    if (!m_root || m_leaves.empty())
+        return XMUINT2(0, 0);
+    const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size())];
+    return GetRandomInArea(r->m_area, true);
+}
+
+XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const
+{
+    UINT tx = m_thumbTex.m_dim.x;
+    UINT ty = m_thumbTex.m_dim.y;
+    XMVECTOR maxMap = XMVectorSet((float)tx, 0, (float)ty, 0);
+    XMVECTOR camXZ = XMLoadFloat3(&xyz);
+    camXZ = XMVectorClamp(camXZ, XMVectorZero(), maxMap);
+    XMUINT2 ppos((UINT)XMVectorGetX(camXZ), (UINT)XMVectorGetZ(camXZ));
+    return ppos;
+}
+

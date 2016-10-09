@@ -84,7 +84,16 @@ namespace DX
         fcolor.w = t;
         return VectorColorToRGBA(fcolor);
     }
-
+    inline DirectX::XMFLOAT4 ColorConversion(uint32_t argb)
+    {
+        DirectX::XMFLOAT4 fargb;
+        const float inv = 1.0f / 255.0f;
+        fargb.x = (argb >> 24)*inv;
+        fargb.y = ((argb >> 16)&0xff)*inv;
+        fargb.z = ((argb >> 8) & 0xff)*inv;
+        fargb.w = ((argb) & 0xff)*inv;
+        return fargb;
+    }
     inline DirectX::XMFLOAT4 GetColorAt(int ndx)
     {
         using namespace DirectX::Colors;

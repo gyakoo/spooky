@@ -4,7 +4,7 @@
 using namespace SpookyAdulthood;
 
 Camera::Camera()
-: m_camRotation(0, 0)
+: m_pitchYaw(0,XM_PI)
 {
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;
@@ -51,10 +51,10 @@ void Camera::Update(DX::StepTimer const& timer)
     const float movDelta = dt*2.0f * (kb.LeftShift?6.0f:1.0f);
 
     // rotation input
-    m_camRotation.y += rotDelta*ms.x;
-    m_camRotation.x += rotDelta*0.5f*ms.y;
-    if (m_camRotation.x > XM_PIDIV4) m_camRotation.x = XM_PIDIV4;
-    if (m_camRotation.x < -XM_PIDIV4) m_camRotation.x = -XM_PIDIV4;
+    m_pitchYaw.y += rotDelta*ms.x;
+    m_pitchYaw.x += rotDelta*0.5f*ms.y;
+    if (m_pitchYaw.x > XM_PIDIV4) m_pitchYaw.x = XM_PIDIV4;
+    if (m_pitchYaw.x < -XM_PIDIV4) m_pitchYaw.x = -XM_PIDIV4;
 
     // movement input
     float movFw = 0.0f;
@@ -64,8 +64,8 @@ void Camera::Update(DX::StepTimer const& timer)
     if (kb.A || kb.Left) movSt = -1.0f;
     else if (kb.D || kb.Right) movSt = 1.0f;
 
-    XMMATRIX ry = XMMatrixRotationY(m_camRotation.y);
-    XMMATRIX rx = XMMatrixRotationX(m_camRotation.x);
+    XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y);
+    XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
     if (movFw || movSt)
     {
         // normalize if moving two axes to avoid strafe+fw cheat
@@ -83,9 +83,18 @@ void Camera::Update(DX::StepTimer const& timer)
 
     // rotate camera and translate
     XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -0.5f, XMVectorGetZ(m_camXZ));
+    XMStoreFloat3(&m_xyz, m_camXZ);
+    m_xyz.y = 0.5f;
+    m_xyz.z = -m_xyz.z;
     XMMATRIX m = XMMatrixMultiply(ry, rx);
     m = XMMatrixMultiply(t, m);
 
     // udpate view mat
     XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
+}
+
+void Camera::SetPosition(const XMFLOAT3& p)
+{
+    XMFLOAT3 _p(p.x, 0, -p.z);
+    m_camXZ = XMLoadFloat3(&_p);
 }

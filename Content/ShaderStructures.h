@@ -17,11 +17,9 @@ namespace SpookyAdulthood
 		DirectX::XMFLOAT3 color;
         DirectX::XMFLOAT3 uvw;
 
-        void Set(float x, float y, float z, float r, float g, float b, float u, float v)
+        void Set(float x, float y, float z)
         {
-            pos = DirectX::XMFLOAT3(x, y, z);
-            color = DirectX::XMFLOAT3(r, g, b);
-            uvw = DirectX::XMFLOAT3(u, v, 0.0f);
+            pos = DirectX::XMFLOAT3(x, y, z);            
         }
 	};
 }

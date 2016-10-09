@@ -82,6 +82,7 @@ void App::SetWindow(CoreWindow^ window)
 
     m_keyboard->SetWindow(reinterpret_cast<ABI::Windows::UI::Core::ICoreWindow*>(window));
     m_mouse->SetWindow(reinterpret_cast<ABI::Windows::UI::Core::ICoreWindow*>(window));
+    m_mouse->SetMode(DirectX::Mouse::MODE_RELATIVE);
 	m_deviceResources->SetWindow(window);
 }
 
