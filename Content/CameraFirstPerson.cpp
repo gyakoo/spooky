@@ -39,63 +39,6 @@ void CameraFirstPerson::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& a
     XMStoreFloat4x4(&m_view, XMMatrixTranspose(XMMatrixLookAtRH(_eye, _at, _up)));
 }
 
-// there are better(faster) ways to do this, anyways
-void CameraFirstPerson::Update(DX::StepTimer const& timer)
-{
-    if (!IsPlaying()) 
-        return;
-
-    auto ms = DirectX::Mouse::Get().GetState();
-    auto kb = DirectX::Keyboard::Get().GetState();
-
-    // update cam
-    const float dt = (float)timer.GetElapsedSeconds();
-    const float rotDelta = dt*XM_PIDIV2;
-    const float movDelta = dt*2.0f * (kb.LeftShift?6.0f:1.0f);
-
-    // rotation input
-    m_pitchYaw.y += rotDelta*ms.x;
-    m_pitchYaw.x += rotDelta*0.5f*ms.y;
-    if (m_pitchYaw.x > XM_PIDIV4) m_pitchYaw.x = XM_PIDIV4;
-    if (m_pitchYaw.x < -XM_PIDIV4) m_pitchYaw.x = -XM_PIDIV4;
-
-    // movement input
-    float movFw = 0.0f;
-    float movSt = 0.0f;
-    if (kb.Up || kb.W) movFw = 1.0f;
-    else if (kb.Down || kb.S) movFw = -1.0f;
-    if (kb.A || kb.Left) movSt = -1.0f;
-    else if (kb.D || kb.Right) movSt = 1.0f;
-
-    XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y);
-    XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
-    if (movFw || movSt)
-    {
-        // normalize if moving two axes to avoid strafe+fw cheat
-        const float il = 1.0f / sqrtf(movFw*movFw + movSt*movSt);
-        movFw *= il*movDelta; movSt *= il*movDelta;
-
-        // move forward and strafe
-        XMVECTOR fw = ry.r[2];
-        XMVECTOR md = XMVectorSet(movFw, movFw, movFw, movFw);
-        m_camXZ = XMVectorMultiplyAdd(fw, md, m_camXZ);
-        XMVECTOR ri = ry.r[0];
-        md = XMVectorSet(movSt, movSt, movSt, movSt);
-        m_camXZ = XMVectorMultiplyAdd(ri, md, m_camXZ);
-    }
-
-    // rotate camera and translate
-    XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -m_height, XMVectorGetZ(m_camXZ));
-    XMStoreFloat3(&m_xyz, m_camXZ);
-    m_xyz.y = m_height;
-    m_xyz.z = -m_xyz.z;
-    XMMATRIX m = XMMatrixMultiply(ry, rx);
-    m = XMMatrixMultiply(t, m);
-
-    // udpate view mat
-    XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
-}
-
 void CameraFirstPerson::SetPosition(const XMFLOAT3& p)
 {
     XMFLOAT3 _p(p.x, 0, -p.z);

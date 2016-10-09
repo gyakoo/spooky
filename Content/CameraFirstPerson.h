@@ -10,10 +10,11 @@ namespace SpookyAdulthood
 #define CAM_DEFAULT_FOVY 70.0f
     struct CameraFirstPerson
     {
-        CameraFirstPerson(float fovYDeg= CAM_DEFAULT_FOVY);
+        CameraFirstPerson(float fovYDeg = CAM_DEFAULT_FOVY);
         void ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix);
         void ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up = XMFLOAT3(0, 1, 0));
-        void Update(DX::StepTimer const& timer);
+        template<typename T>
+        void Update(DX::StepTimer const& timer, T& collisionFun);
         XMFLOAT3 GetPosition() const { return m_xyz; }
         void SetPosition(const XMFLOAT3& p);
         void SetPlayingMode(bool playingMode);
@@ -27,5 +28,64 @@ namespace SpookyAdulthood
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
     };
-}
 
+    // there are better(faster) ways to do this, anyways
+    template<typename T>
+    void CameraFirstPerson::Update(DX::StepTimer const& timer, T& collisionFun)
+    {
+        if (!IsPlaying())
+            return;
+
+        auto ms = DirectX::Mouse::Get().GetState();
+        auto kb = DirectX::Keyboard::Get().GetState();
+
+        // update cam
+        const float dt = (float)timer.GetElapsedSeconds();
+        const float rotDelta = dt*XM_PIDIV2;
+        const float movDelta = dt*2.0f * (kb.LeftShift ? 6.0f : 1.0f);
+
+        // rotation input
+        m_pitchYaw.y += rotDelta*0.8f*ms.x;
+        m_pitchYaw.x += rotDelta*0.5f*ms.y;
+        if (m_pitchYaw.x > XM_PIDIV4) m_pitchYaw.x = XM_PIDIV4;
+        if (m_pitchYaw.x < -XM_PIDIV4) m_pitchYaw.x = -XM_PIDIV4;
+
+        // movement input
+        float movFw = 0.0f;
+        float movSt = 0.0f;
+        if (kb.Up || kb.W) movFw = 1.0f;
+        else if (kb.Down || kb.S) movFw = -1.0f;
+        if (kb.A || kb.Left) movSt = -1.0f;
+        else if (kb.D || kb.Right) movSt = 1.0f;
+
+        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y);
+        XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
+        if (movFw || movSt)
+        {
+            // normalize if moving two axes to avoid strafe+fw cheat
+            const float il = 1.0f / sqrtf(movFw*movFw + movSt*movSt);
+            movFw *= il*movDelta; movSt *= il*movDelta;
+
+            // move forward and strafe
+            XMVECTOR fw = ry.r[2];
+            XMVECTOR md = XMVectorSet(movFw, movFw, movFw, movFw);
+            XMVECTOR newPos = XMVectorMultiplyAdd(fw, md, m_camXZ);
+            XMVECTOR ri = ry.r[0];
+            md = XMVectorSet(movSt, movSt, movSt, movSt);
+            newPos = XMVectorMultiplyAdd(ri, md, newPos);
+            XMVECTOR movDir = XMVectorSubtract(newPos, m_camXZ);
+            m_camXZ = collisionFun(newPos);
+        }
+
+        // rotate camera and translate
+        XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -m_height, XMVectorGetZ(m_camXZ));
+        XMStoreFloat3(&m_xyz, m_camXZ);
+        m_xyz.y = m_height;
+        m_xyz.z = -m_xyz.z;
+        XMMATRIX m = XMMatrixMultiply(ry, rx);
+        m = XMMatrixMultiply(t, m);
+
+        // udpate view mat
+        XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
+    }
+}

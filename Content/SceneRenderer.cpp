@@ -54,7 +54,9 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     if (!m_loadingComplete)
         return;
 
-    m_camera.Update(timer);
+    m_camera.Update(timer, [](XMVECTOR inVec)->XMVECTOR { 
+        return inVec;
+    });
 
     auto kb = DirectX::Keyboard::Get().GetState();
     m_timeUntilNextGen -= timer.GetElapsedSeconds();
