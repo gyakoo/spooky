@@ -8,6 +8,7 @@ namespace SpookyAdulthood
 {
 #define CAM_DEFAULT_HEIGHT 0.65f
 #define CAM_DEFAULT_FOVY 70.0f
+#define CAM_DEFAULT_RADIUS 0.5f
     struct CameraFirstPerson
     {
         CameraFirstPerson(float fovYDeg = CAM_DEFAULT_FOVY);
@@ -22,6 +23,7 @@ namespace SpookyAdulthood
         XMFLOAT4X4 m_view;
         XMFLOAT2 m_pitchYaw;
         float m_height;
+        float m_radius;
     private:
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
@@ -37,7 +39,7 @@ namespace SpookyAdulthood
         // update cam
         const float dt = (float)timer.GetElapsedSeconds();
         const float rotDelta = dt*XM_PIDIV2;
-        const float movDelta = dt*2.0f * (kb.LeftShift ? 6.0f : 1.0f);
+        const float movDelta = dt * (kb.LeftShift ? 6.0f : 1.0f);
 
         // rotation input
         m_pitchYaw.y += rotDelta*0.8f*ms.x;
@@ -72,7 +74,13 @@ namespace SpookyAdulthood
             md = XMVectorSet(movSt, movSt, movSt, movSt);
             newPos = XMVectorMultiplyAdd(ri, md, newPos);
             XMVECTOR movDir = XMVectorSubtract(newPos, m_camXZ);
-            m_camXZ = collisionFun(newPos);
+
+            // collision func
+            XMVECTOR cp = m_camXZ, np = newPos;
+            cp = XMVectorSetZ(cp, -XMVectorGetZ(cp));
+            np = XMVectorSetZ(np, -XMVectorGetZ(np));
+            m_camXZ = collisionFun(cp,np,m_radius);
+            m_camXZ = XMVectorSetZ(m_camXZ, -XMVectorGetZ(m_camXZ));
         }
 
         // rotate camera and translate

@@ -47,6 +47,7 @@ void SceneRenderer::CreateWindowSizeDependentResources()
 		fovAngleY *= 2.0f;
 	}
     m_camera.ComputeProjection(fovAngleY, aspectRatio, 0.01f, 100.0f, m_deviceResources->GetOrientationTransform3D());
+    m_camera.m_radius = 0.5f;
 }
 
 // Called once per frame, rotates the cube and calculates the model and view matrices.
@@ -58,11 +59,12 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     // Update map and camera (input, collisions and visibility)
     m_map.Update(timer, m_camera);
 
-    m_camera.Update(timer, [this](XMVECTOR inVec)->XMVECTOR 
+    m_camera.Update(timer, [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR 
     { 
-        XMFLOAT2 inVec2D(XMVectorGetX(inVec), XMVectorGetZ(inVec));
-        XMFLOAT2 solved2D = FPSCDAndSolving2D(m_map.GetCurrentCollisionSegments(), inVec2D);
-        XMVECTOR solved3D = XMVectorSet(solved2D.x, XMVectorGetY(inVec), solved2D.y, 0.0f);
+        XMFLOAT2 curPos2D(XMVectorGetX(curPos), XMVectorGetZ(curPos));
+        XMFLOAT2 nextPos2D(XMVectorGetX(nextPos), XMVectorGetZ(nextPos));
+        XMFLOAT2 solved2D = FPSCDAndSolving2D(m_map.GetCurrentCollisionSegments(), curPos2D, nextPos2D, radius);
+        XMVECTOR solved3D = XMVectorSet(solved2D.x, XMVectorGetY(nextPos), solved2D.y, 0.0f);
         return solved3D;
     });
 

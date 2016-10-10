@@ -12,5 +12,5 @@ namespace SpookyAdulthood
 
     typedef std::vector<CollSegment> SegmentList;
 
-    XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& inVec);
+    XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius);
 }

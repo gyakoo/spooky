@@ -963,8 +963,9 @@ XMUINT2 LevelMap::GetRandomPosition()
 {
     if (!m_root || m_leaves.empty())
         return XMUINT2(0, 0);
-    const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size()-1)];
-    return GetRandomInArea(r->m_area, true);
+    //const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size()-1)];
+    //return GetRandomInArea(r->m_area, true);
+    return XMUINT2(m_leaves.front()->m_area.m_x0, m_leaves.front()->m_area.m_y0);
 }
 
 XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const

@@ -4,7 +4,7 @@
 using namespace SpookyAdulthood;
 
 CameraFirstPerson::CameraFirstPerson(float fovYDeg)
-: m_pitchYaw(0,XM_PI), m_height(CAM_DEFAULT_HEIGHT)
+: m_pitchYaw(0,XM_PI), m_height(CAM_DEFAULT_HEIGHT), m_radius(CAM_DEFAULT_RADIUS)
 {
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;
