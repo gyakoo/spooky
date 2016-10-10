@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "SpookyAdulthoodMain.h"
 #include "Common\DirectXHelper.h"
+#include "Content\GlobalFlags.h"
 
 using namespace SpookyAdulthood;
 using namespace Windows::Foundation;
@@ -11,12 +12,8 @@ using namespace Concurrency;
 SpookyAdulthoodMain::SpookyAdulthoodMain(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
 	m_deviceResources(deviceResources)
 {
-	// Register to be notified if the Device is lost or recreated
 	m_deviceResources->RegisterDeviceNotify(this);
-
-	// TODO: Replace this with your app's content initialization.
 	m_sceneRenderer = std::unique_ptr<SceneRenderer>(new SceneRenderer(m_deviceResources));
-
 	m_fpsTextRenderer = std::unique_ptr<UIRenderer>(new UIRenderer(m_deviceResources));
 
 	// TODO: Change the timer settings if you want something other than the default variable timestep mode.
@@ -49,6 +46,7 @@ void SpookyAdulthoodMain::Update()
 		// TODO: Replace this with your app's content update functions.
 		m_sceneRenderer->Update(m_timer);
 		m_fpsTextRenderer->Update(m_timer);
+        GlobalFlags::Update(m_timer);
 	});
 }
 
@@ -80,6 +78,7 @@ bool SpookyAdulthoodMain::Render()
 	// TODO: Replace this with your app's content rendering functions.
 	m_sceneRenderer->Render();
 	m_fpsTextRenderer->Render();
+    GlobalFlags::Render(m_deviceResources);
 
 	return true;
 }
@@ -105,8 +104,8 @@ void SpookyAdulthoodMain::OnKeyDown(Windows::System::VirtualKey virtualKey)
     {
     case Windows::System::VirtualKey::Escape:
         Windows::ApplicationModel::Core::CoreApplication::Exit();
-        break;
+        return;
     }
-    m_sceneRenderer->OnKeyDown(virtualKey);
+    GlobalFlags::OnKeyDown(virtualKey);
 }
 

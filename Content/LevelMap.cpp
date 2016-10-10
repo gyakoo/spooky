@@ -5,6 +5,7 @@
 #include <../Common/FPSCDAndSolving.h>
 #include <../Common/DeviceResources.h>
 #include "CameraFirstPerson.h"
+#include "GlobalFlags.h"
 
 using namespace SpookyAdulthood;
 using namespace DX;
@@ -58,7 +59,6 @@ void LevelMapGenerationSettings::Validate() const
 LevelMap::LevelMap(const std::shared_ptr<DX::DeviceResources>& device)
     : m_root(nullptr)
     , m_device(device)
-    , m_thumbTexRender(THUMBMAP_FIXED)
 {
     XMStoreFloat4x4(&m_levelTransform, XMMatrixIdentity());
 }
@@ -824,15 +824,15 @@ void LevelMap::Render(const CameraFirstPerson& camera)
 
     // render all rooms (improve this with visibity !)
     auto context = m_device->GetD3DDeviceContext();
-    for (const auto& room : m_leaves)
+    if (GlobalFlags::DrawLevelGeometry)
     {
-        if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
-            continue;
-
-        UINT stride = sizeof(VertexPositionNormalColorTexture);
-        UINT offset = 0;
-        //if (DirectX::Keyboard::Get().GetState().LeftShift)
+        for (const auto& room : m_leaves)
         {
+            if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
+                continue;
+
+            UINT stride = sizeof(VertexPositionNormalColorTexture);
+            UINT offset = 0;
             context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
             context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
             context->DrawIndexed((UINT)room->m_dx->m_indexCount, 0, 0);
@@ -840,41 +840,47 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     }
 
     /* DEBUG LINES */
-    for (const auto& room : m_leaves)
+    if (GlobalFlags::DrawDebugLines)
     {
-        if (!room->m_collisionSegments || !m_batch) continue;
-        m_batch->Begin();
-        XMFLOAT3 s, e;
-        XMFLOAT4 c(DirectX::Colors::Yellow.f); std::swap(c.x, c.w);
-        for (const auto& seg : *room->m_collisionSegments)
+        for (const auto& room : m_leaves)
         {
-            s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
-            e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
-            VertexPositionColor v1(s, c), v2(e, c);
-            m_batch->DrawLine(v1, v2);
+            if (!room->m_collisionSegments || !m_batch) continue;
+            m_batch->Begin();
+            XMFLOAT3 s, e;
+            XMFLOAT4 c(DirectX::Colors::Yellow.f); std::swap(c.x, c.w);
+            for (const auto& seg : *room->m_collisionSegments)
+            {
+                s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
+                e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
+                VertexPositionColor v1(s, c), v2(e, c);
+                m_batch->DrawLine(v1, v2);
+            }
+            m_batch->End();
         }
-        m_batch->End();
     }
 
     // UI rendering
-    auto sprites = m_device->GetSprites();
-    sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetCommonStates()->PointClamp());
-    switch (m_thumbTexRender)
+    if (GlobalFlags::DrawThumbMap)
     {
-    case THUMBMAP_FIXED:
-        sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 10), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(4, 4));
-        break;
-    case THUMBMAP_ORIENTATED:
+        auto sprites = m_device->GetSprites();
+        sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetCommonStates()->PointClamp());
+        switch (GlobalFlags::DrawThumbMap)
         {
-        float dx = (float)m_thumbTex.m_dim.x;
-        float dy = (float)m_thumbTex.m_dim.y;
-        XMFLOAT2 texPos(dx * 2, dy * 2);
-        XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
-        sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
+        case 1:
+            sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 400), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(4, 4));
+            break;
+        case 2:
+        {
+            float dx = (float)m_thumbTex.m_dim.x;
+            float dy = (float)m_thumbTex.m_dim.y+400;
+            XMFLOAT2 texPos(dx * 2, dy * 2);
+            XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
+            sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
         }
         break;
+        }
+        sprites->End();
     }
-    sprites->End();
 }
 
 void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)

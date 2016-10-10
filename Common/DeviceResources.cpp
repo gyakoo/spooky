@@ -219,6 +219,7 @@ void DX::DeviceResources::CreateDeviceResources()
 			)
 		);
     m_sprites = std::make_unique<SpriteBatch>(GetD3DDeviceContext());
+    m_fontConsole = std::make_unique<DirectX::SpriteFont>(GetD3DDevice(), L"assets\\Courier_16.spritefont");
     m_commonStates = std::make_unique<DirectX::CommonStates>(m_d3dDevice.Get());
 }
 

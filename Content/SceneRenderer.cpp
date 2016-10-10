@@ -4,6 +4,7 @@
 #include "..\Common\DirectXHelper.h"
 #include <../Common/FPSCDAndSolving.h>
 #include "Sprite3D.h"
+#include "GlobalFlags.h"
 
 using namespace SpookyAdulthood;
 
@@ -15,7 +16,6 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_loadingComplete(false),
 	m_degreesPerSecond(45),
 	m_deviceResources(deviceResources),
-    m_timeUntilNextGen(0.0),
     m_map(deviceResources),
     m_sprite3D(deviceResources)
 {
@@ -63,26 +63,29 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
 
     m_camera.Update(timer, [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR 
     { 
-        XMFLOAT2 curPos2D(XMVectorGetX(curPos), XMVectorGetZ(curPos));
-        XMFLOAT2 nextPos2D(XMVectorGetX(nextPos), XMVectorGetZ(nextPos));
-        XMFLOAT2 solved2D = FPSCDAndSolving2D(m_map.GetCurrentCollisionSegments(), curPos2D, nextPos2D, radius);
-        XMVECTOR solved3D = XMVectorSet(solved2D.x, XMVectorGetY(nextPos), solved2D.y, 0.0f);
-        return solved3D;
+        if (GlobalFlags::CollisionsEnabled)
+        {
+            XMFLOAT2 curPos2D(XMVectorGetX(curPos), XMVectorGetZ(curPos));
+            XMFLOAT2 nextPos2D(XMVectorGetX(nextPos), XMVectorGetZ(nextPos));
+            XMFLOAT2 solved2D = FPSCDAndSolving2D(m_map.GetCurrentCollisionSegments(), curPos2D, nextPos2D, radius);
+            XMVECTOR solved3D = XMVectorSet(solved2D.x, XMVectorGetY(nextPos), solved2D.y, 0.0f);
+            return solved3D;
+        }
+        else 
+            return nextPos;
     });
 
     // some other input
-    auto kb = DirectX::Keyboard::Get().GetState();
-    m_timeUntilNextGen -= timer.GetElapsedSeconds();
-    if (kb.D1 && m_timeUntilNextGen <= 0.0)
+    if (GlobalFlags::GenerateNewLevel)
     {
-        m_timeUntilNextGen = 0.25;        
+        GlobalFlags::GenerateNewLevel = false;
         m_map.Generate(m_mapSettings);
         m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
     }
 
-    if (kb.D2 && m_timeUntilNextGen <= 0.0)
+    if (GlobalFlags::SpawnPlayer)
     {
-        m_timeUntilNextGen = 0.25;
+        GlobalFlags::SpawnPlayer = false;
         SpawnPlayer();
     }
 
@@ -106,8 +109,7 @@ void SceneRenderer::Render()
 
     m_sprite3D.Render(0, m_camera, XMFLOAT3(3, 3, 1), XMFLOAT2(1, 1));
 
-    m_deviceResources->GetSprites()->Begin();
-    m_font->DrawString(m_deviceResources->GetSprites(), L"Hello", XMFLOAT2(300, 10), Colors::Yellow);
+    m_deviceResources->GetSprites()->Begin();    
     m_deviceResources->GetSprites()->End();
 }
 
@@ -119,7 +121,6 @@ void SceneRenderer::CreateDeviceDependentResources()
         m_map.CreateDeviceDependentResources();
         m_sprite3D.CreateDeviceDependentResources();
         m_sprite3D.CreateSprite(L"assets\\windowslogo.dds"); // will return 0
-        m_font = std::make_unique<DirectX::SpriteFont>(m_deviceResources->GetD3DDevice(), L"assets\\Courier_16.spritefont");
     });
 
     // after mesh, load texture from file
@@ -144,17 +145,5 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 	m_loadingComplete = false;
     m_map.CreateDeviceDependentResources();
     m_sprite3D.ReleaseDeviceDependentResources();
-    m_font.reset();
-}
-
-
-void SceneRenderer::OnKeyDown(Windows::System::VirtualKey virtualKey)
-{
-    switch (virtualKey)
-    {
-        case Windows::System::VirtualKey::Space:
-            m_map.SetThumbMapRender((LevelMap::ThumbMapRender)(((int)m_map.GetThumbMapRender() + 1) % LevelMap::THUMBMAP_MAX));
-        break;
-    }
 }
 

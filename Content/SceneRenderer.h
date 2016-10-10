@@ -19,7 +19,6 @@ namespace SpookyAdulthood
 		void ReleaseDeviceDependentResources();
 		void Update(DX::StepTimer const& timer);
 		void Render();
-        void OnKeyDown(Windows::System::VirtualKey virtualKey);
 
     private:
         void SpawnPlayer();
@@ -32,11 +31,9 @@ namespace SpookyAdulthood
 		// Variables used with the rendering loop.
 		bool	m_loadingComplete;
 		float	m_degreesPerSecond;
-        double  m_timeUntilNextGen;
         CameraFirstPerson  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;
-        std::unique_ptr<DirectX::SpriteFont> m_font;
 	};
 }
 

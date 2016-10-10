@@ -71,6 +71,7 @@
       <Filter>Common</Filter>
     </ClCompile>
     <ClCompile Include="Content\Sprite3D.cpp" />
+    <ClCompile Include="Content\GlobalFlags.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -92,6 +93,7 @@
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="Content\Sprite3D.h" />
+    <ClInclude Include="Content\GlobalFlags.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">

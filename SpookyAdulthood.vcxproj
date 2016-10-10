@@ -202,6 +202,7 @@
     <ClInclude Include="Common\DeviceResources.h" />
     <ClInclude Include="Common\FPSCDAndSolving.h" />
     <ClInclude Include="Content\CameraFirstPerson.h" />
+    <ClInclude Include="Content\GlobalFlags.h" />
     <ClInclude Include="Content\LevelMap.h" />
     <ClInclude Include="Content\Sprite3D.h" />
     <ClInclude Include="SpookyAdulthoodMain.h" />
@@ -217,6 +218,7 @@
     <ClCompile Include="Common\DeviceResources.cpp" />
     <ClCompile Include="Common\FPSCDAndSolving.cpp" />
     <ClCompile Include="Content\CameraFirstPerson.cpp" />
+    <ClCompile Include="Content\GlobalFlags.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />
     <ClCompile Include="Content\Sprite3D.cpp" />
     <ClCompile Include="SpookyAdulthoodMain.cpp" />

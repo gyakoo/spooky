@@ -175,7 +175,6 @@ namespace SpookyAdulthood
 	class LevelMap
 	{
 	public:
-        enum ThumbMapRender{ THUMBMAP_NONE, THUMBMAP_FIXED, THUMBMAP_ORIENTATED, THUMBMAP_MAX};
 		LevelMap(const std::shared_ptr<DX::DeviceResources>& device);
         ~LevelMap() { Destroy(); }
 		void Generate(const LevelMapGenerationSettings& settings);
@@ -186,8 +185,6 @@ namespace SpookyAdulthood
         void GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos=nullptr);
         XMUINT2 GetRandomPosition();
         XMUINT2 ConvertToMapPosition(const XMFLOAT3& xyz) const;
-        void SetThumbMapRender(ThumbMapRender tmr) { m_thumbTexRender = tmr; }
-        ThumbMapRender GetThumbMapRender() { return m_thumbTexRender; }
         LevelMapBSPNodePtr GetLeafAt(const XMFLOAT3& pos);
         const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
 
@@ -216,7 +213,6 @@ namespace SpookyAdulthood
         std::vector<LevelMapBSPPortal> m_portals;
         std::multimap<LevelMapBSPNode*, uint32_t> m_leafPortals;
         LevelMapThumbTexture m_thumbTex;        
-        ThumbMapRender m_thumbTexRender;
         XMFLOAT4X4 m_levelTransform;
         LevelMapBSPNodePtr m_cameraCurLeaf;
 

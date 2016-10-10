@@ -52,6 +52,7 @@ namespace DX
 
         DirectX::SpriteBatch*       GetSprites() const                      { return m_sprites.get(); }
         DirectX::CommonStates*      GetCommonStates() const                 { return m_commonStates.get(); }
+        DirectX::SpriteFont*        GetFontConsole() const                  { return m_fontConsole.get(); }
 	private:
 		void CreateDeviceIndependentResources();
 		void CreateDeviceResources();
@@ -103,5 +104,6 @@ namespace DX
 
         std::unique_ptr<DirectX::SpriteBatch>  m_sprites;
         std::unique_ptr<DirectX::CommonStates> m_commonStates;
-	};
+        std::unique_ptr<DirectX::SpriteFont> m_fontConsole;
+    };
 }
