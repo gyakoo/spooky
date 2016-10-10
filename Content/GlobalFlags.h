@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+#ifndef GLOBALFLAGS_CAN_TWEAK
+#define GLOBALFLAGS_CAN_TWEAK 1
+#endif
 namespace DX { class DeviceResources; }
 namespace SpookyAdulthood
 {
@@ -11,6 +14,7 @@ namespace SpookyAdulthood
         static bool DrawDebugLines; // def 0
         static bool DrawLevelGeometry; // def 1
         static bool DrawFlags; // def 1
+        static bool DrawWireframe; // def 0
 
         static bool GenerateNewLevel; // def 0 (auto)
         static bool SpawnPlayer; // def 0 (auto)
@@ -20,6 +24,5 @@ namespace SpookyAdulthood
         static void Render(const std::shared_ptr<DX::DeviceResources>& device);
         static void Update(const DX::StepTimer& timer);
         static void OnKeyDown(Windows::System::VirtualKey virtualKey);
-
     };
 }

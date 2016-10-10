@@ -895,7 +895,10 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->VSSetConstantBuffers1(0, 1, m_dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
     context->PSSetShader(m_dxCommon->m_pixelShader.Get(), nullptr, 0);
     context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
-    context->RSSetState(m_device->GetCommonStates()->CullCounterClockwise());
+    if ( GlobalFlags::DrawWireframe )
+        context->RSSetState(m_device->GetCommonStates()->Wireframe());
+    else
+        context->RSSetState(m_device->GetCommonStates()->CullCounterClockwise());
 }
 
 LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)

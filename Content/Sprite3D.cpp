@@ -98,7 +98,8 @@ void Sprite3DManager::Render(int spriteIndex, const CameraFirstPerson& camera, c
         return;
     
     auto context = m_device->GetD3DDeviceContext();
-    auto billboardMat = Matrix::CreateConstrainedBillboard(position, camera.GetPosition(), Vector3(0, 1, 0));
+    XMFLOAT3 camFw(camera.m_view.m[2]);
+    auto billboardMat = Matrix::CreateConstrainedBillboard(position, camera.GetPosition(), Vector3(0, 1, 0), &Vector3(camFw));
     ModelViewProjectionConstantBuffer cbData = { billboardMat, camera.m_view, camera.m_projection };
     context->UpdateSubresource1(m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
     context->VSSetConstantBuffers1(0, 1, m_constantBuffer.GetAddressOf(), nullptr, nullptr);

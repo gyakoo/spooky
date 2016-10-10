@@ -10,29 +10,44 @@ namespace SpookyAdulthood
     int GlobalFlags::DrawThumbMap = 0;
     bool GlobalFlags::DrawDebugLines = false;
     bool GlobalFlags::DrawLevelGeometry = true;
+    bool GlobalFlags::DrawWireframe = false;
     bool GlobalFlags::GenerateNewLevel = false;
     bool GlobalFlags::SpawnPlayer = false;
     
     bool GlobalFlags::DrawFlags = true;
     XMFLOAT2 GlobalFlags::DrawGlobalsPos(10, 10);
 
+    template<typename T>
+    static inline const XMVECTORF32 CEnbl(T v)
+    {
+        return !v ? Colors::Red : Colors::Yellow;
+    }
+
     void GlobalFlags::Render(const std::shared_ptr<DX::DeviceResources>& device)
     {
         static wchar_t buff[256];
-        const float padY = 20.0f;
         if (DrawFlags)
         {
             XMFLOAT2 p = DrawGlobalsPos;
             auto s = device->GetSprites();
-            auto f = device->GetFontConsole();
+            auto f = device->GetFontConsole();            
+            const float padY = XMVectorGetY(f->MeasureString(L"Test"));
             s->Begin();
             {
+                swprintf(buff, 256, L"Draw this(0)=%d", (int)DrawFlags);
+                f->DrawString(s, buff, p, CEnbl(DrawFlags));
+                p.y += padY;
+
                 swprintf(buff, 256, L"Minimap(Space)=%d", DrawThumbMap);
-                f->DrawString(s, buff, p, Colors::Yellow);
+                f->DrawString(s, buff, p, CEnbl(DrawThumbMap));
                 p.y += padY;
 
                 swprintf(buff, 256, L"Collisions(3)=%d", (int)CollisionsEnabled);
-                f->DrawString(s, buff, p, Colors::Yellow);
+                f->DrawString(s, buff, p, CEnbl(CollisionsEnabled));
+                p.y += padY;
+
+                swprintf(buff, 256, L"Wireframe(4)=%d", (int)DrawWireframe);
+                f->DrawString(s, buff, p, CEnbl(DrawWireframe));
                 p.y += padY;
             }
             s->End();
@@ -45,6 +60,7 @@ namespace SpookyAdulthood
 
     void GlobalFlags::OnKeyDown(Windows::System::VirtualKey virtualKey)
     {
+#if GLOBALFLAGS_CAN_TWEAK == 1
         using namespace Windows::System;
         switch (virtualKey)
         {
@@ -63,7 +79,11 @@ namespace SpookyAdulthood
             case VirtualKey::Number3:
                 CollisionsEnabled = !CollisionsEnabled;
             break;
+            case VirtualKey::Number4:
+                DrawWireframe = !DrawWireframe;
+            break;
         }
     }
+#endif
 };
 
