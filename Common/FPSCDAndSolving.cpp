@@ -5,7 +5,7 @@ using namespace DirectX;
 
 namespace SpookyAdulthood
 {
-    // Bourke my dearest friend
+    // P Bourke my good old friend...
     static bool FPSCDRaycast(const XMFLOAT2& p1, const XMFLOAT2& p2, const XMFLOAT2& p3, const XMFLOAT2& p4, XMFLOAT2* outHit, float* outFrac)
     {
         const float den = (p4.y - p3.y)*(p2.x - p1.x) - (p4.x - p3.x)*(p2.y - p1.y);
@@ -32,8 +32,8 @@ namespace SpookyAdulthood
 
     static float FPSCDClosestDistance(const XMFLOAT2& p1, const XMFLOAT2& p2, const XMFLOAT2& p3)
     {
-        XMVECTOR _p1 = XMLoadFloat2(&p1);
-        XMVECTOR _p2 = XMLoadFloat2(&p2);        
+        const XMVECTOR _p1 = XMLoadFloat2(&p1);
+        const XMVECTOR _p2 = XMLoadFloat2(&p2);        
         const float den = XMVectorGetX(XMVector2Length(XMVectorSubtract(_p2, _p1)));
         if (den == 0.0f)
             return -1.0f;
@@ -41,11 +41,14 @@ namespace SpookyAdulthood
         return u;
     }
 
-    XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius)
+    // this is ugly af.
+    // iterative (recursive actually) solving.
+    // cast ray from center of circle, gets the closest hit, compute wall moving direction with closest segment and check next
+    XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius, int iter)
     {
         using namespace DirectX::SimpleMath; // make life a bit easier
 
-        if (!segs || segs->empty())
+        if (!segs || segs->empty() || iter==0)
             return nextPos;
 
         typedef Vector2 Segment[2];
@@ -68,7 +71,7 @@ namespace SpookyAdulthood
             //{right, right+ fwExt }
         };
 
-        // check for all segments 
+        // check for all segments
         XMFLOAT2 hit;
         float frac;
         int closest = -1;
@@ -97,15 +100,13 @@ namespace SpookyAdulthood
         if (closest != -1)
         {
             const auto& collSeg = segs->at((size_t)closest);
-            Vector2 normal(collSeg.normal);
-            Vector2 d = collSeg.end - collSeg.start; 
-            const float t = d.Dot(fwDir); const float s = (t > 0.0f) - (t < 0.0f);
-            d.Normalize();
-            return curPos + d*len*s;
-            //return curPos;// curPos + nd*len;
+            Vector2 wallSlideDir = collSeg.end - collSeg.start; 
+            const float t = wallSlideDir.Dot(fwDir); 
+            const float signMov = (t > 0.0f) - (t < 0.0f);// sign of wall mov direction
+            wallSlideDir.Normalize();
+            const float d = -Vector2(collSeg.normal).Dot(nextPos - curPos); // project movement to wall
+            return FPSCDAndSolving2D(segs, curPos, curPos + wallSlideDir*d*signMov, radius, --iter);
         }
-
-        // final pos is closest + normal*amount_exit_penetration
 
         return nextPos;
     }
