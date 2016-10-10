@@ -36,7 +36,7 @@ namespace SpookyAdulthood
         CameraFirstPerson  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;
-
+        std::unique_ptr<DirectX::SpriteFont> m_font;
 	};
 }
 

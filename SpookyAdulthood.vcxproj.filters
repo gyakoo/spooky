@@ -106,5 +106,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SpookyAdulthood_TemporaryKey.pfx" />
+    <None Include="Assets\Courier_16.spritefont" />
   </ItemGroup>
 </Project>

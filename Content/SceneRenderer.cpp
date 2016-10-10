@@ -105,7 +105,10 @@ void SceneRenderer::Render()
     m_map.Render(m_camera);
 
     m_sprite3D.Render(0, m_camera, XMFLOAT3(3, 3, 1), XMFLOAT2(1, 1));
-    
+
+    m_deviceResources->GetSprites()->Begin();
+    m_font->DrawString(m_deviceResources->GetSprites(), L"Hello", XMFLOAT2(300, 10), Colors::Yellow);
+    m_deviceResources->GetSprites()->End();
 }
 
 void SceneRenderer::CreateDeviceDependentResources()
@@ -116,6 +119,7 @@ void SceneRenderer::CreateDeviceDependentResources()
         m_map.CreateDeviceDependentResources();
         m_sprite3D.CreateDeviceDependentResources();
         m_sprite3D.CreateSprite(L"assets\\windowslogo.dds"); // will return 0
+        m_font = std::make_unique<DirectX::SpriteFont>(m_deviceResources->GetD3DDevice(), L"assets\\Courier_16.spritefont");
     });
 
     // after mesh, load texture from file
@@ -140,6 +144,7 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 	m_loadingComplete = false;
     m_map.CreateDeviceDependentResources();
     m_sprite3D.ReleaseDeviceDependentResources();
+    m_font.reset();
 }
 
 
