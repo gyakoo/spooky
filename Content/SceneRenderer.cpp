@@ -47,7 +47,7 @@ void SceneRenderer::CreateWindowSizeDependentResources()
 		fovAngleY *= 2.0f;
 	}
     m_camera.ComputeProjection(fovAngleY, aspectRatio, 0.01f, 100.0f, m_deviceResources->GetOrientationTransform3D());
-    m_camera.m_radius = 0.5f;
+    m_camera.m_radius = 0.8f;
 }
 
 // Called once per frame, rotates the cube and calculates the model and view matrices.

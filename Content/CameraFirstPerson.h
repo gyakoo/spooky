@@ -38,7 +38,7 @@ namespace SpookyAdulthood
 
         // update cam
         const float dt = (float)timer.GetElapsedSeconds();
-        const float rotDelta = dt*XM_PIDIV2;
+        const float rotDelta = dt*XM_PIDIV4;
         const float movDelta = dt * (kb.LeftShift ? 6.0f : 1.0f);
 
         // rotation input
