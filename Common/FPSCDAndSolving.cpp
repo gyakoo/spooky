@@ -30,6 +30,17 @@ namespace SpookyAdulthood
         return true;
     }
 
+    static float FPSCDClosestDistance(const XMFLOAT2& p1, const XMFLOAT2& p2, const XMFLOAT2& p3)
+    {
+        XMVECTOR _p1 = XMLoadFloat2(&p1);
+        XMVECTOR _p2 = XMLoadFloat2(&p2);        
+        const float den = XMVectorGetX(XMVector2Length(XMVectorSubtract(_p2, _p1)));
+        if (den == 0.0f)
+            return -1.0f;
+        const float u = ((p3.x - p1.x)*(p2.x - p1.x) + (p3.y - p1.y)*(p2.y - p1.y)) / den;
+        return u;
+    }
+
     XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius)
     {
         using namespace DirectX::SimpleMath; // make life a bit easier
@@ -48,13 +59,13 @@ namespace SpookyAdulthood
         const Vector2 center(curPos);
         const Vector2 right = center + riDir*radius;
         const Vector2 left = center - riDir*radius;
-        const Vector2 fwExt = fwDir *(len + radius);
+        const Vector2 fwExt = fwDir *(len /*+ radius*/);
         // casting rays from {left, center, right}
-        Segment charSegments[3] =
+        Segment charSegments[1] =
         {
-            {left, left+ fwExt },
+            //{left, left+ fwExt },
             {center, center + fwExt },
-            {right, right+ fwExt }
+            //{right, right+ fwExt }
         };
 
         // check for all segments 
@@ -88,18 +99,11 @@ namespace SpookyAdulthood
         if (closest != -1)
         {
             auto& collSeg = (*segs)[closest];
-            /*
-            Vector2 segDir = collSeg.end - collSeg.start;
-            Vector2 toP = curPos - minHit;
-            const float d = segDir.Dot(toP);
-            if (d < 0.0f) segDir = -segDir;
-            segDir.Normalize();
-            return curPos + len*segDir;
-            */
-
-            Vector2 np(minHit), n(collSeg.normal);
-            np += n*(radius);
-            Vector2 nd = np - curPos; nd.Normalize();
+            float cd = FPSCDClosestDistance(collSeg.start, collSeg.end, curPos);
+            if (cd >= 0.0f)
+            {
+                return minHit + collSeg.normal*cd;
+            }
             return curPos;// curPos + nd*len;
         }
 
