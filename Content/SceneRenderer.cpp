@@ -3,6 +3,7 @@
 
 #include "..\Common\DirectXHelper.h"
 #include <../Common/FPSCDAndSolving.h>
+#include "Sprite3D.h"
 
 using namespace SpookyAdulthood;
 
@@ -15,7 +16,8 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_degreesPerSecond(45),
 	m_deviceResources(deviceResources),
     m_timeUntilNextGen(0.0),
-    m_map(deviceResources)
+    m_map(deviceResources),
+    m_sprite3D(deviceResources)
 {
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
@@ -101,6 +103,9 @@ void SceneRenderer::Render()
 
     // LEVEL rendering
     m_map.Render(m_camera);
+
+    m_sprite3D.Render(0, m_camera, XMFLOAT3(3, 3, 1), XMFLOAT2(1, 1));
+    
 }
 
 void SceneRenderer::CreateDeviceDependentResources()
@@ -108,12 +113,13 @@ void SceneRenderer::CreateDeviceDependentResources()
     // device resource of map
     auto mapCreateTask = concurrency::create_task([this] 
     {
-        m_map.CreateDeviceDependentResources(); 
+        m_map.CreateDeviceDependentResources();
+        m_sprite3D.CreateDeviceDependentResources();
+        m_sprite3D.CreateSprite(L"assets\\windowslogo.dds"); // will return 0
     });
 
     // after mesh, load texture from file
-    /*
-    auto loadTextureTask = concurrency::create_task([this]() 
+/*    auto loadTextureTask = concurrency::create_task([this]() 
     {
         DX::ThrowIfFailed(
             DirectX::CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"assets\\windowslogo.dds",
@@ -133,6 +139,7 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 {
 	m_loadingComplete = false;
     m_map.CreateDeviceDependentResources();
+    m_sprite3D.ReleaseDeviceDependentResources();
 }
 
 

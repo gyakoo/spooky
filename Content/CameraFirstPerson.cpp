@@ -44,3 +44,8 @@ void CameraFirstPerson::SetPosition(const XMFLOAT3& p)
     XMFLOAT3 _p(p.x, 0, -p.z);
     m_camXZ = XMLoadFloat3(&_p);
 }
+
+XMFLOAT3 CameraFirstPerson::GetForward() const
+{
+    return XMFLOAT3(0, 0, 0);
+}

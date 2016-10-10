@@ -831,7 +831,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
 
         UINT stride = sizeof(VertexPositionNormalColorTexture);
         UINT offset = 0;
-        if (DirectX::Keyboard::Get().GetState().LeftShift)
+        //if (DirectX::Keyboard::Get().GetState().LeftShift)
         {
             context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
             context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -882,15 +882,7 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
     auto context = m_device->GetD3DDeviceContext();
-    context->UpdateSubresource1(
-        m_dxCommon->m_constantBuffer.Get(),
-        0,
-        NULL,
-        &cbData,
-        0,
-        0,
-        0
-    );
+    context->UpdateSubresource1(m_dxCommon->m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     context->IASetInputLayout(m_dxCommon->m_inputLayout.Get());
     context->VSSetShader(m_dxCommon->m_vertexShader.Get(), nullptr, 0);

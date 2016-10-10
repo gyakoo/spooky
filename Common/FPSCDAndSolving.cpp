@@ -41,8 +41,8 @@ namespace SpookyAdulthood
         return u;
     }
 
-    // this is ugly af.
-    // iterative (recursive actually) solving.
+    // this is ugly af do I work at Havok? it does not seem so :S no time , scarejam!
+    // iterative (recursive actually) solving against walls.
     // cast ray from center of circle, gets the closest hit, compute wall moving direction with closest segment and check next
     XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius, int iter)
     {

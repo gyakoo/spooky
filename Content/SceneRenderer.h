@@ -5,6 +5,7 @@
 #include "..\Common\StepTimer.h"
 #include "Content\LevelMap.h"
 #include "Content\CameraFirstPerson.h"
+#include "Content\Sprite3D.h"
 
 namespace SpookyAdulthood
 {
@@ -26,6 +27,7 @@ namespace SpookyAdulthood
 	private:
 		// Cached pointer to device resources.
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
+        Sprite3DManager m_sprite3D;
 
 		// Variables used with the rendering loop.
 		bool	m_loadingComplete;

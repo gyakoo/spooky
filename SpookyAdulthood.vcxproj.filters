@@ -70,6 +70,7 @@
     <ClCompile Include="Common\FPSCDAndSolving.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="Content\Sprite3D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -90,6 +91,7 @@
     <ClInclude Include="Common\FPSCDAndSolving.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="Content\Sprite3D.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">

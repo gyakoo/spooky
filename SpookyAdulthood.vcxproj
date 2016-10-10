@@ -203,6 +203,7 @@
     <ClInclude Include="Common\FPSCDAndSolving.h" />
     <ClInclude Include="Content\CameraFirstPerson.h" />
     <ClInclude Include="Content\LevelMap.h" />
+    <ClInclude Include="Content\Sprite3D.h" />
     <ClInclude Include="SpookyAdulthoodMain.h" />
     <ClInclude Include="Common\DirectXHelper.h" />
     <ClInclude Include="Common\StepTimer.h" />
@@ -217,6 +218,7 @@
     <ClCompile Include="Common\FPSCDAndSolving.cpp" />
     <ClCompile Include="Content\CameraFirstPerson.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />
+    <ClCompile Include="Content\Sprite3D.cpp" />
     <ClCompile Include="SpookyAdulthoodMain.cpp" />
     <ClCompile Include="Content\UIRenderer.cpp" />
     <ClCompile Include="Content\SceneRenderer.cpp" />

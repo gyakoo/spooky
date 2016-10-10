@@ -18,6 +18,7 @@ namespace SpookyAdulthood
         void Update(DX::StepTimer const& timer, T& collisionFun);
         XMFLOAT3 GetPosition() const { return m_xyz; }
         void SetPosition(const XMFLOAT3& p);
+        XMFLOAT3 GetForward() const;
 
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_view;
