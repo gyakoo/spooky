@@ -75,6 +75,7 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
     LevelMapBSPNodePtr lastRoom;
     RecursiveGenerate(m_root, area, settings, 0);        
     GenerateVisibility(settings);
+    GenerateCollisionInfo();
     if (settings.m_generateThumbTex)
         GenerateThumbTex(settings.m_tileCount);
     CreateDeviceDependentResources();
@@ -98,7 +99,6 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         node->m_type = LevelMapBSPNode::NODE_ROOM;
         node->m_leafNdx = (int)m_leaves.size();
         m_leaves.push_back(node);
-        node->ComputeCollisionSegments();
         // leaf, no children
     }
     else
@@ -172,7 +172,7 @@ void LevelMap::Destroy()
     m_leaves.clear();
     m_teleports.clear();
     m_portals.clear();
-    m_leavePortals.clear();
+    m_leafPortals.clear();
     m_thumbTex.Destroy();
 }
 
@@ -295,6 +295,14 @@ void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
     GenerateTeleports(visMatrix);
 }
 
+void LevelMap::GenerateCollisionInfo()
+{
+    for (auto& room : m_leaves)
+    {
+        room->GenerateCollisionSegments(*this);
+    }
+}
+
 bool LevelMap::VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
 {
     auto& areaA = roomA->m_area;
@@ -331,8 +339,8 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
                 VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type )
             };
             uint32_t portalNdx = (uint32_t)m_portals.size();
-            m_leavePortals.insert(std::make_pair(roomA.get(), portalNdx));
-            m_leavePortals.insert(std::make_pair(roomB.get(), portalNdx));
+            m_leafPortals.insert(std::make_pair(roomA.get(), portalNdx));
+            m_leafPortals.insert(std::make_pair(roomB.get(), portalNdx));
             m_portals.push_back(portal);
             break;
         }
@@ -539,6 +547,7 @@ void LevelMap::CreateDeviceDependentResources()
         }));
     }
 
+    m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexPositionColor>>(m_device->GetD3DDeviceContext());
 }
 
 void LevelMap::ReleaseDeviceDependentResources()
@@ -555,6 +564,8 @@ void LevelMap::ReleaseDeviceDependentResources()
     {
         leaf->ReleaseDeviceDependentResources();
     }
+
+    m_batch.reset();
 }
 #pragma warning(disable:4838)
 
@@ -563,7 +574,7 @@ LevelMapBSPNode::PortalDir LevelMapBSPNode::GetPortalDirAt(const LevelMap& lmap,
 {
     const XMUINT2 xy(x, y);
     XMUINT2 ppos[2];
-    auto rang = lmap.m_leavePortals.equal_range(this);
+    auto rang = lmap.m_leafPortals.equal_range(this);
     for (auto it = rang.first; it != rang.second; ++it)
     {
         const auto& portal = lmap.m_portals[it->second];
@@ -820,9 +831,33 @@ void LevelMap::Render(const CameraFirstPerson& camera)
 
         UINT stride = sizeof(VertexPositionNormalColorTexture);
         UINT offset = 0;
-        context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(),&stride, &offset);
-        context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(),DXGI_FORMAT_R16_UINT, 0);
-        context->DrawIndexed( (UINT)room->m_dx->m_indexCount,0,0);
+        if (DirectX::Keyboard::Get().GetState().LeftShift)
+        {
+            context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
+            context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+            context->DrawIndexed((UINT)room->m_dx->m_indexCount, 0, 0);
+        }
+    }
+
+
+    /* DEBUG LINES */
+    //context->RSSetState(m_device->GetCommonStates()->Wireframe());
+    for (const auto& room : m_leaves)
+    {
+        if (room->m_collisionSegments && m_batch)
+        {
+            m_batch->Begin();
+            XMFLOAT3 s, e;
+            XMFLOAT4 c(DirectX::Colors::Yellow.f);
+            for (const auto& seg : *room->m_collisionSegments)
+            {
+                s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
+                e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
+                VertexPositionColor v1(s, c), v2(e, c);
+                m_batch->DrawLine(v1, v2);
+            }
+            m_batch->End();
+        }
     }
 
     // UI rendering
@@ -866,6 +901,7 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->VSSetConstantBuffers1(0, 1, m_dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
     context->PSSetShader(m_dxCommon->m_pixelShader.Get(), nullptr, 0);
     context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
+    context->RSSetState(m_device->GetCommonStates()->CullCounterClockwise());
 }
 
 LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)
@@ -946,10 +982,61 @@ XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const
     return ppos;
 }
 
-void LevelMapBSPNode::ComputeCollisionSegments()
+void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
 {
+    if (!IsLeaf()) return;
     m_collisionSegments = std::make_shared<SegmentList>();
+    m_collisionSegments->reserve(8); // 
+    const float xs[2] = { (float)m_area.m_x0, (float)m_area.m_x1 };
+    const float ys[2] = { (float)m_area.m_y0, (float)m_area.m_y1 };
 
+    CollSegment lastSeg;
+    
+    // north/south
+    for (int i = 0; i < 2; ++i)
+    {
+        lastSeg.start = XMFLOAT2(xs[0], ys[i]+i*1.0f);
+        lastSeg.end = lastSeg.start;
+        for (uint32_t ix = m_area.m_x0; ix <= m_area.m_x1; ++ix)
+        {
+            auto portalDir = GetPortalDirAt(lmap, ix, (uint32_t)ys[i]);
+            if (portalDir == (PortalDir)(NORTH + i))
+            {
+                if (lastSeg.IsValid())
+                    m_collisionSegments->push_back(lastSeg);
+                lastSeg.start.x = lastSeg.end.x = ix + 1.0f;
+            }
+            else
+            { 
+                lastSeg.end.x = ix + 1.0f;
+            }
+        }
+        if (lastSeg.IsValid())
+            m_collisionSegments->push_back(lastSeg);
+    }
+
+    // west/east
+    for (int i = 0; i < 2; ++i)
+    {
+        lastSeg.start = XMFLOAT2(xs[i] + i*1.0f, ys[0]);
+        lastSeg.end = lastSeg.start;
+        for (uint32_t iy = m_area.m_y0; iy <= m_area.m_y1; ++iy)
+        {
+            auto portalDir = GetPortalDirAt(lmap, (uint32_t)xs[i], iy);
+            if (portalDir == (PortalDir)(WEST + i))
+            {
+                if (lastSeg.IsValid())
+                    m_collisionSegments->push_back(lastSeg);
+                lastSeg.start.y = lastSeg.end.y = iy + 1.0f;
+            }
+            else
+            {
+                lastSeg.end.y = iy + 1.0f;
+            }
+        }
+        if (lastSeg.IsValid())
+            m_collisionSegments->push_back(lastSeg);
+    }
 }
 
 const SegmentList* LevelMap::GetCurrentCollisionSegments()

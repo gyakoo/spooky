@@ -37,7 +37,7 @@ namespace SpookyAdulthood
 
         void OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Windows::UI::Core::KeyEventArgs ^args);
 
-        void ChangeToFullscreen();
+        void ToggleToFullscreen();
 
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;

@@ -33,7 +33,8 @@ App::App() :
 	m_windowClosed(false),
 	m_windowVisible(true)
 {
-    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
+    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
+    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::PreferredLaunchViewSize;
 }
 
 // The first method called when the IFrameworkView is being created.
@@ -99,15 +100,22 @@ void App::Load(Platform::String^ entryPoint)
 	}
 }
 
-void App::ChangeToFullscreen()
+void App::ToggleToFullscreen()
 {
     auto av = Windows::UI::ViewManagement::ApplicationView::GetForCurrentView();
     if (!av->IsFullScreenMode)
+    {
         if (av->TryEnterFullScreenMode())
         {
-            av->PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
+            //av->PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
             av->FullScreenSystemOverlayMode = Windows::UI::ViewManagement::FullScreenSystemOverlayMode::Minimal;
         }
+    }
+    else
+    {
+        av->ExitFullScreenMode();
+        av->FullScreenSystemOverlayMode = Windows::UI::ViewManagement::FullScreenSystemOverlayMode::Standard;
+    }
 }
 
 // This method is called after the window becomes active.
@@ -219,4 +227,8 @@ void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 void SpookyAdulthood::App::OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Windows::UI::Core::KeyEventArgs ^args)
 {
     m_main->OnKeyDown(args->VirtualKey);
+    if (args->VirtualKey == Windows::System::VirtualKey::F5)
+    {
+        ToggleToFullscreen();
+    }
 }

@@ -57,7 +57,7 @@ namespace SpookyAdulthood
         void CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device);
         void ReleaseDeviceDependentResources();
         PortalDir GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y);
-        void ComputeCollisionSegments();
+        void GenerateCollisionSegments(const LevelMap& lmap);
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;
@@ -196,6 +196,7 @@ namespace SpookyAdulthood
         void Destroy();
         void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateVisibility(const LevelMapGenerationSettings& settings);
+        void GenerateCollisionInfo();
         bool VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
         void VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
         void VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
@@ -213,15 +214,17 @@ namespace SpookyAdulthood
         std::vector<LevelMapBSPNodePtr> m_leaves;
         std::vector<LevelMapBSPTeleport> m_teleports;
         std::vector<LevelMapBSPPortal> m_portals;
-        std::multimap<LevelMapBSPNode*, uint32_t> m_leavePortals;
+        std::multimap<LevelMapBSPNode*, uint32_t> m_leafPortals;
         LevelMapThumbTexture m_thumbTex;        
         ThumbMapRender m_thumbTexRender;
         XMFLOAT4X4 m_levelTransform;
         LevelMapBSPNodePtr m_cameraCurLeaf;
 
+
         // DX resources
         std::shared_ptr<DX::DeviceResources> m_device;
         std::unique_ptr<MapDXResources> m_dxCommon;
-	};
+        std::unique_ptr<DirectX::PrimitiveBatch<VertexPositionColor>> m_batch;// DEBUG LINES
+    };
 }
 
