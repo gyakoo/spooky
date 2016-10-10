@@ -53,6 +53,9 @@ namespace SpookyAdulthood
         if (kb.A || kb.Left) movSt = -1.0f;
         else if (kb.D || kb.Right) movSt = 1.0f;
 
+        if (kb.Q) m_height += movDelta;
+        else if (kb.E) m_height -= movDelta;
+
         XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y);
         XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
         if (movFw || movSt)

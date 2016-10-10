@@ -6,6 +6,7 @@ namespace SpookyAdulthood
     struct CollSegment
     {
         XMFLOAT2 start, end;
+        XMFLOAT2 normal;
         bool IsValid() const { return start.x != end.x || start.y != end.y; }
     };
 

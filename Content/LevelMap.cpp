@@ -839,25 +839,21 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         }
     }
 
-
     /* DEBUG LINES */
-    //context->RSSetState(m_device->GetCommonStates()->Wireframe());
     for (const auto& room : m_leaves)
     {
-        if (room->m_collisionSegments && m_batch)
+        if (!room->m_collisionSegments || !m_batch) continue;
+        m_batch->Begin();
+        XMFLOAT3 s, e;
+        XMFLOAT4 c(DirectX::Colors::Yellow.f); std::swap(c.x, c.w);
+        for (const auto& seg : *room->m_collisionSegments)
         {
-            m_batch->Begin();
-            XMFLOAT3 s, e;
-            XMFLOAT4 c(DirectX::Colors::Yellow.f);
-            for (const auto& seg : *room->m_collisionSegments)
-            {
-                s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
-                e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
-                VertexPositionColor v1(s, c), v2(e, c);
-                m_batch->DrawLine(v1, v2);
-            }
-            m_batch->End();
+            s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
+            e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
+            VertexPositionColor v1(s, c), v2(e, c);
+            m_batch->DrawLine(v1, v2);
         }
+        m_batch->End();
     }
 
     // UI rendering
@@ -997,6 +993,7 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
     {
         lastSeg.start = XMFLOAT2(xs[0], ys[i]+i*1.0f);
         lastSeg.end = lastSeg.start;
+        lastSeg.normal = XMFLOAT2(0.0f, 1.0f*(i ? -1.0f : 1.0f));
         for (uint32_t ix = m_area.m_x0; ix <= m_area.m_x1; ++ix)
         {
             auto portalDir = GetPortalDirAt(lmap, ix, (uint32_t)ys[i]);
@@ -1020,6 +1017,7 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
     {
         lastSeg.start = XMFLOAT2(xs[i] + i*1.0f, ys[0]);
         lastSeg.end = lastSeg.start;
+        lastSeg.normal = XMFLOAT2(1.0f*(i ? -1.0f : 1.0f), 0.0f);
         for (uint32_t iy = m_area.m_y0; iy <= m_area.m_y1; ++iy)
         {
             auto portalDir = GetPortalDirAt(lmap, (uint32_t)xs[i], iy);
