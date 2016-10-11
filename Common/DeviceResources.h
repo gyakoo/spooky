@@ -34,6 +34,8 @@ namespace DX
         std::unique_ptr<DirectX::SpriteBatch>       m_sprites;
         std::unique_ptr<DirectX::CommonStates>      m_commonStates;
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
+        Microsoft::WRL::ComPtr<ID3D11Texture2D>		m_textureWhite;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
     };
 
 	// Controls all the DirectX device resources.

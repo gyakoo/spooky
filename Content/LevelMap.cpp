@@ -767,7 +767,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             context->DrawIndexed((UINT)room->m_dx->m_indexCount, 0, 0);
         }
     }
-
+    
     /* DEBUG LINES */
     if (GlobalFlags::DrawDebugLines)
     {
@@ -823,8 +823,12 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->IASetInputLayout(dxCommon->m_inputLayout.Get());
     context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
     context->VSSetConstantBuffers1(0, 1, dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
+    ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointWrap();
+    context->PSSetSamplers(0, 1, &sampler);    
+    context->PSSetShaderResources(0, 1, dxCommon->m_textureWhiteSRV.GetAddressOf());
     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
     context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
+    context->OMSetBlendState(dxCommon->GetCommonStates()->Opaque(), nullptr, 0xffffffff);
     if ( GlobalFlags::DrawWireframe )
         context->RSSetState(dxCommon->GetCommonStates()->Wireframe());
     else

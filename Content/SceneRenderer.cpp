@@ -107,7 +107,10 @@ void SceneRenderer::Render()
     // LEVEL rendering
     m_map.Render(m_camera);
 
-    m_sprite3D.Render(0, m_camera, XMFLOAT3(3, 3, 1), XMFLOAT2(1, 1));
+    m_sprite3D.Begin(m_camera);
+    m_sprite3D.Render(0, XMFLOAT3(5, 0.5f, 6), XMFLOAT2(1, 1));
+    m_sprite3D.Render(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
+    m_sprite3D.End();
 }
 
 void SceneRenderer::CreateDeviceDependentResources()
@@ -117,7 +120,8 @@ void SceneRenderer::CreateDeviceDependentResources()
     {
         m_map.CreateDeviceDependentResources();
         m_sprite3D.CreateDeviceDependentResources();
-        m_sprite3D.CreateSprite(L"assets\\windowslogo.dds"); // will return 0
+        m_sprite3D.CreateSprite(L"assets\\zombie.png");
+        m_sprite3D.CreateSprite(L"assets\\zombie2.png");
     });
 
     // after mesh, load texture from file

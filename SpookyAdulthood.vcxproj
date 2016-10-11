@@ -194,8 +194,10 @@
     <Image Include="Assets\Square44x44Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\white.png" />
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
-    <Image Include="Assets\windowslogo.dds" />
+    <Image Include="Assets\zombie.png" />
+    <Image Include="Assets\zombie2.png" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />

@@ -6,7 +6,7 @@ namespace DX { class StepTimer;  }
 
 namespace SpookyAdulthood
 {
-#define CAM_DEFAULT_HEIGHT 0.65f
+#define CAM_DEFAULT_HEIGHT 0.75f
 #define CAM_DEFAULT_FOVY 70.0f
 #define CAM_DEFAULT_RADIUS 0.5f
     struct CameraFirstPerson

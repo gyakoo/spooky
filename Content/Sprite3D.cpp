@@ -3,7 +3,6 @@
 #include "../Common/DirectXHelper.h"
 #include "../Common/DeviceResources.h"
 #include "CameraFirstPerson.h"
-#include "ShaderStructures.h"
 
 using namespace DirectX;
 
@@ -11,7 +10,7 @@ namespace SpookyAdulthood
 {
 
 Sprite3DManager::Sprite3DManager(const std::shared_ptr<DX::DeviceResources>& device)
-    : m_device(device)
+    : m_device(device), m_rendering(false)
 {
 
 }
@@ -24,10 +23,10 @@ void Sprite3DManager::CreateDeviceDependentResources()
     XMFLOAT4 white(1, 1, 1, 1);
     vt vertices[4] = 
     {
-        vt(XMFLOAT3(-0.5f,-0.5f,0), XMFLOAT3(0,0,-1), white, XMFLOAT2(0,1)),
-        vt(XMFLOAT3( 0.5f,-0.5f,0), XMFLOAT3(0,0,-1), white, XMFLOAT2(1,1)),
-        vt(XMFLOAT3( 0.5f, 0.5f,0), XMFLOAT3(0,0,-1), white, XMFLOAT2(1,0)),
-        vt(XMFLOAT3(-0.5f, 0.5f,0), XMFLOAT3(0,0,-1), white, XMFLOAT2(0,0))
+        vt(XMFLOAT3(-0.5f,-0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(0,1)),
+        vt(XMFLOAT3( 0.5f,-0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(1,1)),
+        vt(XMFLOAT3( 0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(1,0)),
+        vt(XMFLOAT3(-0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(0,0))
     };
     unsigned short indices[6] = { 0, 1, 2, 0, 2, 3 };
 
@@ -79,8 +78,10 @@ void Sprite3DManager::ReleaseDeviceDependentResources()
 }
 
 
-void Sprite3DManager::Render(int spriteIndex, const CameraFirstPerson& camera, const XMFLOAT3& position, const XMFLOAT2& size)
+void Sprite3DManager::Render(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size)
 {
+    DX::ThrowIfFalse(m_rendering); // Begin not called
+
     using namespace DirectX::SimpleMath;
     if (!m_vertexBuffer) 
         return;
@@ -89,24 +90,19 @@ void Sprite3DManager::Render(int spriteIndex, const CameraFirstPerson& camera, c
     
     auto dxCommon = m_device->GetGameResources();
     auto context = m_device->GetD3DDeviceContext();
-    static float a = 0.0f; a += .001f;
-    XMMATRIX mr = XMMatrixRotationY(a);
-    XMMATRIX mt = XMMatrixTranslation(position.x, position.y, position.z);
-    XMMATRIX mBB = XMMatrixMultiply(mr, mt);    
+    auto& sprite = m_sprites[spriteIndex];    
+    
+    // billboard constrained to up vector (cheap computation)
+    XMMATRIX mr = m_camInvYaw;
+    mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
+    
+    // prepare buffer for VS
+    XMStoreFloat4x4(&m_cbData.model, XMMatrixTranspose(mr));    
 
-    ModelViewProjectionConstantBuffer cbData;
-    XMStoreFloat4x4(&cbData.model, XMMatrixTranspose(mBB));
-    cbData.view = camera.m_view;
-    cbData.projection = camera.m_projection;
-    context->UpdateSubresource1(dxCommon->m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
-    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
-    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+    // render
+    context->UpdateSubresource1(dxCommon->m_constantBuffer.Get(),0,NULL,&m_cbData,0,0,0);
     context->VSSetConstantBuffers1(0, 1, dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
-    context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
-    context->RSSetState(dxCommon->GetCommonStates()->CullNone());
-
+    context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());
     UINT stride = sizeof(VertexPositionNormalColorTexture);
     UINT offset = 0;
     context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
@@ -118,11 +114,23 @@ int Sprite3DManager::CreateSprite(const std::wstring& pathToTex, int at/*=-1*/)
 {
     Sprite3D spr;
     spr.m_filename = pathToTex;
-    DX::ThrowIfFailed(
-        DirectX::CreateDDSTextureFromFile(
-            m_device->GetD3DDevice(), pathToTex.c_str(),
-            (ID3D11Resource**)spr.m_texture.ReleaseAndGetAddressOf(),
-            spr.m_textureSRV.ReleaseAndGetAddressOf() ) );
+
+    if (pathToTex.substr(pathToTex.find_last_of(L".") + 1) == L"dds")
+    {
+        DX::ThrowIfFailed(
+            DirectX::CreateDDSTextureFromFile(
+                m_device->GetD3DDevice(), pathToTex.c_str(),
+                (ID3D11Resource**)spr.m_texture.ReleaseAndGetAddressOf(),
+                spr.m_textureSRV.ReleaseAndGetAddressOf()));
+    }
+    else
+    {
+        DX::ThrowIfFailed(
+            DirectX::CreateWICTextureFromFile(
+                m_device->GetD3DDevice(), pathToTex.c_str(),
+                (ID3D11Resource**)spr.m_texture.ReleaseAndGetAddressOf(),
+                spr.m_textureSRV.ReleaseAndGetAddressOf()));
+    }
 
     if (at >= 0 && at < (int)m_sprites.size())
     {
@@ -134,6 +142,36 @@ int Sprite3DManager::CreateSprite(const std::wstring& pathToTex, int at/*=-1*/)
         m_sprites.push_back(spr);
     }
     return at;
+}
+
+void Sprite3DManager::Begin(const CameraFirstPerson& camera)
+{
+    DX::ThrowIfFalse(!m_rendering);
+    m_rendering = true;
+
+    auto dxCommon = m_device->GetGameResources();
+    auto context = m_device->GetD3DDeviceContext();
+
+    // set state for render
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
+    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
+    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+    ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
+    context->PSSetSamplers(0, 1, &sampler);
+    context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
+    context->OMSetBlendState(dxCommon->GetCommonStates()->AlphaBlend(), nullptr, 0xffffffff);
+    context->RSSetState(dxCommon->GetCommonStates()->CullNone());
+
+    m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y);
+    m_cbData.view = camera.m_view;
+    m_cbData.projection = camera.m_projection;
+}
+
+void Sprite3DManager::End()
+{
+    DX::ThrowIfFalse(m_rendering);
+    m_rendering = false;
 }
 
 

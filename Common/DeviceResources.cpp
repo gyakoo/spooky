@@ -756,10 +756,17 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
     m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
     m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");
     m_commonStates = std::make_unique<DirectX::CommonStates>(device->GetD3DDevice());
+    DX::ThrowIfFailed(
+        DirectX::CreateWICTextureFromFile(
+            device->GetD3DDevice(), L"assets\\white.png",
+            (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
+            m_textureWhiteSRV.ReleaseAndGetAddressOf()));
 }
 
 DX::GameDXResources::~GameDXResources()
 {
+    m_textureWhiteSRV.Reset();
+    m_textureWhite.Reset();
     m_vertexShader.Reset();
     m_pixelShader.Reset();
     m_constantBuffer.Reset();
