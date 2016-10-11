@@ -14,6 +14,7 @@ SamplerState samPoint;
 
 
 #define FOG_TYPE 1
+#define SPOTLIGHT 1
 
 // A pass-through function for the (interpolated) color data.
 float4 main(PixelShaderInput input) : SV_TARGET
@@ -22,13 +23,14 @@ float4 main(PixelShaderInput input) : SV_TARGET
     const float4 fogColor = float4(0, 0, 0, 1.0f);
     const float fogStart = 0.5f;
     const float fogEnd = 7.0f;
-    const float fogDensity = 0.5f;
+    const float fogDensity = 0.7f;
 
     float3 L = normalize(-lightDir);
-    float d = abs(dot(input.normal, L));
+    float nDotL = max(dot(input.normal, L),0.0f);
     float4 texColor = texDiffuse.Sample(samPoint, input.uv);
     float alpha = texColor.a;
-    float4 color = texColor.aaaa*float4(texColor.rgb*input.color.rgb*d, 1.0f);
+    
+    float4 color = alpha*float4(texColor.rgb*input.color.rgb*nDotL, 1.0f);
     
 
     //float dist = abs(input.viewSpace.z); // dist = input.pos.z / input.pos.w; // plane based
@@ -46,5 +48,13 @@ float4 main(PixelShaderInput input) : SV_TARGET
 #endif
         color.rgb = lerp(color.rgb, fogColor, (1 - fogFactor));
     }
+
+#if SPOTLIGHT==1
+    if (nDotL > 0.0)
+    {
+        if (length(input.sPos.xy) < 0.6f)
+            color.xyz *= 4.0f;
+    }
+#endif
 	return color;
 }
