@@ -590,17 +590,17 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     m_dx = std::make_shared<NodeDXResources>();
 
     const auto& area = m_area;
-    std::vector<VertexPositionNormalColorTexture> vertices; vertices.reserve(area.CountTiles()*4);
+    std::vector<VertexPositionNormalColorTexture4> vertices; vertices.reserve(area.CountTiles()*4);
     std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
     {
         static const float EP = 1.0f;
         static const float FH = 2.0f;
         XMFLOAT4 argb(DirectX::Colors::White.f);
-        VertexPositionNormalColorTexture quadVerts[4];
+        VertexPositionNormalColorTexture4 quadVerts[4];
         for (int i = 0; i < 4; ++i)
         {
             quadVerts[i].color = argb;
-            quadVerts[i].textureCoordinate = XMFLOAT2(0,0);
+            quadVerts[i].textureCoordinate = XMFLOAT4(0,0,0,0);
         }
         unsigned short cvi = 0; // current vertex index
         float x, z;
@@ -702,7 +702,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     vertexBufferData.pSysMem = vertices.data();
     vertexBufferData.SysMemPitch = 0;
     vertexBufferData.SysMemSlicePitch = 0;
-    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTexture)*vertices.size());
+    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTexture4)*vertices.size());
     CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
     DX::ThrowIfFailed(
         device->GetD3DDevice()->CreateBuffer(
@@ -760,7 +760,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
                 continue;
 
-            UINT stride = sizeof(VertexPositionNormalColorTexture);
+            UINT stride = sizeof(VertexPositionNormalColorTexture4);
             UINT offset = 0;
             context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
             context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);

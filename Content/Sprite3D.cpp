@@ -19,14 +19,14 @@ void Sprite3DManager::CreateDeviceDependentResources()
 {
     if (m_vertexBuffer)
         return;
-    typedef VertexPositionNormalColorTexture vt;
+    typedef VertexPositionNormalColorTexture4 vt;
     XMFLOAT4 white(1, 1, 1, 1);
     vt vertices[4] = 
     {
-        vt(XMFLOAT3(-0.5f,-0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(0,1)),
-        vt(XMFLOAT3( 0.5f,-0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(1,1)),
-        vt(XMFLOAT3( 0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(1,0)),
-        vt(XMFLOAT3(-0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(0,0))
+        vt(XMFLOAT3(-0.5f,-0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT4(0,1,0,0)),
+        vt(XMFLOAT3(0.5f,-0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT4(1,1,0,0)),
+        vt(XMFLOAT3(0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT4(1,0,0,0)),
+        vt(XMFLOAT3(-0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT4(0,0,0,0))
     };
     unsigned short indices[6] = { 0, 1, 2, 0, 2, 3 };
 
@@ -35,7 +35,7 @@ void Sprite3DManager::CreateDeviceDependentResources()
     vertexBufferData.pSysMem = vertices;
     vertexBufferData.SysMemPitch = 0;
     vertexBufferData.SysMemSlicePitch = 0;
-    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTexture)*4);
+    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTexture4)*4);
     CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
     DX::ThrowIfFailed(
         m_device->GetD3DDevice()->CreateBuffer(
@@ -103,7 +103,7 @@ void Sprite3DManager::Render(int spriteIndex, const XMFLOAT3& position, const XM
     context->UpdateSubresource1(dxCommon->m_constantBuffer.Get(),0,NULL,&m_cbData,0,0,0);
     context->VSSetConstantBuffers1(0, 1, dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
     context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());
-    UINT stride = sizeof(VertexPositionNormalColorTexture);
+    UINT stride = sizeof(VertexPositionNormalColorTexture4);
     UINT offset = 0;
     context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
     context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -114,7 +114,7 @@ int Sprite3DManager::CreateSprite(const std::wstring& pathToTex, int at/*=-1*/)
 {
     Sprite3D spr;
     spr.m_filename = pathToTex;
-
+    std::transform(spr.m_filename.begin(), spr.m_filename.end(), spr.m_filename.begin(), ::towlower);
     if (pathToTex.substr(pathToTex.find_last_of(L".") + 1) == L"dds")
     {
         DX::ThrowIfFailed(
@@ -153,12 +153,12 @@ void Sprite3DManager::Begin(const CameraFirstPerson& camera)
     auto context = m_device->GetD3DDeviceContext();
 
     // set state for render
-    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
-    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
-    ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
-    context->PSSetSamplers(0, 1, &sampler);
+//     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//     context->IASetInputLayout(dxCommon->m_inputLayout.Get());
+//     context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
+//     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+//     ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
+//     context->PSSetSamplers(0, 1, &sampler);
     context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
     context->OMSetBlendState(dxCommon->GetCommonStates()->AlphaBlend(), nullptr, 0xffffffff);
     context->RSSetState(dxCommon->GetCommonStates()->CullNone());

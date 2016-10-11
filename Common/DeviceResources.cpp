@@ -724,8 +724,8 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
 
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateInputLayout(
-                VertexPositionNormalColorTexture::InputElements,
-                VertexPositionNormalColorTexture::InputElementCount,
+                SpookyAdulthood::VertexPositionNormalColorTexture4::InputElements,
+                SpookyAdulthood::VertexPositionNormalColorTexture4::InputElementCount,
                 &fileData[0],
                 fileData.size(),
                 &m_inputLayout

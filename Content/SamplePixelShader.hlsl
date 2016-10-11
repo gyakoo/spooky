@@ -4,7 +4,7 @@ struct PixelShaderInput
     float4 pos : SV_POSITION;
     float3 normal : NORMAL;
     float4 color : COLOR0;
-    float2 uv : TEXCOORD0;
+    float4 uv : TEXCOORD0;
     float4 viewSpace : VIEWSPACE;
     float4 sPos : TEXCOORD1;
 };
@@ -39,7 +39,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
 #else
     const float nDotL = 1.0f;
 #endif
-    float4 texColor = texDiffuse.Sample(samPoint, input.uv);
+    float4 texColor = texDiffuse.Sample(samPoint, input.uv.xy+input.uv.zw);
     float alpha = texColor.a;
 
     
