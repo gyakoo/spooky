@@ -9,7 +9,7 @@ CameraFirstPerson::CameraFirstPerson(float fovYDeg)
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;
     XMStoreFloat4x4(&id, XMMatrixIdentity());
-    ComputeProjection(fovYDeg*XM_PI / 180.0f, 1.0f, 0.01f, 100.0f, id);
+    ComputeProjection(fovYDeg*XM_PI / 180.0f, 1.0f, 0.01f, 40.0f, id);
     m_view = id; //view identity
 }
 

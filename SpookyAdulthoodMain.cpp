@@ -34,7 +34,8 @@ SpookyAdulthoodMain::~SpookyAdulthoodMain()
 void SpookyAdulthoodMain::CreateWindowSizeDependentResources() 
 {
 	// TODO: Replace this with the size-dependent initialization of your app's content.
-	m_sceneRenderer->CreateWindowSizeDependentResources();
+    if ( m_sceneRenderer )
+	    m_sceneRenderer->CreateWindowSizeDependentResources();
 }
 
 // Updates the application state once per frame.

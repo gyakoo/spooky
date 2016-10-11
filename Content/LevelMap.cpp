@@ -595,7 +595,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     {
         static const float EP = 1.0f;
         static const float FH = 2.0f;
-        XMFLOAT4 argb(DirectX::Colors::Magenta.f);
+        XMFLOAT4 argb(DirectX::Colors::White.f);
         VertexPositionNormalColorTexture quadVerts[4];
         for (int i = 0; i < 4; ++i)
         {
@@ -801,7 +801,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         case 2:
         {
             float dx = (float)m_thumbTex.m_dim.x;
-            float dy = (float)m_thumbTex.m_dim.y+400;
+            float dy = (float)m_thumbTex.m_dim.y+100;
             XMFLOAT2 texPos(dx * 2, dy * 2);
             XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
             sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
