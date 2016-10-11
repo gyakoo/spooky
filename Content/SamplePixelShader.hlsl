@@ -17,7 +17,9 @@ SamplerState samPoint;
 #define SPOTLIGHT 1
 #define NDOTL 0
 
-// A pass-through function for the (interpolated) color data.
+// You won't like the 'lighting model' below.
+// It's basically a range based FOG and the fog density depends on the screen space distance
+// from the origin (0,0) and depth
 float4 main(PixelShaderInput input) : SV_TARGET
 {
     const float4 fogColor = float4(0, 0, 0, 1.0f);

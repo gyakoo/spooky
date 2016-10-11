@@ -222,6 +222,7 @@
     <ClCompile Include="Content\CameraFirstPerson.cpp" />
     <ClCompile Include="Content\GlobalFlags.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />
+    <ClCompile Include="Content\ShaderStructures.cpp" />
     <ClCompile Include="Content\Sprite3D.cpp" />
     <ClCompile Include="SpookyAdulthoodMain.cpp" />
     <ClCompile Include="Content\UIRenderer.cpp" />

@@ -72,6 +72,7 @@
     </ClCompile>
     <ClCompile Include="Content\Sprite3D.cpp" />
     <ClCompile Include="Content\GlobalFlags.cpp" />
+    <ClCompile Include="Content\ShaderStructures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
