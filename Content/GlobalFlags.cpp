@@ -28,9 +28,10 @@ namespace SpookyAdulthood
         static wchar_t buff[256];
         if (DrawFlags)
         {
+            auto dxCommon = device->GetGameResources();
             XMFLOAT2 p = DrawGlobalsPos;
-            auto s = device->GetSprites();
-            auto f = device->GetFontConsole();            
+            auto s = dxCommon->GetSprites();
+            auto f = dxCommon->GetFontConsole();
             const float padY = XMVectorGetY(f->MeasureString(L"Test"));
             s->Begin();
             {

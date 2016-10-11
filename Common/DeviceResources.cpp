@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "DeviceResources.h"
 #include "DirectXHelper.h"
+#include "Content/ShaderStructures.h"
 
 using namespace D2D1;
 using namespace DirectX;
@@ -217,10 +218,8 @@ void DX::DeviceResources::CreateDeviceResources()
 			D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
 			&m_d2dContext
 			)
-		);
-    m_sprites = std::make_unique<SpriteBatch>(GetD3DDeviceContext());
-    m_fontConsole = std::make_unique<DirectX::SpriteFont>(GetD3DDevice(), L"assets\\Courier_16.spritefont");
-    m_commonStates = std::make_unique<DirectX::CommonStates>(m_d3dDevice.Get());
+		);    
+    m_gameResources = std::make_unique<GameDXResources>(this);
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -449,7 +448,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 	// Grayscale text anti-aliasing is recommended for all Windows Store apps.
 	m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
-    m_sprites->SetRotation(ComputeDisplayRotation());
+    m_gameResources->m_sprites->SetRotation(ComputeDisplayRotation());
 }
 
 // Determine the dimensions of the render target and whether it will be scaled down.
@@ -703,4 +702,69 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 		break;
 	}
 	return rotation;
+}
+
+
+DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
+{
+    // vertex shader and input layout
+    auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
+    auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
+
+    loadVSTask.then([this, device](const std::vector<byte>& fileData) {
+
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateVertexShader(
+                &fileData[0],
+                fileData.size(),
+                nullptr,
+                &m_vertexShader
+            )
+        );
+
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateInputLayout(
+                VertexPositionNormalColorTexture::InputElements,
+                VertexPositionNormalColorTexture::InputElementCount,
+                &fileData[0],
+                fileData.size(),
+                &m_inputLayout
+            )
+        );
+    });
+
+    loadPSTask.then([this, device](const std::vector<byte>& fileData) {
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreatePixelShader(
+                &fileData[0],
+                fileData.size(),
+                nullptr,
+                &m_pixelShader
+            )
+        );
+
+        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateBuffer(
+                &constantBufferDesc,
+                nullptr,
+                &m_constantBuffer
+            )
+        );
+    });
+
+    m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
+    m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");
+    m_commonStates = std::make_unique<DirectX::CommonStates>(device->GetD3DDevice());
+}
+
+DX::GameDXResources::~GameDXResources()
+{
+    m_vertexShader.Reset();
+    m_pixelShader.Reset();
+    m_constantBuffer.Reset();
+    m_inputLayout.Reset();
+    m_sprites.reset();
+    m_fontConsole.reset();
+    m_commonStates.reset();
 }

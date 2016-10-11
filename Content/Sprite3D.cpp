@@ -60,15 +60,6 @@ void Sprite3DManager::CreateDeviceDependentResources()
         )
     );
 
-    CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-    DX::ThrowIfFailed(
-        m_device->GetD3DDevice()->CreateBuffer(
-            &constantBufferDesc,
-            nullptr,
-            &m_constantBuffer
-        )
-    );
-
     for (auto& sp : m_sprites)
     {
         sp.m_texture.Reset();
@@ -80,7 +71,6 @@ void Sprite3DManager::ReleaseDeviceDependentResources()
 {
     m_vertexBuffer.Reset();
     m_indexBuffer.Reset();
-    m_constantBuffer.Reset();
     
     for (int i = 0; i < (int)m_sprites.size();++i)
     {
@@ -97,14 +87,25 @@ void Sprite3DManager::Render(int spriteIndex, const CameraFirstPerson& camera, c
     if (spriteIndex < 0 || spriteIndex >= (int)m_sprites.size()) 
         return;
     
+    auto dxCommon = m_device->GetGameResources();
     auto context = m_device->GetD3DDeviceContext();
-    XMFLOAT3 camFw(camera.m_view.m[2]);
-    auto billboardMat = Matrix::CreateConstrainedBillboard(position, camera.GetPosition(), Vector3(0, 1, 0), &Vector3(camFw));
-    ModelViewProjectionConstantBuffer cbData = { billboardMat, camera.m_view, camera.m_projection };
-    context->UpdateSubresource1(m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
-    context->VSSetConstantBuffers1(0, 1, m_constantBuffer.GetAddressOf(), nullptr, nullptr);
-    context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
-    context->RSSetState(m_device->GetCommonStates()->CullNone());
+    static float a = 0.0f; a += .001f;
+    XMMATRIX mr = XMMatrixRotationY(a);
+    XMMATRIX mt = XMMatrixTranslation(position.x, position.y, position.z);
+    XMMATRIX mBB = XMMatrixMultiply(mr, mt);    
+
+    ModelViewProjectionConstantBuffer cbData;
+    XMStoreFloat4x4(&cbData.model, XMMatrixTranspose(mBB));
+    cbData.view = camera.m_view;
+    cbData.projection = camera.m_projection;
+    context->UpdateSubresource1(dxCommon->m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
+    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
+    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+    context->VSSetConstantBuffers1(0, 1, dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
+    context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
+    context->RSSetState(dxCommon->GetCommonStates()->CullNone());
 
     UINT stride = sizeof(VertexPositionNormalColorTexture);
     UINT offset = 0;

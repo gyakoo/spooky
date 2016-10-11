@@ -34,8 +34,7 @@ PixelShaderInput main(VertexShaderInput input)
 
 	// Transform the vertex position into projected space.
 	pos = mul(pos, model);
-	pos = mul(pos, view);
-    output.viewSpace = pos;
+	pos = mul(pos, view);    
 	pos = mul(pos, projection);
 	output.pos = pos;
 
@@ -44,6 +43,7 @@ PixelShaderInput main(VertexShaderInput input)
     output.normal = input.normal;
 	output.color = input.color;
     output.sPos = pos;
+    output.viewSpace = pos;
 
 	return output;
 }

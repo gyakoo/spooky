@@ -529,13 +529,6 @@ XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
 void LevelMap::CreateDeviceDependentResources()
 {
     if (!m_root) return;
-    // common stuff (shaders, textures, etc...)
-    if (!m_dxCommon)
-    {
-        m_dxCommon = std::make_unique<MapDXResources>();
-        m_dxCommon->CreateDeviceDependentResources(m_device);
-    }
-
     // buffers for each room
     std::vector< concurrency::task<void> > tasks; 
     tasks.reserve(m_leaves.size());
@@ -552,13 +545,6 @@ void LevelMap::CreateDeviceDependentResources()
 
 void LevelMap::ReleaseDeviceDependentResources()
 {
-    // common stuff (shaders, textures, etc...)
-    if (m_dxCommon)
-    {
-        m_dxCommon->ReleaseDeviceDependentResources();
-        m_dxCommon = nullptr;
-    }
-
     // buffers for each room
     for (auto& leaf : m_leaves)
     {
@@ -751,63 +737,6 @@ void LevelMapBSPNode::ReleaseDeviceDependentResources()
     m_dx->m_indexCount = 0;
 }
 
-void MapDXResources::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
-{
-    // vertex shader and input layout
-    auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
-    auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
-
-    loadVSTask.then([this, device](const std::vector<byte>& fileData) {
-
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreateVertexShader(
-                &fileData[0],
-                fileData.size(),
-                nullptr,
-                &m_vertexShader
-            )
-        );
-
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreateInputLayout(                
-                VertexPositionNormalColorTexture::InputElements,
-                VertexPositionNormalColorTexture::InputElementCount,
-                &fileData[0],
-                fileData.size(),
-                &m_inputLayout
-            )
-        );
-    });
-
-    loadPSTask.then([this,device](const std::vector<byte>& fileData) {
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreatePixelShader(
-                &fileData[0],
-                fileData.size(),
-                nullptr,
-                &m_pixelShader
-            )
-        );
-
-        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreateBuffer(
-                &constantBufferDesc,
-                nullptr,
-                &m_constantBuffer
-            )
-        );
-    });
-}
-
-void MapDXResources::ReleaseDeviceDependentResources()
-{
-    m_vertexShader.Reset();
-    m_pixelShader.Reset();
-    m_constantBuffer.Reset();
-    m_inputLayout.Reset();
-}
-
 void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camera)
 {
     m_cameraCurLeaf = GetLeafAt(camera.GetPosition());
@@ -817,7 +746,7 @@ void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camer
 
 void LevelMap::Render(const CameraFirstPerson& camera)
 {
-    if (!m_root || !m_dxCommon || !m_dxCommon->m_constantBuffer)
+    if (!m_root)
         return;
 
     RenderSetCommonState(camera);
@@ -862,8 +791,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     // UI rendering
     if (GlobalFlags::DrawThumbMap)
     {
-        auto sprites = m_device->GetSprites();
-        sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetCommonStates()->PointClamp());
+        auto sprites = m_device->GetGameResources()->GetSprites();
+        sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetGameResources()->GetCommonStates()->PointClamp());
         switch (GlobalFlags::DrawThumbMap)
         {
         case 1:
@@ -887,18 +816,19 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
 {
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
+    auto dxCommon = m_device->GetGameResources();
     auto context = m_device->GetD3DDeviceContext();
-    context->UpdateSubresource1(m_dxCommon->m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
+    context->UpdateSubresource1(dxCommon->m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->IASetInputLayout(m_dxCommon->m_inputLayout.Get());
-    context->VSSetShader(m_dxCommon->m_vertexShader.Get(), nullptr, 0);
-    context->VSSetConstantBuffers1(0, 1, m_dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
-    context->PSSetShader(m_dxCommon->m_pixelShader.Get(), nullptr, 0);
-    context->OMSetDepthStencilState(m_device->GetCommonStates()->DepthDefault(), 0);
+    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
+    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
+    context->VSSetConstantBuffers1(0, 1, dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
+    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+    context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
     if ( GlobalFlags::DrawWireframe )
-        context->RSSetState(m_device->GetCommonStates()->Wireframe());
+        context->RSSetState(dxCommon->GetCommonStates()->Wireframe());
     else
-        context->RSSetState(m_device->GetCommonStates()->CullCounterClockwise());
+        context->RSSetState(dxCommon->GetCommonStates()->CullCounterClockwise());
 }
 
 LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)

@@ -78,21 +78,6 @@ namespace SpookyAdulthood
     };
 
     //* ***************************************************************** *//
-    //* MapDXResources
-    //* ***************************************************************** *//
-    struct MapDXResources // common
-    {
-        void CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device);
-        void ReleaseDeviceDependentResources();
-
-        Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
-        Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
-        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
-        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_constantBuffer;
-
-    };
-
-    //* ***************************************************************** *//
     //* LevelMapBSPPortal
     //* ***************************************************************** *//
     struct LevelMapBSPPortal
@@ -219,7 +204,6 @@ namespace SpookyAdulthood
 
         // DX resources
         std::shared_ptr<DX::DeviceResources> m_device;
-        std::unique_ptr<MapDXResources> m_dxCommon;
         std::unique_ptr<DirectX::PrimitiveBatch<VertexPositionColor>> m_batch;// DEBUG LINES
     };
 }

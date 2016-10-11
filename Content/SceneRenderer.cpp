@@ -108,9 +108,6 @@ void SceneRenderer::Render()
     m_map.Render(m_camera);
 
     m_sprite3D.Render(0, m_camera, XMFLOAT3(3, 3, 1), XMFLOAT2(1, 1));
-
-    m_deviceResources->GetSprites()->Begin();    
-    m_deviceResources->GetSprites()->End();
 }
 
 void SceneRenderer::CreateDeviceDependentResources()

@@ -9,6 +9,33 @@ namespace DX
 		virtual void OnDeviceRestored() = 0;
 	};
 
+    class DeviceResources;
+
+    //* ***************************************************************** *//
+    //* Global GAME dx resources
+    //* ***************************************************************** *//
+    struct GameDXResources // common
+    {
+        GameDXResources(const DX::DeviceResources* device);
+        ~GameDXResources();
+
+        DirectX::SpriteBatch*       GetSprites() const { return m_sprites.get(); }
+        DirectX::CommonStates*      GetCommonStates() const { return m_commonStates.get(); }
+        DirectX::SpriteFont*        GetFontConsole() const { return m_fontConsole.get(); }
+        ID3D11InputLayout*          GetInputLayout() const { return m_inputLayout.Get(); }
+        ID3D11VertexShader*         GetVertexShader() const { return m_vertexShader.Get(); }
+        ID3D11PixelShader*          GetPixelShader() const { return m_pixelShader.Get(); }
+        ID3D11Buffer*		        GetConstantBuffer() const { return m_constantBuffer.Get();}
+
+        Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
+        Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
+        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_constantBuffer;
+        std::unique_ptr<DirectX::SpriteBatch>       m_sprites;
+        std::unique_ptr<DirectX::CommonStates>      m_commonStates;
+        std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
+    };
+
 	// Controls all the DirectX device resources.
 	class DeviceResources
 	{
@@ -50,9 +77,9 @@ namespace DX
 		IWICImagingFactory2*		GetWicImagingFactory() const			{ return m_wicFactory.Get(); }
 		D2D1::Matrix3x2F			GetOrientationTransform2D() const		{ return m_orientationTransform2D; }
 
-        DirectX::SpriteBatch*       GetSprites() const                      { return m_sprites.get(); }
-        DirectX::CommonStates*      GetCommonStates() const                 { return m_commonStates.get(); }
-        DirectX::SpriteFont*        GetFontConsole() const                  { return m_fontConsole.get(); }
+        // GAME DX Common resources
+        GameDXResources*            GetGameResources() const                { return m_gameResources.get(); }
+
 	private:
 		void CreateDeviceIndependentResources();
 		void CreateDeviceResources();
@@ -102,8 +129,8 @@ namespace DX
 		// The IDeviceNotify can be held directly as it owns the DeviceResources.
 		IDeviceNotify* m_deviceNotify;
 
-        std::unique_ptr<DirectX::SpriteBatch>  m_sprites;
-        std::unique_ptr<DirectX::CommonStates> m_commonStates;
-        std::unique_ptr<DirectX::SpriteFont> m_fontConsole;
+        // game dx resources        
+        std::unique_ptr<GameDXResources> m_gameResources;
+
     };
 }
