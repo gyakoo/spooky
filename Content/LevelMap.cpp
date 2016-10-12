@@ -647,7 +647,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             float dy = (float)m_thumbTex.m_dim.y;
             auto cp = camera.GetPosition();
             XMFLOAT2 texPos(100,100);
-            XMFLOAT2 rotOrig(dx*0.5f+cp.x, dy*0.5f+cp.z);
+            XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
             sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
         }
         break;
