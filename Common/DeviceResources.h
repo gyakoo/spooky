@@ -37,6 +37,7 @@ namespace DX
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>		m_textureWhite;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
+        bool m_ready;
     };
 
 	// Controls all the DirectX device resources.

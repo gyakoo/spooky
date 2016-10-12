@@ -8,7 +8,7 @@ namespace SpookyAdulthood
 {
 #define CAM_DEFAULT_HEIGHT 0.75f
 #define CAM_DEFAULT_FOVY 70.0f
-#define CAM_DEFAULT_RADIUS 0.5f
+#define CAM_DEFAULT_RADIUS 0.25f
     struct CameraFirstPerson
     {
         CameraFirstPerson(float fovYDeg = CAM_DEFAULT_FOVY);
@@ -25,6 +25,7 @@ namespace SpookyAdulthood
         XMFLOAT2 m_pitchYaw;
         float m_height;
         float m_radius;
+        float m_aspectRatio;
     private:
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;

@@ -448,7 +448,8 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 	// Grayscale text anti-aliasing is recommended for all Windows Store apps.
 	m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
-    m_gameResources->m_sprites->SetRotation(ComputeDisplayRotation());
+    if ( m_gameResources && m_gameResources->m_ready)
+        m_gameResources->m_sprites->SetRotation(ComputeDisplayRotation());
 }
 
 // Determine the dimensions of the render target and whether it will be scaled down.
@@ -706,10 +707,44 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 
 
 DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
+    : m_ready(false)
 {
     // vertex shader and input layout
     auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
     auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
+
+    m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
+    m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");
+    m_commonStates = std::make_unique<DirectX::CommonStates>(device->GetD3DDevice());
+    DX::ThrowIfFailed(
+        DirectX::CreateWICTextureFromFile(
+            device->GetD3DDevice(), L"assets\\white.png",
+            (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
+            m_textureWhiteSRV.ReleaseAndGetAddressOf()));
+
+    // VS constant buffer
+    {
+        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateBuffer(
+                &constantBufferDesc,
+                nullptr,
+                &m_VSconstantBuffer
+            )
+        );
+    }
+    // PS Constant buffer
+    {
+        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+        DX::ThrowIfFailed(
+            device->GetD3DDevice()->CreateBuffer(
+                &constantBufferDesc,
+                nullptr,
+                &m_PSconstantBuffer
+            )
+        );
+    }
+
 
     loadVSTask.then([this, device](const std::vector<byte>& fileData) {
 
@@ -731,6 +766,7 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
                 &m_inputLayout
             )
         );
+        m_ready = m_pixelShader != nullptr;
     });
 
     loadPSTask.then([this, device](const std::vector<byte>& fileData) {
@@ -744,44 +780,14 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
                     &m_pixelShader
                 )
             );
-        }
-        // VS constant buffer
-        {
-            CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-            DX::ThrowIfFailed(
-                device->GetD3DDevice()->CreateBuffer(
-                    &constantBufferDesc,
-                    nullptr,
-                    &m_VSconstantBuffer
-                )
-            );
-        }
-    }).then([this, device]() {
-        // PS Constant buffer
-        {
-            CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-            DX::ThrowIfFailed(
-                device->GetD3DDevice()->CreateBuffer(
-                    &constantBufferDesc,
-                    nullptr,
-                    &m_PSconstantBuffer
-                )
-            );
-        }
+        }        
+        m_ready = m_inputLayout != nullptr;
     });
-
-    m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
-    m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");
-    m_commonStates = std::make_unique<DirectX::CommonStates>(device->GetD3DDevice());
-    DX::ThrowIfFailed(
-        DirectX::CreateWICTextureFromFile(
-            device->GetD3DDevice(), L"assets\\white.png",
-            (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
-            m_textureWhiteSRV.ReleaseAndGetAddressOf()));
 }
 
 DX::GameDXResources::~GameDXResources()
 {
+    m_ready = false;
     m_textureWhiteSRV.Reset();
     m_textureWhite.Reset();
     m_vertexShader.Reset();

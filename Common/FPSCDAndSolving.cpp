@@ -58,17 +58,17 @@ namespace SpookyAdulthood
         Vector2 fwDir = nextPos - curPos; 
         const float len = fwDir.Length(); if (len == 0) return nextPos;        
         fwDir *= 1.0f / len; // normalize        
-        //const Vector2 riDir(fwDir.y, -fwDir.x);
+        const Vector2 riDir(fwDir.y, -fwDir.x);
         const Vector2 center(curPos);
-        //const Vector2 right = center + riDir*radius;
-        //const Vector2 left = center - riDir*radius;
+        const Vector2 right = center + riDir*radius;
+        const Vector2 left = center - riDir*radius;
         const Vector2 fwExt = fwDir *(len + radius);
         // casting rays from {left, center, right}
-        Segment charSegments[1] =
+        Segment charSegments[3] =
         {
-            //{left, left+ fwExt },
+            {left, left+ fwExt },
             {center, center + fwExt },
-            //{right, right+ fwExt }
+            {right, right+ fwExt }
         };
 
         // check for all segments
@@ -104,7 +104,8 @@ namespace SpookyAdulthood
             const float t = wallSlideDir.Dot(fwDir); 
             const float signMov = (t > 0.0f) - (t < 0.0f);// sign of wall mov direction
             wallSlideDir.Normalize();
-            const float d = -Vector2(collSeg.normal).Dot(nextPos - curPos); // project movement to wall
+            //const float d = -Vector2(collSeg.normal).Dot(nextPos - curPos); // project movement to wall
+            const float d = len;
             return FPSCDAndSolving2D(segs, curPos, curPos + wallSlideDir*d*signMov, radius, --iter);
         }
 

@@ -15,7 +15,7 @@ SamplerState samPoint;
 
 cbuffer constants
 {
-    float4 texAtlasSize;
+    float4 texAtlasSize;  // xy=atlas size, z=<undefined>, w=aspect ratio
 };
 
 
@@ -60,8 +60,11 @@ float4 main(PixelShaderInput input) : SV_TARGET
     if (nDotL > 0.0)
     {
         //const float depthFactor = saturate(input.sPos.z*0.5f); // using the z component
-        const float depthFactor = 1.0f;// dist*0.3;
-        fogDensity *= saturate(length(input.sPos.xy)*0.25f*depthFactor);
+        //const float depthFactor = dist*0.3f;
+        float depthFactor = 1.0f;
+        const float aspect = texAtlasSize.w;
+        const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
+        fogDensity *= saturate(length(xy)*0.25f*depthFactor);
     }
 #endif
 

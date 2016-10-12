@@ -89,6 +89,7 @@ void Sprite3DManager::Render(int spriteIndex, const XMFLOAT3& position, const XM
         return;
     
     auto dxCommon = m_device->GetGameResources();
+    if (!dxCommon->m_ready) return;
     auto context = m_device->GetD3DDeviceContext();
     auto& sprite = m_sprites[spriteIndex];    
     
@@ -150,16 +151,17 @@ void Sprite3DManager::Begin(const CameraFirstPerson& camera)
     m_rendering = true;
 
     auto dxCommon = m_device->GetGameResources();
+    if (!dxCommon->m_ready) return;
     auto context = m_device->GetD3DDeviceContext();
 
     // set state for render
-//     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//     context->IASetInputLayout(dxCommon->m_inputLayout.Get());
-//     context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-//     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
-//     ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
-//     context->PSSetSamplers(0, 1, &sampler);
-    PixelShaderConstantBuffer pscb = { {1,1,1,1} };
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
+    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
+    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+    ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
+    context->PSSetSamplers(0, 1, &sampler);
+    PixelShaderConstantBuffer pscb = { {1,1,1,camera.m_aspectRatio} };
     context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
     context->OMSetBlendState(dxCommon->GetCommonStates()->AlphaBlend(), nullptr, 0xffffffff);
     context->RSSetState(dxCommon->GetCommonStates()->CullNone());

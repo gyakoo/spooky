@@ -616,36 +616,43 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                 x = float(_x); z = float(_z);
                 // floor tile
                 {
+                    const UINT FLOORTEX = 0;
                     quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
                     quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
                     quadVerts[2].position = XMFLOAT3(x + EP, 0.0f, z + EP);
                     quadVerts[3].position = XMFLOAT3(x, 0.0f, z + EP);
+                    quadVerts[0].SetTexCoord(0, 0, FLOORTEX, 1);
+                    quadVerts[1].SetTexCoord(1, 0, FLOORTEX, 1);
+                    quadVerts[2].SetTexCoord(1, 1, FLOORTEX, 1);
+                    quadVerts[3].SetTexCoord(0, 1, FLOORTEX, 1);
                     for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 1, 0); }
                     std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
                     const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
                     cvi += 4; // 
-                    std::copy(inds, inds + 6, std::back_inserter(indices));
-                    quadVerts[0].SetTexCoord(0, 0, 0, 1);
-                    quadVerts[1].SetTexCoord(1, 0, 0, 1);
-                    quadVerts[2].SetTexCoord(1, 1, 0, 1);
-                    quadVerts[3].SetTexCoord(0, 1, 0, 1);
+                    std::copy(inds, inds + 6, std::back_inserter(indices));                    
                 }
 
                 // ceiling tile
                 {
+                    const UINT CEILINGTEX = 0;
                     quadVerts[0].position = XMFLOAT3(x, FH, z);
                     quadVerts[3].position = XMFLOAT3(x + EP, FH, z);
                     quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
                     quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
+                    quadVerts[0].SetTexCoord(0, 0, CEILINGTEX, 2);
+                    quadVerts[1].SetTexCoord(1, 0, CEILINGTEX, 2);
+                    quadVerts[2].SetTexCoord(1, 1, CEILINGTEX, 2);
+                    quadVerts[3].SetTexCoord(0, 1, CEILINGTEX, 2);
                     for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, -1, 0); }
                     std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
                     const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
                     cvi += 4; // 
-                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                    std::copy(inds, inds + 6, std::back_inserter(indices));                    
                 }
 
                 // walls
                 {
+                    const UINT WALLTEX = 0;
                     auto portalDir = GetPortalDirAt(lmap, _x, _z);
                     bool addWallTile = false;
                     if (_z == m_area.m_y0 && portalDir != NORTH)              // wall north
@@ -655,6 +662,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
                         quadVerts[3].position = XMFLOAT3(x, FH, z);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
                         addWallTile = true;
                     }
                     else if (_z == m_area.m_y1 && portalDir != SOUTH)         // wall south
@@ -664,8 +675,12 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
                         quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, -1); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
                         addWallTile = true;
-                    }
+                    }                    
 
                     if (addWallTile)
                     {
@@ -674,6 +689,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         cvi += 4; // 
                         std::copy(inds, inds + 6, std::back_inserter(indices));
                     }
+
                     if (_x == m_area.m_x0 && portalDir != WEST)              // wall west
                     {
                         quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
@@ -681,6 +697,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x, FH, z);
                         quadVerts[3].position = XMFLOAT3(x, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
                         addWallTile = true;
                     }
                     else if (_x == m_area.m_x1 && portalDir != EAST)         // wall east
@@ -690,8 +710,12 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x+EP, FH, z);
                         quadVerts[1].position = XMFLOAT3(x+EP, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(-1, 0, 0); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
                         addWallTile = true;
-                    }
+                    }                    
                     if (addWallTile)
                     {
                         std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
@@ -811,9 +835,10 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         case 2:
         {
             float dx = (float)m_thumbTex.m_dim.x;
-            float dy = (float)m_thumbTex.m_dim.y+100;
-            XMFLOAT2 texPos(dx * 2, dy * 2);
-            XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
+            float dy = (float)m_thumbTex.m_dim.y;
+            auto cp = camera.GetPosition();
+            XMFLOAT2 texPos(100,100);
+            XMFLOAT2 rotOrig(dx*0.5f+cp.x, dy*0.5f+cp.z);
             sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
         }
         break;
@@ -830,6 +855,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
     auto dxCommon = m_device->GetGameResources();
+    if (!dxCommon->m_ready) return false;
     auto context = m_device->GetD3DDeviceContext();
     context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -839,7 +865,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
-    PixelShaderConstantBuffer pscb = { { 16,16,16,16 } };
+    PixelShaderConstantBuffer pscb = { { 16,16,16,camera.m_aspectRatio } };
     context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
