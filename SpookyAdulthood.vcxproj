@@ -206,7 +206,7 @@
   <ItemGroup>
     <ClInclude Include="App.h" />
     <ClInclude Include="Common\DeviceResources.h" />
-    <ClInclude Include="Common\FPSCDAndSolving.h" />
+    <ClInclude Include="Content\CollisionAndSolving2D.h" />
     <ClInclude Include="Content\CameraFirstPerson.h" />
     <ClInclude Include="Content\GlobalFlags.h" />
     <ClInclude Include="Content\LevelMap.h" />
@@ -222,7 +222,7 @@
   <ItemGroup>
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Common\DeviceResources.cpp" />
-    <ClCompile Include="Common\FPSCDAndSolving.cpp" />
+    <ClCompile Include="Content\CollisionAndSolving2D.cpp" />
     <ClCompile Include="Content\CameraFirstPerson.cpp" />
     <ClCompile Include="Content\GlobalFlags.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />

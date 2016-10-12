@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <DirectXMath.h>
 #include <random>
-#include <../Common/FPSCDAndSolving.h>
+#include "CollisionAndSolving2D.h"
 
 using namespace DirectX;
 

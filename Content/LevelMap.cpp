@@ -1,9 +1,8 @@
 ﻿#include "pch.h"
 #include "LevelMap.h"
-#include <../Common/DirectXHelper.h>
+#include "../Common/DirectXHelper.h"
+#include "../Common/DeviceResources.h"
 #include "ShaderStructures.h"
-#include <../Common/FPSCDAndSolving.h>
-#include <../Common/DeviceResources.h>
 #include "CameraFirstPerson.h"
 #include "GlobalFlags.h"
 
@@ -22,6 +21,47 @@ using namespace Windows::Globalization::DateTimeFormatting;
 
 static const uint32_t RANDOM_DEFAULT_SEED = 997;
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region This cpp types and functions
+struct SpookyAdulthood::VisMatrix
+{
+    std::vector<bool> matrix;
+
+    VisMatrix(int nLeaves)
+    {
+        matrix.resize(nLeaves*nLeaves, false);
+    }
+
+    inline bool IsVisible(int n, int i, int j) const
+    {
+        return matrix[n*j + i];
+    }
+
+    inline void SetVisible(int n, int i, int j, bool v)
+    {
+        matrix[n*j + i] = v;
+    }
+};
+
+bool operator ==(const XMUINT2& a, const XMUINT2& b)
+{
+    return a.x == b.x && a.y == b.y;
+}
+
+// random element in a set
+template<typename T>
+static size_t RandomRoomInSet(const T& roomset, RandomProvider& rnd)
+{
+    T::const_iterator it = roomset.begin();
+    std::advance(it, rnd.Get(0, (uint32_t)roomset.size() - 1));
+    return *it;
+}
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region LevelMapGenerationSettings
 LevelMapGenerationSettings::LevelMapGenerationSettings()
     : m_randomSeed(RANDOM_DEFAULT_SEED), m_tileSize(1.0f, 1.0f)
     , m_tileCount(20, 20), m_minTileCount(4, 4)
@@ -32,6 +72,20 @@ LevelMapGenerationSettings::LevelMapGenerationSettings()
 {
 }
 
+void LevelMapGenerationSettings::Validate() const
+{
+    DX::ThrowIfFalse(m_charRadius > 0.01f);
+    const float charDiam = m_charRadius * 2.0f;
+    DX::ThrowIfFalse(m_tileSize.x > charDiam && m_tileSize.y > charDiam);
+    DX::ThrowIfFalse(m_tileCount.x >= m_minTileCount.x && m_tileCount.y >= m_minTileCount.y);
+    DX::ThrowIfFalse(m_minTileCount.x >= 2 && m_minTileCount.y >= 2);
+}
+//////////////////////////////////////////////////////////////////////////
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region RandomProvider
 void RandomProvider::SetSeed(uint32_t seed)
 {
     if (!m_gen || m_lastSeed != seed)
@@ -46,16 +100,38 @@ uint32_t RandomProvider::Get(uint32_t minN, uint32_t maxN)
         SetSeed(RANDOM_DEFAULT_SEED);
     return std::uniform_int_distribution<uint32_t>(minN, maxN)(*m_gen);
 }
+#pragma endregion
 
-void LevelMapGenerationSettings::Validate() const
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region LevelMapBSPPortal
+XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
 {
-    DX::ThrowIfFalse(m_charRadius > 0.01f);
-    const float charDiam = m_charRadius * 2.0f;
-    DX::ThrowIfFalse(m_tileSize.x > charDiam && m_tileSize.y > charDiam);
-    DX::ThrowIfFalse(m_tileCount.x >= m_minTileCount.x && m_tileCount.y >= m_minTileCount.y);
-    DX::ThrowIfFalse(m_minTileCount.x >= 2 && m_minTileCount.y >= 2);
-}
+    DX::ThrowIfFalse(m_wallNode->m_type == LevelMapBSPNode::WALL_VERT || m_wallNode->m_type == LevelMapBSPNode::WALL_HORIZ);
 
+    XMUINT2 pos(0, 0);
+    switch (m_wallNode->m_type)
+    {
+    case LevelMapBSPNode::WALL_VERT:
+        pos.x = m_wallNode->m_area.m_x0;
+        pos.y = m_index;
+        if (opposite)
+            *opposite = XMUINT2(pos.x - 1, pos.y);
+        break;
+    case LevelMapBSPNode::WALL_HORIZ:
+        pos.x = m_index;
+        pos.y = m_wallNode->m_area.m_y0;
+        if (opposite)
+            *opposite = XMUINT2(pos.x, pos.y - 1);
+        break;
+    }
+    return pos;
+}
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region LevelMap
 LevelMap::LevelMap(const std::shared_ptr<DX::DeviceResources>& device)
     : m_root(nullptr)
     , m_device(device)
@@ -229,26 +305,6 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     m_thumbTex.CreateDeviceDependentResources(m_device);
 }
 
-struct SpookyAdulthood::VisMatrix
-{
-    std::vector<bool> matrix;
-
-    VisMatrix(int nLeaves)
-    {
-        matrix.resize(nLeaves*nLeaves, false);
-    }
-
-    inline bool IsVisible( int n, int i, int j) const
-    {
-        return matrix[n*j + i];
-    }
-
-    inline void SetVisible(int n, int i, int j, bool v)
-    {
-        matrix [n*j + i] = v;
-    }
-};
-
 // I know, I know...
 void LevelMap::GenerateVisibility(const LevelMapGenerationSettings& settings)
 {
@@ -400,11 +456,6 @@ bool LevelMap::HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr&
     return false;
 }
 
-bool operator ==(const XMUINT2& a, const XMUINT2& b)
-{
-    return a.x == b.x && a.y == b.y;
-}
-
 XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal/*=true*/)
 {
     XMUINT2 rndPos(m_random.Get(area.m_x0, area.m_x1), m_random.Get(area.m_y0, area.m_y1));
@@ -434,15 +485,6 @@ XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNot
         }
     }
     return rndPos;
-}
-
-// random element in a set
-template<typename T>
-size_t RandomRoomInSet(const T& roomset, RandomProvider& rnd)
-{
-    T::const_iterator it = roomset.begin();
-    std::advance(it, rnd.Get(0, (uint32_t)roomset.size() - 1));
-    return *it;
 }
 
 void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
@@ -503,29 +545,6 @@ void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
     }
 }
 
-XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
-{
-    DX::ThrowIfFalse(m_wallNode->m_type == LevelMapBSPNode::WALL_VERT || m_wallNode->m_type == LevelMapBSPNode::WALL_HORIZ);
-
-    XMUINT2 pos(0, 0);
-    switch (m_wallNode->m_type)
-    {
-    case LevelMapBSPNode::WALL_VERT:
-        pos.x = m_wallNode->m_area.m_x0;
-        pos.y = m_index;
-        if (opposite)
-            *opposite = XMUINT2(pos.x - 1, pos.y);
-        break;
-    case LevelMapBSPNode::WALL_HORIZ:
-        pos.x = m_index;
-        pos.y = m_wallNode->m_area.m_y0;
-        if (opposite)
-            *opposite = XMUINT2(pos.x, pos.y - 1);
-        break;
-    }
-    return pos;
-}
-
 void LevelMap::CreateDeviceDependentResources()
 {
     if (!m_root) return;
@@ -558,216 +577,6 @@ void LevelMap::ReleaseDeviceDependentResources()
     m_batch.reset();
     m_atlasTexture.Reset();
     m_atlasTextureSRV.Reset();
-}
-#pragma warning(disable:4838)
-
-
-LevelMapBSPNode::PortalDir LevelMapBSPNode::GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y)
-{
-    const XMUINT2 xy(x, y);
-    XMUINT2 ppos[2];
-    auto rang = lmap.m_leafPortals.equal_range(this);
-    for (auto it = rang.first; it != rang.second; ++it)
-    {
-        const auto& portal = lmap.m_portals[it->second];
-        ppos[0] = portal.GetPortalPosition(ppos+1);
-        for (int i = 0; i < 2; ++i)
-        {
-            if (xy == ppos[i])
-            {
-                const XMUINT2& opp = ppos[(i + 1) % 2];
-                if (opp.y == y - 1) return NORTH;
-                else if (opp.y == y + 1) return SOUTH;
-                else if (opp.x == x - 1) return WEST;
-                else if (opp.x == x + 1) return EAST;
-                DX::ThrowIfFalse(false);
-            }
-        }
-    }
-    return NONE;
-}
-
-
-
-void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device)
-{
-    if (m_dx || !IsLeaf())
-        return;
-    m_dx = std::make_shared<NodeDXResources>();
-
-    const auto& area = m_area;
-    std::vector<VertexPositionNormalColorTextureNdx> vertices; vertices.reserve(area.CountTiles()*4);
-    std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
-    {
-        static const float EP = 1.0f;
-        static const float FH = 2.0f;
-        XMFLOAT4 argb(DirectX::Colors::White.f);
-        VertexPositionNormalColorTextureNdx quadVerts[4];
-        for (int i = 0; i < 4; ++i)
-        {
-            quadVerts[i].color = argb;
-        }
-        unsigned short cvi = 0; // current vertex index
-        float x, z;
-        for (uint32_t _z = area.m_y0; _z <= area.m_y1; ++_z)
-        {
-            for (uint32_t _x = area.m_x0; _x <= area.m_x1; ++_x)
-            {
-                x = float(_x); z = float(_z);
-                // floor tile
-                {
-                    const UINT FLOORTEX = 0;
-                    quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
-                    quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
-                    quadVerts[2].position = XMFLOAT3(x + EP, 0.0f, z + EP);
-                    quadVerts[3].position = XMFLOAT3(x, 0.0f, z + EP);
-                    quadVerts[0].SetTexCoord(0, 0, FLOORTEX, 1);
-                    quadVerts[1].SetTexCoord(1, 0, FLOORTEX, 1);
-                    quadVerts[2].SetTexCoord(1, 1, FLOORTEX, 1);
-                    quadVerts[3].SetTexCoord(0, 1, FLOORTEX, 1);
-                    for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 1, 0); }
-                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
-                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
-                    cvi += 4; // 
-                    std::copy(inds, inds + 6, std::back_inserter(indices));                    
-                }
-
-                // ceiling tile
-                {
-                    const UINT CEILINGTEX = 0;
-                    quadVerts[0].position = XMFLOAT3(x, FH, z);
-                    quadVerts[3].position = XMFLOAT3(x + EP, FH, z);
-                    quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
-                    quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
-                    quadVerts[0].SetTexCoord(0, 0, CEILINGTEX, 2);
-                    quadVerts[1].SetTexCoord(1, 0, CEILINGTEX, 2);
-                    quadVerts[2].SetTexCoord(1, 1, CEILINGTEX, 2);
-                    quadVerts[3].SetTexCoord(0, 1, CEILINGTEX, 2);
-                    for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, -1, 0); }
-                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
-                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
-                    cvi += 4; // 
-                    std::copy(inds, inds + 6, std::back_inserter(indices));                    
-                }
-
-                // walls
-                {
-                    const UINT WALLTEX = 0;
-                    auto portalDir = GetPortalDirAt(lmap, _x, _z);
-                    bool addWallTile = false;
-                    if (_z == m_area.m_y0 && portalDir != NORTH)              // wall north
-                    {
-                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
-                        quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
-                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
-                        quadVerts[3].position = XMFLOAT3(x, FH, z);
-                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
-                        addWallTile = true;
-                    }
-                    else if (_z == m_area.m_y1 && portalDir != SOUTH)         // wall south
-                    {
-                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
-                        quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z + EP);
-                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
-                        quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
-                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, -1); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
-                        addWallTile = true;
-                    }                    
-
-                    if (addWallTile)
-                    {
-                        std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
-                        const unsigned short inds[6] = { /*tri0*/cvi, cvi + 2, cvi + 1, /*tri1*/cvi, cvi + 3, cvi + 2 };
-                        cvi += 4; // 
-                        std::copy(inds, inds + 6, std::back_inserter(indices));
-                    }
-
-                    if (_x == m_area.m_x0 && portalDir != WEST)              // wall west
-                    {
-                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
-                        quadVerts[1].position = XMFLOAT3(x, 0.0f, z);
-                        quadVerts[2].position = XMFLOAT3(x, FH, z);
-                        quadVerts[3].position = XMFLOAT3(x, FH, z + EP);
-                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
-                        addWallTile = true;
-                    }
-                    else if (_x == m_area.m_x1 && portalDir != EAST)         // wall east
-                    {
-                        quadVerts[0].position = XMFLOAT3(x+EP, 0.0f, z + EP);
-                        quadVerts[3].position = XMFLOAT3(x+EP, 0.0f, z);
-                        quadVerts[2].position = XMFLOAT3(x+EP, FH, z);
-                        quadVerts[1].position = XMFLOAT3(x+EP, FH, z + EP);
-                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(-1, 0, 0); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
-                        addWallTile = true;
-                    }                    
-                    if (addWallTile)
-                    {
-                        std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
-                        const unsigned short inds[6] = { /*tri0*/cvi, cvi + 2, cvi + 1, /*tri1*/cvi, cvi + 3, cvi + 2 };
-                        cvi += 4; // 
-                        std::copy(inds, inds + 6, std::back_inserter(indices));
-                    }
-                }
-            }
-        }
-    }
-    m_dx->m_indexCount = indices.size();
-    DX::ThrowIfFalse(!vertices.empty() && !indices.empty());
-
-    // VB
-    D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
-    vertexBufferData.pSysMem = vertices.data();
-    vertexBufferData.SysMemPitch = 0;
-    vertexBufferData.SysMemSlicePitch = 0;
-    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTextureNdx)*vertices.size());
-    CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
-    DX::ThrowIfFailed(
-        device->GetD3DDevice()->CreateBuffer(
-            &vertexBufferDesc,
-            &vertexBufferData,
-            &m_dx->m_vertexBuffer
-        )
-    );
-
-    // IB
-    D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
-    indexBufferData.pSysMem = indices.data();
-    indexBufferData.SysMemPitch = 0;
-    indexBufferData.SysMemSlicePitch = 0;
-    CD3D11_BUFFER_DESC indexBufferDesc(UINT(sizeof(unsigned short)*indices.size()), D3D11_BIND_INDEX_BUFFER);
-    DX::ThrowIfFailed(
-        device->GetD3DDevice()->CreateBuffer(
-            &indexBufferDesc,
-            &indexBufferData,
-            &m_dx->m_indexBuffer
-        )
-    );
-
-}
-#pragma warning(default:4838)
-
-void LevelMapBSPNode::ReleaseDeviceDependentResources()
-{
-    if (!m_dx) return;
-    m_dx->m_vertexBuffer.Reset();
-    m_dx->m_indexBuffer.Reset();
-    m_dx->m_indexCount = 0;
 }
 
 void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camera)
@@ -892,6 +701,307 @@ LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)
     return nullptr;
 }
 
+XMUINT2 LevelMap::GetRandomPosition()
+{
+    if (!m_root || m_leaves.empty())
+        return XMUINT2(0, 0);
+    //const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size()-1)];
+    //return GetRandomInArea(r->m_area, true);
+    return XMUINT2(m_leaves.front()->m_area.m_x0, m_leaves.front()->m_area.m_y0);
+}
+
+XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const
+{
+    UINT tx = m_thumbTex.m_dim.x;
+    UINT ty = m_thumbTex.m_dim.y;
+    XMVECTOR maxMap = XMVectorSet((float)tx - 1, 0, (float)ty - 1, 0);
+    XMVECTOR camXZ = XMLoadFloat3(&xyz);
+    camXZ = XMVectorClamp(camXZ, XMVectorZero(), maxMap);
+    XMUINT2 ppos((UINT)XMVectorGetX(camXZ), (UINT)XMVectorGetZ(camXZ));
+    return ppos;
+}
+
+const SegmentList* LevelMap::GetCurrentCollisionSegments()
+{
+    if (!m_cameraCurLeaf) return nullptr;
+    return m_cameraCurLeaf->m_collisionSegments.get();
+}
+
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region LevelMapBSPNode
+#pragma warning(disable:4838)
+LevelMapBSPNode::PortalDir LevelMapBSPNode::GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y)
+{
+    const XMUINT2 xy(x, y);
+    XMUINT2 ppos[2];
+    auto rang = lmap.m_leafPortals.equal_range(this);
+    for (auto it = rang.first; it != rang.second; ++it)
+    {
+        const auto& portal = lmap.m_portals[it->second];
+        ppos[0] = portal.GetPortalPosition(ppos + 1);
+        for (int i = 0; i < 2; ++i)
+        {
+            if (xy == ppos[i])
+            {
+                const XMUINT2& opp = ppos[(i + 1) % 2];
+                if (opp.y == y - 1) return NORTH;
+                else if (opp.y == y + 1) return SOUTH;
+                else if (opp.x == x - 1) return WEST;
+                else if (opp.x == x + 1) return EAST;
+                DX::ThrowIfFalse(false);
+            }
+        }
+    }
+    return NONE;
+}
+
+void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device)
+{
+    if (m_dx || !IsLeaf())
+        return;
+    m_dx = std::make_shared<NodeDXResources>();
+
+    const auto& area = m_area;
+    std::vector<VertexPositionNormalColorTextureNdx> vertices; vertices.reserve(area.CountTiles() * 4);
+    std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
+    {
+        static const float EP = 1.0f;
+        static const float FH = 2.0f;
+        XMFLOAT4 argb(DirectX::Colors::White.f);
+        VertexPositionNormalColorTextureNdx quadVerts[4];
+        for (int i = 0; i < 4; ++i)
+        {
+            quadVerts[i].color = argb;
+        }
+        unsigned short cvi = 0; // current vertex index
+        float x, z;
+        for (uint32_t _z = area.m_y0; _z <= area.m_y1; ++_z)
+        {
+            for (uint32_t _x = area.m_x0; _x <= area.m_x1; ++_x)
+            {
+                x = float(_x); z = float(_z);
+                // floor tile
+                {
+                    const UINT FLOORTEX = 0;
+                    quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
+                    quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
+                    quadVerts[2].position = XMFLOAT3(x + EP, 0.0f, z + EP);
+                    quadVerts[3].position = XMFLOAT3(x, 0.0f, z + EP);
+                    quadVerts[0].SetTexCoord(0, 0, FLOORTEX, 1);
+                    quadVerts[1].SetTexCoord(1, 0, FLOORTEX, 1);
+                    quadVerts[2].SetTexCoord(1, 1, FLOORTEX, 1);
+                    quadVerts[3].SetTexCoord(0, 1, FLOORTEX, 1);
+                    for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 1, 0); }
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
+                    cvi += 4; // 
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // ceiling tile
+                {
+                    const UINT CEILINGTEX = 0;
+                    quadVerts[0].position = XMFLOAT3(x, FH, z);
+                    quadVerts[3].position = XMFLOAT3(x + EP, FH, z);
+                    quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
+                    quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
+                    quadVerts[0].SetTexCoord(0, 0, CEILINGTEX, 2);
+                    quadVerts[1].SetTexCoord(1, 0, CEILINGTEX, 2);
+                    quadVerts[2].SetTexCoord(1, 1, CEILINGTEX, 2);
+                    quadVerts[3].SetTexCoord(0, 1, CEILINGTEX, 2);
+                    for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, -1, 0); }
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
+                    cvi += 4; // 
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // walls
+                {
+                    const UINT WALLTEX = 0;
+                    auto portalDir = GetPortalDirAt(lmap, _x, _z);
+                    bool addWallTile = false;
+                    if (_z == m_area.m_y0 && portalDir != NORTH)              // wall north
+                    {
+                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
+                        quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
+                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
+                        quadVerts[3].position = XMFLOAT3(x, FH, z);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
+                        addWallTile = true;
+                    }
+                    else if (_z == m_area.m_y1 && portalDir != SOUTH)         // wall south
+                    {
+                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
+                        quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z + EP);
+                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
+                        quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, -1); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
+                        addWallTile = true;
+                    }
+
+                    if (addWallTile)
+                    {
+                        std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                        const unsigned short inds[6] = { /*tri0*/cvi, cvi + 2, cvi + 1, /*tri1*/cvi, cvi + 3, cvi + 2 };
+                        cvi += 4; // 
+                        std::copy(inds, inds + 6, std::back_inserter(indices));
+                    }
+
+                    if (_x == m_area.m_x0 && portalDir != WEST)              // wall west
+                    {
+                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
+                        quadVerts[1].position = XMFLOAT3(x, 0.0f, z);
+                        quadVerts[2].position = XMFLOAT3(x, FH, z);
+                        quadVerts[3].position = XMFLOAT3(x, FH, z + EP);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
+                        addWallTile = true;
+                    }
+                    else if (_x == m_area.m_x1 && portalDir != EAST)         // wall east
+                    {
+                        quadVerts[0].position = XMFLOAT3(x + EP, 0.0f, z + EP);
+                        quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z);
+                        quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
+                        quadVerts[1].position = XMFLOAT3(x + EP, FH, z + EP);
+                        for (auto& v : quadVerts) { v.normal = XMFLOAT3(-1, 0, 0); }
+                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
+                        addWallTile = true;
+                    }
+                    if (addWallTile)
+                    {
+                        std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                        const unsigned short inds[6] = { /*tri0*/cvi, cvi + 2, cvi + 1, /*tri1*/cvi, cvi + 3, cvi + 2 };
+                        cvi += 4; // 
+                        std::copy(inds, inds + 6, std::back_inserter(indices));
+                    }
+                }
+            }
+        }
+    }
+    m_dx->m_indexCount = indices.size();
+    DX::ThrowIfFalse(!vertices.empty() && !indices.empty());
+
+    // VB
+    D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
+    vertexBufferData.pSysMem = vertices.data();
+    vertexBufferData.SysMemPitch = 0;
+    vertexBufferData.SysMemSlicePitch = 0;
+    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTextureNdx)*vertices.size());
+    CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
+    DX::ThrowIfFailed(
+        device->GetD3DDevice()->CreateBuffer(
+            &vertexBufferDesc,
+            &vertexBufferData,
+            &m_dx->m_vertexBuffer
+        )
+    );
+
+    // IB
+    D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
+    indexBufferData.pSysMem = indices.data();
+    indexBufferData.SysMemPitch = 0;
+    indexBufferData.SysMemSlicePitch = 0;
+    CD3D11_BUFFER_DESC indexBufferDesc(UINT(sizeof(unsigned short)*indices.size()), D3D11_BIND_INDEX_BUFFER);
+    DX::ThrowIfFailed(
+        device->GetD3DDevice()->CreateBuffer(
+            &indexBufferDesc,
+            &indexBufferData,
+            &m_dx->m_indexBuffer
+        )
+    );
+
+}
+#pragma warning(default:4838)
+
+void LevelMapBSPNode::ReleaseDeviceDependentResources()
+{
+    if (!m_dx) return;
+    m_dx->m_vertexBuffer.Reset();
+    m_dx->m_indexBuffer.Reset();
+    m_dx->m_indexCount = 0;
+}
+
+void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
+{
+    if (!IsLeaf()) return;
+    m_collisionSegments = std::make_shared<SegmentList>();
+    m_collisionSegments->reserve(8); // 
+    const float xs[2] = { (float)m_area.m_x0, (float)m_area.m_x1 };
+    const float ys[2] = { (float)m_area.m_y0, (float)m_area.m_y1 };
+
+    CollSegment lastSeg;
+
+    // north/south
+    for (int i = 0; i < 2; ++i)
+    {
+        lastSeg.start = XMFLOAT2(xs[0], ys[i] + i*1.0f);
+        lastSeg.end = lastSeg.start;
+        lastSeg.normal = XMFLOAT2(0.0f, 1.0f*(i ? -1.0f : 1.0f));
+        for (uint32_t ix = m_area.m_x0; ix <= m_area.m_x1; ++ix)
+        {
+            auto portalDir = GetPortalDirAt(lmap, ix, (uint32_t)ys[i]);
+            if (portalDir == (PortalDir)(NORTH + i))
+            {
+                if (lastSeg.IsValid())
+                    m_collisionSegments->push_back(lastSeg);
+                lastSeg.start.x = lastSeg.end.x = ix + 1.0f;
+            }
+            else
+            {
+                lastSeg.end.x = ix + 1.0f;
+            }
+        }
+        if (lastSeg.IsValid())
+            m_collisionSegments->push_back(lastSeg);
+    }
+
+    // west/east
+    for (int i = 0; i < 2; ++i)
+    {
+        lastSeg.start = XMFLOAT2(xs[i] + i*1.0f, ys[0]);
+        lastSeg.end = lastSeg.start;
+        lastSeg.normal = XMFLOAT2(1.0f*(i ? -1.0f : 1.0f), 0.0f);
+        for (uint32_t iy = m_area.m_y0; iy <= m_area.m_y1; ++iy)
+        {
+            auto portalDir = GetPortalDirAt(lmap, (uint32_t)xs[i], iy);
+            if (portalDir == (PortalDir)(WEST + i))
+            {
+                if (lastSeg.IsValid())
+                    m_collisionSegments->push_back(lastSeg);
+                lastSeg.start.y = lastSeg.end.y = iy + 1.0f;
+            }
+            else
+            {
+                lastSeg.end.y = iy + 1.0f;
+            }
+        }
+        if (lastSeg.IsValid())
+            m_collisionSegments->push_back(lastSeg);
+    }
+}
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region LevelMapThumbTexture
 // so bad! it destroys/creates the texture and texture view rather than update
 // todo: change that!
 void LevelMapThumbTexture::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
@@ -936,89 +1046,5 @@ void LevelMapThumbTexture::SetAt(uint32_t x, uint32_t y, uint32_t value)
 {
     m_sysMem[m_dim.y*y + x] = value;
 }
-
-XMUINT2 LevelMap::GetRandomPosition()
-{
-    if (!m_root || m_leaves.empty())
-        return XMUINT2(0, 0);
-    //const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size()-1)];
-    //return GetRandomInArea(r->m_area, true);
-    return XMUINT2(m_leaves.front()->m_area.m_x0, m_leaves.front()->m_area.m_y0);
-}
-
-XMUINT2 LevelMap::ConvertToMapPosition(const XMFLOAT3& xyz) const
-{
-    UINT tx = m_thumbTex.m_dim.x;
-    UINT ty = m_thumbTex.m_dim.y;
-    XMVECTOR maxMap = XMVectorSet((float)tx-1, 0, (float)ty-1, 0);
-    XMVECTOR camXZ = XMLoadFloat3(&xyz);
-    camXZ = XMVectorClamp(camXZ, XMVectorZero(), maxMap);
-    XMUINT2 ppos((UINT)XMVectorGetX(camXZ), (UINT)XMVectorGetZ(camXZ));
-    return ppos;
-}
-
-void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
-{
-    if (!IsLeaf()) return;
-    m_collisionSegments = std::make_shared<SegmentList>();
-    m_collisionSegments->reserve(8); // 
-    const float xs[2] = { (float)m_area.m_x0, (float)m_area.m_x1 };
-    const float ys[2] = { (float)m_area.m_y0, (float)m_area.m_y1 };
-
-    CollSegment lastSeg;
-    
-    // north/south
-    for (int i = 0; i < 2; ++i)
-    {
-        lastSeg.start = XMFLOAT2(xs[0], ys[i]+i*1.0f);
-        lastSeg.end = lastSeg.start;
-        lastSeg.normal = XMFLOAT2(0.0f, 1.0f*(i ? -1.0f : 1.0f));
-        for (uint32_t ix = m_area.m_x0; ix <= m_area.m_x1; ++ix)
-        {
-            auto portalDir = GetPortalDirAt(lmap, ix, (uint32_t)ys[i]);
-            if (portalDir == (PortalDir)(NORTH + i))
-            {
-                if (lastSeg.IsValid())
-                    m_collisionSegments->push_back(lastSeg);
-                lastSeg.start.x = lastSeg.end.x = ix + 1.0f;
-            }
-            else
-            { 
-                lastSeg.end.x = ix + 1.0f;
-            }
-        }
-        if (lastSeg.IsValid())
-            m_collisionSegments->push_back(lastSeg);
-    }
-
-    // west/east
-    for (int i = 0; i < 2; ++i)
-    {
-        lastSeg.start = XMFLOAT2(xs[i] + i*1.0f, ys[0]);
-        lastSeg.end = lastSeg.start;
-        lastSeg.normal = XMFLOAT2(1.0f*(i ? -1.0f : 1.0f), 0.0f);
-        for (uint32_t iy = m_area.m_y0; iy <= m_area.m_y1; ++iy)
-        {
-            auto portalDir = GetPortalDirAt(lmap, (uint32_t)xs[i], iy);
-            if (portalDir == (PortalDir)(WEST + i))
-            {
-                if (lastSeg.IsValid())
-                    m_collisionSegments->push_back(lastSeg);
-                lastSeg.start.y = lastSeg.end.y = iy + 1.0f;
-            }
-            else
-            {
-                lastSeg.end.y = iy + 1.0f;
-            }
-        }
-        if (lastSeg.IsValid())
-            m_collisionSegments->push_back(lastSeg);
-    }
-}
-
-const SegmentList* LevelMap::GetCurrentCollisionSegments()
-{
-    if (!m_cameraCurLeaf) return nullptr;
-    return m_cameraCurLeaf->m_collisionSegments.get();
-}
+#pragma endregion
 

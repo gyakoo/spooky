@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "FPSCDAndSolving.h"
+#include "CollisionAndSolving2D.h"
 
 using namespace DirectX;
 
@@ -44,7 +44,7 @@ namespace SpookyAdulthood
     // this is ugly af do I work at Havok? it does not seem so :S no time , scarejam!
     // iterative (recursive actually) solving against walls.
     // cast ray from center of circle, gets the closest hit, compute wall moving direction with closest segment and check next
-    XMFLOAT2 FPSCDAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius, int iter)
+    XMFLOAT2 CollisionAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius, int iter)
     {
         using namespace DirectX::SimpleMath; // make life a bit easier
 
@@ -102,11 +102,11 @@ namespace SpookyAdulthood
             const auto& collSeg = segs->at((size_t)closest);
             Vector2 wallSlideDir = collSeg.end - collSeg.start; 
             const float t = wallSlideDir.Dot(fwDir); 
-            const float signMov = (t > 0.0f) - (t < 0.0f);// sign of wall mov direction
+            const float signMov = float(t > 0.0f) - (t < 0.0f);// sign of wall mov direction
             wallSlideDir.Normalize();
             //const float d = -Vector2(collSeg.normal).Dot(nextPos - curPos); // project movement to wall
             const float d = len;
-            return FPSCDAndSolving2D(segs, curPos, curPos + wallSlideDir*d*signMov, radius, --iter);
+            return CollisionAndSolving2D(segs, curPos, curPos + wallSlideDir*d*signMov, radius, --iter);
         }
 
         return nextPos;

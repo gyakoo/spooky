@@ -24,16 +24,13 @@ namespace SpookyAdulthood
         void SpawnPlayer();
 
 	private:
-		// Cached pointer to device resources.
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
         Sprite3DManager m_sprite3D;
-
-		// Variables used with the rendering loop.
-		bool	m_loadingComplete;
-		float	m_degreesPerSecond;
         CameraFirstPerson  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;
+        float	m_degreesPerSecond;
+        bool	m_loadingComplete;        
 	};
 }
 
