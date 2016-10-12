@@ -4,11 +4,8 @@ ipch/
 SpookyAdulthood.VC.db
 *.opendb
 *.db
+*.VC.db
 Debug/
 x64/
-SpookyAdulthood.VC.db
-SpookyAdulthood.VC.db
-SpookyAdulthood.VC.db
-*.db
-SpookyAdulthood.VC.db
-SpookyAdulthood.VC.db
+AppPackages/
+BundleArtifacts/
