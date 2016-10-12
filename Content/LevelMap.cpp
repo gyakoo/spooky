@@ -530,15 +530,19 @@ void LevelMap::CreateDeviceDependentResources()
 {
     if (!m_root) return;
     // buffers for each room
-    std::vector< concurrency::task<void> > tasks; 
-    tasks.reserve(m_leaves.size());
     for (auto& leaf : m_leaves)
     {
-        tasks.push_back( 
-            concurrency::create_task([this, leaf]() {
-                leaf->CreateDeviceDependentResources(*this, m_device); 
-        }));
+        concurrency::create_task([this, leaf]() {
+            leaf->CreateDeviceDependentResources(*this, m_device); 
+        });
     }
+    auto& loadTexTask = concurrency::create_task([this]() {
+        DX::ThrowIfFailed(
+            DirectX::CreateWICTextureFromFile(
+                m_device->GetD3DDevice(), L"assets\\atlaslevel.png",
+                (ID3D11Resource**)m_atlasTexture.ReleaseAndGetAddressOf(),
+                m_atlasTextureSRV.ReleaseAndGetAddressOf()));
+    });
 
     m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexPositionColor>>(m_device->GetD3DDeviceContext());
 }
@@ -552,6 +556,8 @@ void LevelMap::ReleaseDeviceDependentResources()
     }
 
     m_batch.reset();
+    m_atlasTexture.Reset();
+    m_atlasTextureSRV.Reset();
 }
 #pragma warning(disable:4838)
 
@@ -590,17 +596,16 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     m_dx = std::make_shared<NodeDXResources>();
 
     const auto& area = m_area;
-    std::vector<VertexPositionNormalColorTexture4> vertices; vertices.reserve(area.CountTiles()*4);
+    std::vector<VertexPositionNormalColorTextureNdx> vertices; vertices.reserve(area.CountTiles()*4);
     std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
     {
         static const float EP = 1.0f;
         static const float FH = 2.0f;
         XMFLOAT4 argb(DirectX::Colors::White.f);
-        VertexPositionNormalColorTexture4 quadVerts[4];
+        VertexPositionNormalColorTextureNdx quadVerts[4];
         for (int i = 0; i < 4; ++i)
         {
             quadVerts[i].color = argb;
-            quadVerts[i].textureCoordinate = XMFLOAT4(0,0,0,0);
         }
         unsigned short cvi = 0; // current vertex index
         float x, z;
@@ -620,6 +625,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                     const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
                     cvi += 4; // 
                     std::copy(inds, inds + 6, std::back_inserter(indices));
+                    quadVerts[0].SetTexCoord(0, 0, 0, 1);
+                    quadVerts[1].SetTexCoord(1, 0, 0, 1);
+                    quadVerts[2].SetTexCoord(1, 1, 0, 1);
+                    quadVerts[3].SetTexCoord(0, 1, 0, 1);
                 }
 
                 // ceiling tile
@@ -702,7 +711,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     vertexBufferData.pSysMem = vertices.data();
     vertexBufferData.SysMemPitch = 0;
     vertexBufferData.SysMemSlicePitch = 0;
-    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTexture4)*vertices.size());
+    const UINT vbsize = UINT(sizeof(VertexPositionNormalColorTextureNdx)*vertices.size());
     CD3D11_BUFFER_DESC vertexBufferDesc(vbsize, D3D11_BIND_VERTEX_BUFFER);
     DX::ThrowIfFailed(
         device->GetD3DDevice()->CreateBuffer(
@@ -749,7 +758,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     if (!m_root)
         return;
 
-    RenderSetCommonState(camera);
+    if (!RenderSetCommonState(camera))
+        return;
 
     // render all rooms (improve this with visibity !)
     auto context = m_device->GetD3DDeviceContext();
@@ -760,7 +770,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
                 continue;
 
-            UINT stride = sizeof(VertexPositionNormalColorTexture4);
+            UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
             UINT offset = 0;
             context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
             context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
@@ -812,20 +822,26 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     }
 }
 
-void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
+bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
 {
+    if (!m_atlasTexture || !m_atlasTextureSRV)
+        return false;
+
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
     auto dxCommon = m_device->GetGameResources();
     auto context = m_device->GetD3DDeviceContext();
-    context->UpdateSubresource1(dxCommon->m_constantBuffer.Get(),0,NULL,&cbData,0,0,0);
+    context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     context->IASetInputLayout(dxCommon->m_inputLayout.Get());
     context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-    context->VSSetConstantBuffers1(0, 1, dxCommon->m_constantBuffer.GetAddressOf(), nullptr, nullptr);
+    context->VSSetConstantBuffers1(0, 1, dxCommon->m_VSconstantBuffer.GetAddressOf(), nullptr, nullptr);
     ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
-    context->PSSetShaderResources(0, 1, dxCommon->m_textureWhiteSRV.GetAddressOf());
+    context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
+    PixelShaderConstantBuffer pscb = { { 16,16,16,16 } };
+    context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
+    context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
     context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
     context->OMSetBlendState(dxCommon->GetCommonStates()->Opaque(), nullptr, 0xffffffff);
@@ -833,6 +849,7 @@ void LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
         context->RSSetState(dxCommon->GetCommonStates()->Wireframe());
     else
         context->RSSetState(dxCommon->GetCommonStates()->CullCounterClockwise());
+    return true;
 }
 
 LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)

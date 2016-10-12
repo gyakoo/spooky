@@ -1,16 +1,22 @@
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
-    float4 pos : SV_POSITION;
-    float3 normal : NORMAL;
-    float4 color : COLOR0;
-    float4 uv : TEXCOORD0;
-    float4 viewSpace : VIEWSPACE;
-    float4 sPos : TEXCOORD1;
+    float4 pos          : SV_POSITION;
+    float3 normal       : NORMAL;
+    float4 color        : COLOR0;
+    float2 uv           : TEXCOORD0;
+    float4 viewSpace    : VIEWSPACE;
+    float4 sPos         : TEXCOORD1;
+    uint2  tindex       : TEXINDEX;
 };
 
 Texture2D texDiffuse;
 SamplerState samPoint;
+
+cbuffer constants
+{
+    float4 texAtlasSize;
+};
 
 
 #define FOG_TYPE 2
@@ -39,11 +45,12 @@ float4 main(PixelShaderInput input) : SV_TARGET
 #else
     const float nDotL = 1.0f;
 #endif
-    float4 texColor = texDiffuse.Sample(samPoint, input.uv.xy+input.uv.zw);
+    float2 texAtlasFac = 1.0f / texAtlasSize.xy;
+    float2 uv = input.tindex*texAtlasFac;
+    float4 texColor = texDiffuse.Sample(samPoint, uv+input.uv*texAtlasFac);
     float alpha = texColor.a;
 
-    
-    float4 color = alpha*float4(texColor.rgb*input.color.rgb *nDotL, 1.0f);
+    float4 color = alpha*float4(texColor.rgb*input.color.rgb*nDotL, 1.0f);
     
     //float dist = abs(input.viewSpace.z); // dist = input.pos.z / input.pos.w; // plane based
     //float dist = length(input.viewSpace.xzw); // range based
@@ -53,8 +60,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
     if (nDotL > 0.0)
     {
         //const float depthFactor = saturate(input.sPos.z*0.5f); // using the z component
-        const float depthFactor = dist*.3f;
-        fogDensity *= saturate(length(input.sPos.xy)*0.3f*depthFactor);
+        const float depthFactor = 1.0f;// dist*0.3;
+        fogDensity *= saturate(length(input.sPos.xy)*0.25f*depthFactor);
     }
 #endif
 
@@ -68,8 +75,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
         float dfd = dist*fogDensity;
         fogFactor = saturate(1.0f / exp(dfd*dfd));
 #endif
-        color.rgb = lerp(color.rgb, fogColor, (1 - fogFactor));
+        color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor));
     }
 
-	return color;
+    return color;
 }

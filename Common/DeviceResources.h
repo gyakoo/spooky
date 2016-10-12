@@ -25,12 +25,13 @@ namespace DX
         ID3D11InputLayout*          GetInputLayout() const { return m_inputLayout.Get(); }
         ID3D11VertexShader*         GetVertexShader() const { return m_vertexShader.Get(); }
         ID3D11PixelShader*          GetPixelShader() const { return m_pixelShader.Get(); }
-        ID3D11Buffer*		        GetConstantBuffer() const { return m_constantBuffer.Get();}
+        ID3D11Buffer*		        GetConstantBuffer() const { return m_VSconstantBuffer.Get();}
 
         Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
         Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
         Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
-        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_constantBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_VSconstantBuffer;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_PSconstantBuffer;
         std::unique_ptr<DirectX::SpriteBatch>       m_sprites;
         std::unique_ptr<DirectX::CommonStates>      m_commonStates;
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;

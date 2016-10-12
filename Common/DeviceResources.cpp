@@ -724,8 +724,8 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
 
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateInputLayout(
-                SpookyAdulthood::VertexPositionNormalColorTexture4::InputElements,
-                SpookyAdulthood::VertexPositionNormalColorTexture4::InputElementCount,
+                SpookyAdulthood::VertexPositionNormalColorTextureNdx::InputElements,
+                SpookyAdulthood::VertexPositionNormalColorTextureNdx::InputElementCount,
                 &fileData[0],
                 fileData.size(),
                 &m_inputLayout
@@ -734,23 +734,40 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
     });
 
     loadPSTask.then([this, device](const std::vector<byte>& fileData) {
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreatePixelShader(
-                &fileData[0],
-                fileData.size(),
-                nullptr,
-                &m_pixelShader
-            )
-        );
-
-        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreateBuffer(
-                &constantBufferDesc,
-                nullptr,
-                &m_constantBuffer
-            )
-        );
+        // Pixel shader
+        {
+            DX::ThrowIfFailed(
+                device->GetD3DDevice()->CreatePixelShader(
+                    &fileData[0],
+                    fileData.size(),
+                    nullptr,
+                    &m_pixelShader
+                )
+            );
+        }
+        // VS constant buffer
+        {
+            CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+            DX::ThrowIfFailed(
+                device->GetD3DDevice()->CreateBuffer(
+                    &constantBufferDesc,
+                    nullptr,
+                    &m_VSconstantBuffer
+                )
+            );
+        }
+    }).then([this, device]() {
+        // PS Constant buffer
+        {
+            CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+            DX::ThrowIfFailed(
+                device->GetD3DDevice()->CreateBuffer(
+                    &constantBufferDesc,
+                    nullptr,
+                    &m_PSconstantBuffer
+                )
+            );
+        }
     });
 
     m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
@@ -769,7 +786,8 @@ DX::GameDXResources::~GameDXResources()
     m_textureWhite.Reset();
     m_vertexShader.Reset();
     m_pixelShader.Reset();
-    m_constantBuffer.Reset();
+    m_VSconstantBuffer.Reset();
+    m_PSconstantBuffer.Reset();
     m_inputLayout.Reset();
     m_sprites.reset();
     m_fontConsole.reset();

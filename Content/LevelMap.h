@@ -188,7 +188,7 @@ namespace SpookyAdulthood
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
-        void RenderSetCommonState(const CameraFirstPerson& camera);
+        bool RenderSetCommonState(const CameraFirstPerson& camera);
 
     private:
         RandomProvider m_random;
@@ -201,10 +201,11 @@ namespace SpookyAdulthood
         XMFLOAT4X4 m_levelTransform;
         LevelMapBSPNodePtr m_cameraCurLeaf;
 
-
         // DX resources
         std::shared_ptr<DX::DeviceResources> m_device;
         std::unique_ptr<DirectX::PrimitiveBatch<VertexPositionColor>> m_batch;// DEBUG LINES
+        Microsoft::WRL::ComPtr<ID3D11Texture2D>  m_atlasTexture;
+        Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_atlasTextureSRV;
     };
 }
 
