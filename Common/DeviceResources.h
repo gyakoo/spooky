@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include <random>
 namespace DX
 {
 	// Provides an interface for an application that owns DeviceResources to be notified of the device being lost or created.
@@ -11,8 +11,26 @@ namespace DX
 
     class DeviceResources;
 
+
     //* ***************************************************************** *//
-    //* Global GAME dx resources
+    //* RandomProvider
+    //* ***************************************************************** *//
+    class RandomProvider
+    {
+    public:
+        RandomProvider() :m_lastSeed(0) {}
+
+        void SetSeed(uint32_t seed);
+        uint32_t Get(uint32_t minN, uint32_t maxN);
+
+    protected:
+        std::unique_ptr<std::mt19937> m_gen;
+        uint32_t m_lastSeed, m_seed;
+    };
+
+
+    //* ***************************************************************** *//
+    //* Global GAME dx/misc resources
     //* ***************************************************************** *//
     struct GameDXResources // common
     {
@@ -37,6 +55,7 @@ namespace DX
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>		m_textureWhite;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
+        RandomProvider m_random;
         bool m_ready;
     };
 

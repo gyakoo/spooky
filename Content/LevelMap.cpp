@@ -19,8 +19,6 @@ using namespace Windows::UI::Xaml::Controls;
 using namespace Windows::UI::Xaml::Navigation;
 using namespace Windows::Globalization::DateTimeFormatting;
 
-static const uint32_t RANDOM_DEFAULT_SEED = 997;
-
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 #pragma region This cpp types and functions
@@ -147,7 +145,7 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
 
     m_root = std::make_shared<LevelMapBSPNode>();
     LevelMapBSPTileArea area(0, settings.m_tileCount.x - 1, 0, settings.m_tileCount.y - 1);
-    m_random.SetSeed(settings.m_randomSeed);
+    m_device->GetGameResources()->m_random.SetSeed(settings.m_randomSeed);
     LevelMapBSPNodePtr lastRoom;
     RecursiveGenerate(m_root, area, settings, 0);        
     GenerateVisibility(settings);
@@ -169,6 +167,7 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         return;
     }
 
+    auto& random = m_device->GetGameResources()->m_random;
     // Can be a ROOM?
     if ( CanBeRoom(node, area, settings, depth) )
     {
@@ -184,12 +183,12 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         uint32_t at = 0;
         if (node->m_type == LevelMapBSPNode::WALL_VERT) // random division plane
         {
-            at = area.m_x0 + m_random.Get(0, area.SizeX() - 1);
+            at = area.m_x0 + random.Get(0, area.SizeX() - 1);
             node->m_area.m_x0 = node->m_area.m_x1 = at;
         }
         else
         {
-            at = area.m_y0 + m_random.Get(0, area.SizeY() - 1);
+            at = area.m_y0 + random.Get(0, area.SizeY() - 1);
             node->m_area.m_y0 = node->m_area.m_y1 = at;
         }
         //if (at == 0) at = 1;
@@ -236,7 +235,8 @@ bool LevelMap::CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileAr
         return true;
 
     
-    float dice = m_random.Get(1, 100)*0.01f;
+    auto& random = m_device->GetGameResources()->m_random;
+    float dice = random.Get(1, 100)*0.01f;
     return dice < settings.m_probRoom;
 }
 
@@ -255,7 +255,7 @@ void LevelMap::Destroy()
 void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 {
     if (!m_root) return;
-
+    
     m_thumbTex.Destroy();
 
     uint32_t w = tcount.x;
@@ -265,7 +265,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     ZeroMemory(m_thumbTex.m_sysMem, w*h * sizeof(uint32_t));
 
     // rooms
-    for (auto& room : m_leaves )
+    for (auto& room : m_leaves)
     {
         for (uint32_t y = room->m_area.m_y0; y <= room->m_area.m_y1; ++y)
             for (uint32_t x = room->m_area.m_x0; x <= room->m_area.m_x1; ++x)
@@ -422,7 +422,7 @@ int LevelMap::VisComputeRandomPortalIndex(const LevelMapBSPTileArea& areaA, cons
     }
 
     // random cell along the wallDir
-    return m_random.Get(a, b);
+    return m_device->GetGameResources()->m_random.Get(a, b);
 }
 
 void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB)
@@ -458,7 +458,8 @@ bool LevelMap::HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr&
 
 XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal/*=true*/)
 {
-    XMUINT2 rndPos(m_random.Get(area.m_x0, area.m_x1), m_random.Get(area.m_y0, area.m_y1));
+    auto& random = m_device->GetGameResources()->m_random;
+    XMUINT2 rndPos(random.Get(area.m_x0, area.m_x1), random.Get(area.m_y0, area.m_y1));
     
     if (checkNotInPortal)
     {
@@ -531,14 +532,15 @@ void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
         return;
 
     // generate teleports between sets 2-by-2    
+    auto& random = m_device->GetGameResources()->m_random;
     for (size_t i = 1; i < allRoomSets.size(); ++i)
     {
         const RoomSet& a = allRoomSets[i - 1];
         const RoomSet& b = allRoomSets[i];
         
         // gets a random room in both sets
-        const size_t roomANdx = RandomRoomInSet(a, m_random);
-        const size_t roomBNdx = RandomRoomInSet(b, m_random);
+        const size_t roomANdx = RandomRoomInSet(a, random);
+        const size_t roomBNdx = RandomRoomInSet(b, random);
 
         // todo: don't allow to put two teleports in the same room!
         this->VisGenerateTeleport(m_leaves[roomANdx], m_leaves[roomBNdx]);
@@ -581,7 +583,8 @@ void LevelMap::ReleaseDeviceDependentResources()
 
 void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camera)
 {
-    m_cameraCurLeaf = GetLeafAt(camera.GetPosition());
+    auto pos = camera.GetPosition();
+    m_cameraCurLeaf = GetLeafAt(pos);
     if (m_cameraCurLeaf)
         m_cameraCurLeaf->m_tag = 0x00ff00ff;
 }
@@ -674,7 +677,8 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
-    PixelShaderConstantBuffer pscb = { { 16,16,16,camera.m_aspectRatio } };
+    static float a = 0.0f; 
+    PixelShaderConstantBuffer pscb = { { 16,16, camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio } };
     context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
@@ -705,7 +709,9 @@ XMUINT2 LevelMap::GetRandomPosition()
 {
     if (!m_root || m_leaves.empty())
         return XMUINT2(0, 0);
-    //const auto& r = m_leaves[m_random.Get(0, (uint32_t)m_leaves.size()-1)];
+
+    //auto& random = m_device->GetGameResources()->m_random;
+    //const auto& r = m_leaves[random.Get(0, (uint32_t)m_leaves.size()-1)];
     //return GetRandomInArea(r->m_area, true);
     return XMUINT2(m_leaves.front()->m_area.m_x0, m_leaves.front()->m_area.m_y0);
 }
@@ -776,6 +782,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
         {
             quadVerts[i].color = argb;
         }
+        auto& random = device->GetGameResources()->m_random;
+        const UINT FLOORTEX = random.Get(0, 4);
+        const UINT CEILINGTEX = random.Get(0, 4);
+        const UINT WALLTEX = random.Get(0, 4);
         unsigned short cvi = 0; // current vertex index
         float x, z;
         for (uint32_t _z = area.m_y0; _z <= area.m_y1; ++_z)
@@ -785,7 +795,6 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                 x = float(_x); z = float(_z);
                 // floor tile
                 {
-                    const UINT FLOORTEX = 0;
                     quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
                     quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
                     quadVerts[2].position = XMFLOAT3(x + EP, 0.0f, z + EP);
@@ -803,7 +812,6 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
 
                 // ceiling tile
                 {
-                    const UINT CEILINGTEX = 0;
                     quadVerts[0].position = XMFLOAT3(x, FH, z);
                     quadVerts[3].position = XMFLOAT3(x + EP, FH, z);
                     quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
@@ -821,7 +829,6 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
 
                 // walls
                 {
-                    const UINT WALLTEX = 0;
                     auto portalDir = GetPortalDirAt(lmap, _x, _z);
                     bool addWallTile = false;
                     if (_z == m_area.m_y0 && portalDir != NORTH)              // wall north
@@ -831,10 +838,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
                         quadVerts[3].position = XMFLOAT3(x, FH, z);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
                     }
                     else if (_z == m_area.m_y1 && portalDir != SOUTH)         // wall south
@@ -844,10 +851,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
                         quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, -1); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
                     }
 
@@ -866,10 +873,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x, FH, z);
                         quadVerts[3].position = XMFLOAT3(x, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
                     }
                     else if (_x == m_area.m_x1 && portalDir != EAST)         // wall east
@@ -879,10 +886,10 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
                         quadVerts[1].position = XMFLOAT3(x + EP, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(-1, 0, 0); }
-                        quadVerts[0].SetTexCoord(0, 0, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(1, 0, WALLTEX, 0);
-                        quadVerts[2].SetTexCoord(1, 1, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
                     }
                     if (addWallTile)

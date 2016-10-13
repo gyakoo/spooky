@@ -21,7 +21,6 @@ cbuffer constants
 
 #define FOG_TYPE 2
 #define SPOTLIGHT 1
-#define NDOTL 0
 
 // You won't like the 'lighting model' below.
 // It's basically a range based FOG and the fog density depends on the screen space distance
@@ -35,36 +34,31 @@ float4 main(PixelShaderInput input) : SV_TARGET
 #if FOG_TYPE==1
     float fogDensity = 0.7f;
 #else
-    float fogDensity = 0.8f;
+    float fogDensity = 1.0f;
 #endif
 
-#if NDOTL == 1
-    const float3 lightDir = float3(0.4, -1, -0.4);
-    const float3 L = normalize(-lightDir);
-    const float nDotL = max(dot(input.normal, L),0.0f);
-#else
-    const float nDotL = 1.0f;
-#endif
     float2 texAtlasFac = 1.0f / texAtlasSize.xy;
     float2 uv = input.tindex*texAtlasFac;
     float4 texColor = texDiffuse.Sample(samPoint, uv+input.uv*texAtlasFac);
     float alpha = texColor.a;
 
-    float4 color = alpha*float4(texColor.rgb*input.color.rgb*nDotL, 1.0f);
+    float4 color = alpha*float4(texColor.rgb*input.color.rgb, 1.0f);
     
     //float dist = abs(input.viewSpace.z); // dist = input.pos.z / input.pos.w; // plane based
     //float dist = length(input.viewSpace.xzw); // range based
     float dist = length(input.viewSpace); // range based
 
 #if SPOTLIGHT==1
-    if (nDotL > 0.0)
+    if (texAtlasSize.z>0.0f)
     {
-        //const float depthFactor = saturate(input.sPos.z*0.5f); // using the z component
-        //const float depthFactor = dist*0.3f;
-        float depthFactor = 1.0f;
         const float aspect = texAtlasSize.w;
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
-        fogDensity *= saturate(length(xy)*0.25f*depthFactor);
+        float val = length(xy)*0.15f;
+        fogDensity *= val;
+    }
+    else
+    {
+        fogDensity = 0.6f;
     }
 #endif
 

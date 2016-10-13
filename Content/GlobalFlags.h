@@ -6,6 +6,9 @@
 namespace DX { class DeviceResources; }
 namespace SpookyAdulthood
 {
+
+    static const uint32_t RANDOM_DEFAULT_SEED = 997;
+
     struct GlobalFlags
     {
         static bool CollisionsEnabled; // def 0
@@ -15,6 +18,7 @@ namespace SpookyAdulthood
         static bool DrawLevelGeometry; // def 1
         static bool DrawFlags; // def 1
         static bool DrawWireframe; // def 0
+        static bool ThumbMapAll; // def 0
 
         static bool GenerateNewLevel; // def 0 (auto)
         static bool SpawnPlayer; // def 0 (auto)

@@ -21,9 +21,9 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 
-    m_mapSettings.m_tileCount = XMUINT2(40, 40);
+    m_mapSettings.m_tileCount = XMUINT2(60, 60);
     m_mapSettings.m_minTileCount = XMUINT2(3, 3);
-    m_mapSettings.m_maxTileCount = XMUINT2(10, 10);
+    m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
     m_map.Generate(m_mapSettings);
     SpawnPlayer();    
 }

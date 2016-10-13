@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include <DirectXMath.h>
-#include <random>
 #include "CollisionAndSolving2D.h"
 
 using namespace DirectX;
@@ -120,22 +119,6 @@ namespace SpookyAdulthood
     };
 
     //* ***************************************************************** *//
-    //* RandomProvider
-    //* ***************************************************************** *//
-    class RandomProvider
-    {
-    public:
-        RandomProvider() :m_lastSeed(0) {}
-
-        void SetSeed(uint32_t seed);
-        uint32_t Get(uint32_t minN, uint32_t maxN);
-
-    protected:
-        std::unique_ptr<std::mt19937> m_gen;
-        uint32_t m_lastSeed, m_seed;
-    };
-
-    //* ***************************************************************** *//
     //* LevelMapThumbTexture
     //* ***************************************************************** *//
     struct LevelMapThumbTexture
@@ -191,7 +174,6 @@ namespace SpookyAdulthood
         bool RenderSetCommonState(const CameraFirstPerson& camera);
 
     private:
-        RandomProvider m_random;
         LevelMapBSPNodePtr m_root;
         std::vector<LevelMapBSPNodePtr> m_leaves;
         std::vector<LevelMapBSPTeleport> m_teleports;

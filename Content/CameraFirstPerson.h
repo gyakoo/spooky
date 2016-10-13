@@ -23,12 +23,14 @@ namespace SpookyAdulthood
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_view;
         XMFLOAT2 m_pitchYaw;
+        bool m_running;
         float m_height;
         float m_radius;
         float m_aspectRatio;
     private:
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
+        float m_runningTime;
     };
 
     // there are better(faster) ways to do this, anyways
@@ -37,17 +39,17 @@ namespace SpookyAdulthood
     {
         auto ms = DirectX::Mouse::Get().GetState();
         auto kb = DirectX::Keyboard::Get().GetState();
+        m_running = kb.LeftShift;
 
         // update cam
         const float dt = (float)timer.GetElapsedSeconds();
         const float rotDelta = dt*XM_PIDIV4;
-        const float movDelta = dt * (kb.LeftShift ? 6.0f : 1.0f);
+        const float movDelta = dt * (m_running ? 3.0f : 1.0f);
 
         // rotation input
         m_pitchYaw.y += rotDelta*0.8f*ms.x;
         m_pitchYaw.x += rotDelta*0.5f*ms.y;
-        if (m_pitchYaw.x > XM_PIDIV4) m_pitchYaw.x = XM_PIDIV4;
-        if (m_pitchYaw.x < -XM_PIDIV4) m_pitchYaw.x = -XM_PIDIV4;
+        m_pitchYaw.x = Clamp(m_pitchYaw.x, -0.4f, 0.4f);
 
         // movement input
         float movFw = 0.0f;
@@ -83,10 +85,12 @@ namespace SpookyAdulthood
             np = XMVectorSetZ(np, -XMVectorGetZ(np));
             m_camXZ = collisionFun(cp,np,m_radius);
             m_camXZ = XMVectorSetZ(m_camXZ, -XMVectorGetZ(m_camXZ));
+            m_runningTime += (float)timer.GetElapsedSeconds();
         }
 
         // rotate camera and translate
-        XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -m_height, XMVectorGetZ(m_camXZ));
+        const float hvel = m_running ? 8.0f : 5.0f;
+        XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -m_height-sin(m_runningTime*hvel)*0.05f, XMVectorGetZ(m_camXZ));
         XMStoreFloat3(&m_xyz, m_camXZ);
         m_xyz.y = m_height;
         m_xyz.z = -m_xyz.z;

@@ -161,7 +161,7 @@ void Sprite3DManager::Begin(const CameraFirstPerson& camera)
     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
     ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
     context->PSSetSamplers(0, 1, &sampler);
-    PixelShaderConstantBuffer pscb = { {1,1,1,camera.m_aspectRatio} };
+    PixelShaderConstantBuffer pscb = { {1,1,camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio} };
     context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
     context->OMSetBlendState(dxCommon->GetCommonStates()->AlphaBlend(), nullptr, 0xffffffff);
     context->RSSetState(dxCommon->GetCommonStates()->CullNone());

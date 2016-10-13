@@ -2,6 +2,7 @@
 #include "DeviceResources.h"
 #include "DirectXHelper.h"
 #include "Content/ShaderStructures.h"
+#include "Content/GlobalFlags.h"
 
 using namespace D2D1;
 using namespace DirectX;

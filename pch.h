@@ -41,3 +41,9 @@
 #include "DirectXTK/Inc/SpriteFont.h"
 #include "DirectXTK/Inc/VertexTypes.h"
 #include "DirectXTK/Inc/WICTextureLoader.h"
+
+template<typename T, typename R, typename K>
+inline T Clamp(const T& v, const R& _min, const K& _max)
+{
+    return v < _min ? _min : (v>_max?_max:v);
+}
