@@ -6,7 +6,7 @@ namespace DX { class StepTimer;  }
 
 namespace SpookyAdulthood
 {
-#define CAM_DEFAULT_HEIGHT 0.75f
+#define CAM_DEFAULT_HEIGHT 0.8f
 #define CAM_DEFAULT_FOVY 70.0f
 #define CAM_DEFAULT_RADIUS 0.25f
     struct CameraFirstPerson
@@ -90,7 +90,7 @@ namespace SpookyAdulthood
 
         // rotate camera and translate
         const float hvel = m_running ? 8.0f : 5.0f;
-        XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ), -m_height-sin(m_runningTime*hvel)*0.05f, XMVectorGetZ(m_camXZ));
+        XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ)-cos(m_runningTime*hvel)*0.04f, -m_height-sin(m_runningTime*hvel)*0.05f, XMVectorGetZ(m_camXZ));
         XMStoreFloat3(&m_xyz, m_camXZ);
         m_xyz.y = m_height;
         m_xyz.z = -m_xyz.z;

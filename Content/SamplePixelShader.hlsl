@@ -19,6 +19,13 @@ cbuffer constants
 };
 
 
+float DistancePointVector(float3 p, float3 x1, float3 x2)
+{
+    float nu = length(cross(x2 - x1, x1 - p));
+    float de = length(x2 - x1);
+    return nu / de;
+}
+
 #define FOG_TYPE 2
 #define SPOTLIGHT 1
 
@@ -49,17 +56,17 @@ float4 main(PixelShaderInput input) : SV_TARGET
     float dist = length(input.viewSpace); // range based
 
 #if SPOTLIGHT==1
-    if (texAtlasSize.z>0.0f)
+    //if (texAtlasSize.z>0.0f)
     {
         const float aspect = texAtlasSize.w;
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
-        float val = length(xy)*0.15f;
+        float val = length(xy)*0.6f*saturate(2/dist);
         fogDensity *= val;
     }
-    else
-    {
-        fogDensity = 0.6f;
-    }
+//    else
+//    {
+//        fogDensity = 0.5f;
+//   }
 #endif
 
     {
