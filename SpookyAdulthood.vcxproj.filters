@@ -112,6 +112,9 @@
     <Image Include="Assets\atlaslevel.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\baby.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

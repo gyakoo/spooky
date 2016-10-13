@@ -105,7 +105,15 @@ void SceneRenderer::Render()
     m_sprite3D.Begin(m_camera);
     m_sprite3D.Render(0, XMFLOAT3(5, 0.5f, 6), XMFLOAT2(1, 1));
     m_sprite3D.Render(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
+    m_sprite3D.Render(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
     m_sprite3D.End();
+
+    auto sprite2D = m_deviceResources->GetGameResources()->GetSprites();
+    auto& spr = m_sprite3D.GetSprite(2);
+    auto s = m_deviceResources->GetOutputSize();
+    sprite2D->Begin();
+    sprite2D->Draw(spr.m_textureSRV.Get(), XMFLOAT2(s.Width / 2, s.Height-200), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(1.0f,1.0f));
+    sprite2D->End();
 }
 
 void SceneRenderer::CreateDeviceDependentResources()
@@ -119,6 +127,7 @@ void SceneRenderer::CreateDeviceDependentResources()
         m_sprite3D.CreateDeviceDependentResources();
         m_sprite3D.CreateSprite(L"assets\\zombie.png");
         m_sprite3D.CreateSprite(L"assets\\zombie2.png");
+        m_sprite3D.CreateSprite(L"assets\\baby.png");
     });
 
     (mapCreateTask && sprTask).then([this] () 

@@ -96,9 +96,11 @@ void Sprite3DManager::Render(int spriteIndex, const XMFLOAT3& position, const XM
     // billboard constrained to up vector (cheap computation)
     XMMATRIX mr = m_camInvYaw;
     mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
+
+    XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);    
     
     // prepare buffer for VS
-    XMStoreFloat4x4(&m_cbData.model, XMMatrixTranspose(mr));    
+    XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms,mr));
 
     // render
     context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(),0,NULL,&m_cbData,0,0,0);
@@ -167,7 +169,7 @@ void Sprite3DManager::Begin(const CameraFirstPerson& camera)
     context->RSSetState(dxCommon->GetCommonStates()->CullNone());
     context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
-    m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y);
+    m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
     m_cbData.view = camera.m_view;
     m_cbData.projection = camera.m_projection;
 }
@@ -177,6 +179,12 @@ void Sprite3DManager::End()
     DX::ThrowIfFalse(m_rendering);
     m_rendering = false;
 }
+
+Sprite3D& Sprite3DManager::GetSprite(int ndx)
+{
+    return m_sprites[ndx];
+}
+
 
 
 };

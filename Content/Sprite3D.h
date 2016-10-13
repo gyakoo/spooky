@@ -25,6 +25,7 @@ namespace SpookyAdulthood
         void End();
         void Render(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size);
         int CreateSprite(const std::wstring& pathToTex, int at=-1);
+        Sprite3D& GetSprite(int ndx);
 
     private:        
         std::shared_ptr<DX::DeviceResources>    m_device;

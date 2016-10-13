@@ -19,31 +19,15 @@ cbuffer constants
 };
 
 
-float DistancePointVector(float3 p, float3 x1, float3 x2)
-{
-    float nu = length(cross(x2 - x1, x1 - p));
-    float de = length(x2 - x1);
-    return nu / de;
-}
-
-#define FOG_TYPE 2
-#define SPOTLIGHT 1
-
 // You won't like the 'lighting model' below.
 // It's basically a range based FOG and the fog density depends on the screen space distance
 // from the origin (0,0) and depth
 float4 main(PixelShaderInput input) : SV_TARGET
 {
     const float4 fogColor = float4(0, 0, 0, 1.0f);
-    const float fogStart = 0.5f;
-    const float fogEnd = 7.0f;
-
-#if FOG_TYPE==1
-    float fogDensity = 0.7f;
-#else
     float fogDensity = 1.0f;
-#endif
 
+    // texturing
     float2 texAtlasFac = 1.0f / texAtlasSize.xy;
     float2 uv = input.tindex*texAtlasFac;
     float4 texColor = texDiffuse.Sample(samPoint, uv+input.uv*texAtlasFac);
@@ -51,34 +35,25 @@ float4 main(PixelShaderInput input) : SV_TARGET
 
     float4 color = alpha*float4(texColor.rgb*input.color.rgb, 1.0f);
     
-    //float dist = abs(input.viewSpace.z); // dist = input.pos.z / input.pos.w; // plane based
-    //float dist = length(input.viewSpace.xzw); // range based
     float dist = length(input.viewSpace); // range based
 
-#if SPOTLIGHT==1
+    // Changing fog density depending on circle from origin 
     //if (texAtlasSize.z>0.0f)
     {
         const float aspect = texAtlasSize.w;
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
-        float val = length(xy)*0.6f*saturate(2/dist);
+        float val = length(xy)*0.6f*saturate(2/dist); // origin and depth
         fogDensity *= val;
     }
 //    else
 //    {
 //        fogDensity = 0.5f;
 //   }
-#endif
 
+    // Fog 1/exp2
     {
-        float fogFactor = 0;
-#if FOG_TYPE==0
-        fogFactor = saturate((fogEnd - dist) / (fogEnd - fogStart));
-#elif FOG_TYPE==1
-        fogFactor = saturate(1.0f / exp(dist*fogDensity));
-#elif FOG_TYPE==2
-        float dfd = dist*fogDensity;
-        fogFactor = saturate(1.0f / exp(dfd*dfd));
-#endif
+        const float dfd = dist*fogDensity;
+        const float fogFactor = saturate(1.0f / exp(dfd*dfd));
         color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor));
     }
 

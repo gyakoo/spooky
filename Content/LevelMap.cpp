@@ -642,7 +642,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         switch (GlobalFlags::DrawThumbMap)
         {
         case 1:
-            sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 400), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(4, 4));
+            sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 400), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(2, 2));
             break;
         case 2:
         {
@@ -651,7 +651,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             auto cp = camera.GetPosition();
             XMFLOAT2 texPos(100,100);
             XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
-            sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(4, 4));
+            sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(2, 2));
         }
         break;
         }
