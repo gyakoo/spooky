@@ -14,6 +14,14 @@ namespace SpookyAdulthood
         std::wstring m_filename;
     };
 
+    struct SpriteRender3D
+    {
+        size_t m_index;
+        XMFLOAT3 m_position;
+        XMFLOAT2 m_size;
+        float m_distToCameraSq;
+    };
+
     class Sprite3DManager
     {
     public:
@@ -34,6 +42,8 @@ namespace SpookyAdulthood
         std::vector<Sprite3D> m_sprites;
         XMMATRIX m_camInvYaw;
         ModelViewProjectionConstantBuffer m_cbData;
+        std::vector<SpriteRender3D> m_spritesToRender;
+        XMFLOAT3 m_camPosition;
         bool m_rendering;
     };
 

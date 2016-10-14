@@ -87,30 +87,11 @@ void Sprite3DManager::Render(int spriteIndex, const XMFLOAT3& position, const XM
         return;
     if (spriteIndex < 0 || spriteIndex >= (int)m_sprites.size()) 
         return;
-    
-    auto dxCommon = m_device->GetGameResources();
-    if (!dxCommon->m_ready) return;
-    auto context = m_device->GetD3DDeviceContext();
-    auto& sprite = m_sprites[spriteIndex];    
-    
-    // billboard constrained to up vector (cheap computation)
-    XMMATRIX mr = m_camInvYaw;
-    mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
 
-    XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);    
-    
-    // prepare buffer for VS
-    XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms,mr));
-
-    // render
-    context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(),0,NULL,&m_cbData,0,0,0);
-    context->VSSetConstantBuffers1(0, 1, dxCommon->m_VSconstantBuffer.GetAddressOf(), nullptr, nullptr);
-    context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());
-    UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
-    UINT offset = 0;
-    context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
-    context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-    context->DrawIndexed(6, 0, 0);
+    const float x = m_camPosition.x - position.x;
+    const float y = m_camPosition.z - position.z;
+    SpriteRender3D sprR = { (size_t)spriteIndex, position, size, x*x + y*y};
+    m_spritesToRender.push_back(sprR);
 }
 
 int Sprite3DManager::CreateSprite(const std::wstring& pathToTex, int at/*=-1*/)
@@ -172,19 +153,57 @@ void Sprite3DManager::Begin(const CameraFirstPerson& camera)
     m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
     m_cbData.view = camera.m_view;
     m_cbData.projection = camera.m_projection;
+    m_camPosition = camera.GetPosition();
+    m_spritesToRender.clear();
 }
 
 void Sprite3DManager::End()
 {
     DX::ThrowIfFalse(m_rendering);
     m_rendering = false;
+
+    // sort sprites by distance to camera (for alpha blending to work)
+    std::sort(m_spritesToRender.begin(), m_spritesToRender.end(), [this](const SpriteRender3D& a, const SpriteRender3D& b) -> bool
+    {
+        const auto& sa = m_sprites[a.m_index];
+        const auto& sb = m_sprites[b.m_index];
+        return a.m_distToCameraSq > b.m_distToCameraSq;
+    });
+
+    auto dxCommon = m_device->GetGameResources();
+    if (!dxCommon->m_ready) return;
+    auto context = m_device->GetD3DDeviceContext();
+
+    for (const auto& sprI : m_spritesToRender)
+    {
+        auto& sprite = m_sprites[sprI.m_index];
+        const auto& position = sprI.m_position;
+        const auto& size = sprI.m_size;
+
+        // billboard constrained to up vector (cheap computation)
+        XMMATRIX mr = m_camInvYaw;
+        mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
+
+        XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
+
+        // prepare buffer for VS
+        XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
+
+        // render
+        context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(), 0, NULL, &m_cbData, 0, 0, 0);
+        context->VSSetConstantBuffers1(0, 1, dxCommon->m_VSconstantBuffer.GetAddressOf(), nullptr, nullptr);
+        context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());
+        UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
+        UINT offset = 0;
+        context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+        context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+        context->DrawIndexed(6, 0, 0);
+    }
 }
 
 Sprite3D& Sprite3DManager::GetSprite(int ndx)
 {
     return m_sprites[ndx];
 }
-
-
 
 };
