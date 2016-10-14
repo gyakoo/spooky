@@ -37,14 +37,6 @@ namespace DX
         GameDXResources(const DX::DeviceResources* device);
         ~GameDXResources();
 
-        DirectX::SpriteBatch*       GetSprites() const { return m_sprites.get(); }
-        DirectX::CommonStates*      GetCommonStates() const { return m_commonStates.get(); }
-        DirectX::SpriteFont*        GetFontConsole() const { return m_fontConsole.get(); }
-        ID3D11InputLayout*          GetInputLayout() const { return m_inputLayout.Get(); }
-        ID3D11VertexShader*         GetVertexShader() const { return m_vertexShader.Get(); }
-        ID3D11PixelShader*          GetPixelShader() const { return m_pixelShader.Get(); }
-        ID3D11Buffer*		        GetConstantBuffer() const { return m_VSconstantBuffer.Get();}
-
         Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
         Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
         Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;

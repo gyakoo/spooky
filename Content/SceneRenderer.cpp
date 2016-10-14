@@ -97,7 +97,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         Vector3 camPos(m_camera.GetPosition());
         Vector3 srcPos(m_test);
         Vector3 dir = camPos -srcPos; dir.Normalize();
-        srcPos += dir*timer.GetElapsedSeconds(); srcPos.y = m_test.y;
+        srcPos += dir*(float)timer.GetElapsedSeconds(); srcPos.y = m_test.y;
         //m_test = srcPos;
     }
 
@@ -120,7 +120,7 @@ void SceneRenderer::Render()
     m_sprite3D.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
     m_sprite3D.End3D();
 
-    auto sprite2D = m_deviceResources->GetGameResources()->GetSprites();
+    auto sprite2D = m_deviceResources->GetGameResources()->m_sprites.get();
     auto& spr = m_sprite3D.GetSprite(2);
     auto s = m_deviceResources->GetOutputSize();
     //sprite2D->Begin();

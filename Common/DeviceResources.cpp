@@ -711,8 +711,8 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
     : m_ready(false)
 {
     // vertex shader and input layout
-    auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
-    auto loadPSTask = DX::ReadDataAsync(L"SamplePixelShader.cso");
+    auto loadVSTask = DX::ReadDataAsync(L"BaseVertexShader.cso");
+    auto loadPSTask = DX::ReadDataAsync(L"BasePixelShader.cso");
 
     m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
     m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");

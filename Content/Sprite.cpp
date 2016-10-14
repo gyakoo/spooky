@@ -143,12 +143,12 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_inputLayout.Get());
         context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
-        ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointClamp();
+        ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
         context->PSSetSamplers(0, 1, &sampler);
         PixelShaderConstantBuffer pscb = { { 1,1,camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio } };
-        context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
-        context->OMSetBlendState(dxCommon->GetCommonStates()->AlphaBlend(), nullptr, 0xffffffff);
-        context->RSSetState(dxCommon->GetCommonStates()->CullNone());
+        context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
+        context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
+        context->RSSetState(dxCommon->m_commonStates->CullNone());
         context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
         context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
         m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
@@ -209,7 +209,29 @@ namespace SpookyAdulthood
 
     void SpriteManager::Begin2D()
     {
+        //DX::ThrowIfFalse(!m_rendering[R2D]);
+        //m_rendering[R2D] = true;
 
+        //auto dxCommon = m_device->GetGameResources();
+        //if (!dxCommon->m_ready) return;
+        //auto context = m_device->GetD3DDeviceContext();
+
+        //// set state for render
+        //context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        //context->IASetInputLayout(dxCommon->m_inputLayout.Get());
+        //context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
+        //context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+        //ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
+        //context->PSSetSamplers(0, 1, &sampler);
+        //PixelShaderConstantBuffer pscb = { 0 };
+        //context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
+        //context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
+        //context->RSSetState(dxCommon->m_commonStates->CullNone());
+        //context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
+        //context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
+        //m_camInvYaw = XMMatrixRotationY(-0); // billboard oriented to cam (Y constrained)
+        //
+        //m_spritesToRender[R2D].clear();
     }
     void SpriteManager::End2D()
     {

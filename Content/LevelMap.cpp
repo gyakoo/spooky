@@ -637,8 +637,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     // UI rendering
     if (GlobalFlags::DrawThumbMap)
     {
-        auto sprites = m_device->GetGameResources()->GetSprites();
-        sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetGameResources()->GetCommonStates()->PointClamp());
+        auto sprites = m_device->GetGameResources()->m_sprites.get();
+        sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetGameResources()->m_commonStates->PointClamp());
         switch (GlobalFlags::DrawThumbMap)
         {
         case 1:
@@ -674,7 +674,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->IASetInputLayout(dxCommon->m_inputLayout.Get());
     context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
     context->VSSetConstantBuffers1(0, 1, dxCommon->m_VSconstantBuffer.GetAddressOf(), nullptr, nullptr);
-    ID3D11SamplerState* sampler = dxCommon->GetCommonStates()->PointWrap();
+    ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
     static float a = 0.0f; 
@@ -682,12 +682,12 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
     context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
-    context->OMSetDepthStencilState(dxCommon->GetCommonStates()->DepthDefault(), 0);
-    context->OMSetBlendState(dxCommon->GetCommonStates()->Opaque(), nullptr, 0xffffffff);
+    context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
+    context->OMSetBlendState(dxCommon->m_commonStates->Opaque(), nullptr, 0xffffffff);
     if ( GlobalFlags::DrawWireframe )
-        context->RSSetState(dxCommon->GetCommonStates()->Wireframe());
+        context->RSSetState(dxCommon->m_commonStates->Wireframe());
     else
-        context->RSSetState(dxCommon->GetCommonStates()->CullCounterClockwise());
+        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
     return true;
 }
 

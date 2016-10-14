@@ -26,12 +26,6 @@
     <ClInclude Include="Content\ShaderStructures.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <FxCompile Include="Content\SamplePixelShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="Content\SampleVertexShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
     <Image Include="Assets\LockScreenLogo.scale-200.png">
       <Filter>Assets</Filter>
     </Image>
@@ -123,5 +117,15 @@
   <ItemGroup>
     <None Include="SpookyAdulthood_TemporaryKey.pfx" />
     <None Include="Assets\Courier_16.spritefont" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Content\shaders\BasePixelShader.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\shaders\BaseVertexShader.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl" />
+    <FxCompile Include="Content\shaders\ScreenSpriteVS.hlsl" />
   </ItemGroup>
 </Project>

@@ -30,8 +30,8 @@ namespace SpookyAdulthood
         {
             auto dxCommon = device->GetGameResources();
             XMFLOAT2 p = DrawGlobalsPos;
-            auto s = dxCommon->GetSprites();
-            auto f = dxCommon->GetFontConsole();
+            auto s = dxCommon->m_sprites.get();
+            auto f = dxCommon->m_fontConsole.get();
             const float padY = XMVectorGetY(f->MeasureString(L"Test"));
             s->Begin();
             {
