@@ -115,6 +115,7 @@
     <Image Include="Assets\baby.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\baby.dds" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

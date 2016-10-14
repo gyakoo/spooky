@@ -192,6 +192,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <Image Include="Assets\atlaslevel.png" />
+    <Image Include="Assets\baby.dds" />
     <Image Include="Assets\baby.png" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
     <Image Include="Assets\SplashScreen.scale-200.png" />

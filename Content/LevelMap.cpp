@@ -776,6 +776,9 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     {
         static const float EP = 1.0f;
         static const float FH = 2.0f;
+        static const float FHF = 0.75f;
+        static const float OFFSFH = FH*FHF;
+
         XMFLOAT4 argb(DirectX::Colors::White.f);
         VertexPositionNormalColorTextureNdx quadVerts[4];
         for (int i = 0; i < 4; ++i)
@@ -831,28 +834,32 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                 {
                     auto portalDir = GetPortalDirAt(lmap, _x, _z);
                     bool addWallTile = false;
-                    if (_z == m_area.m_y0 && portalDir != NORTH)              // wall north
+                    if (_z == m_area.m_y0 )              // wall north
                     {
-                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
-                        quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
+                        const float offsH = portalDir == NORTH ? OFFSFH : 0.0f;
+                        const float offsHF = portalDir == NORTH ? 1.0f-FHF : 1.0f;
+                        quadVerts[0].position = XMFLOAT3(x, offsH, z);
+                        quadVerts[1].position = XMFLOAT3(x + EP, offsH, z);
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
                         quadVerts[3].position = XMFLOAT3(x, FH, z);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, 1); }
-                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1*offsHF, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 1*offsHF, WALLTEX, 0);
                         quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
                         quadVerts[3].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
                     }
-                    else if (_z == m_area.m_y1 && portalDir != SOUTH)         // wall south
+                    else if (_z == m_area.m_y1)         // wall south
                     {
-                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
-                        quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z + EP);
+                        const float offsH = portalDir == SOUTH ? OFFSFH : 0.0f;
+                        const float offsHF = portalDir == SOUTH ? 1.0f - FHF : 1.0f;
+                        quadVerts[0].position = XMFLOAT3(x, offsH, z + EP);
+                        quadVerts[3].position = XMFLOAT3(x + EP, offsH, z + EP);
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z + EP);
                         quadVerts[1].position = XMFLOAT3(x, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, 0, -1); }
-                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1*offsHF, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 1*offsHF, WALLTEX, 0);
                         quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
                         quadVerts[1].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
@@ -866,28 +873,32 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         std::copy(inds, inds + 6, std::back_inserter(indices));
                     }
 
-                    if (_x == m_area.m_x0 && portalDir != WEST)              // wall west
+                    if (_x == m_area.m_x0 )              // wall west
                     {
-                        quadVerts[0].position = XMFLOAT3(x, 0.0f, z + EP);
-                        quadVerts[1].position = XMFLOAT3(x, 0.0f, z);
+                        const float offsH = portalDir == WEST ? OFFSFH : 0.0f;
+                        const float offsHF = portalDir == WEST ? 1.0f - FHF : 1.0f;
+                        quadVerts[0].position = XMFLOAT3(x, offsH, z + EP);
+                        quadVerts[1].position = XMFLOAT3(x, offsH, z);
                         quadVerts[2].position = XMFLOAT3(x, FH, z);
                         quadVerts[3].position = XMFLOAT3(x, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(1, 0, 0); }
-                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
-                        quadVerts[1].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1*offsHF, WALLTEX, 0);
+                        quadVerts[1].SetTexCoord(1, 1*offsHF, WALLTEX, 0);
                         quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
                         quadVerts[3].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
                     }
-                    else if (_x == m_area.m_x1 && portalDir != EAST)         // wall east
+                    else if (_x == m_area.m_x1 )         // wall east
                     {
-                        quadVerts[0].position = XMFLOAT3(x + EP, 0.0f, z + EP);
-                        quadVerts[3].position = XMFLOAT3(x + EP, 0.0f, z);
+                        const float offsH = portalDir == EAST ? OFFSFH : 0.0f;
+                        const float offsHF = portalDir == EAST ? 1.0f - FHF : 1.0f;
+                        quadVerts[0].position = XMFLOAT3(x + EP, offsH, z + EP);
+                        quadVerts[3].position = XMFLOAT3(x + EP, offsH, z);
                         quadVerts[2].position = XMFLOAT3(x + EP, FH, z);
                         quadVerts[1].position = XMFLOAT3(x + EP, FH, z + EP);
                         for (auto& v : quadVerts) { v.normal = XMFLOAT3(-1, 0, 0); }
-                        quadVerts[0].SetTexCoord(0, 1, WALLTEX, 0);
-                        quadVerts[3].SetTexCoord(1, 1, WALLTEX, 0);
+                        quadVerts[0].SetTexCoord(0, 1*offsHF, WALLTEX, 0);
+                        quadVerts[3].SetTexCoord(1, 1*offsHF, WALLTEX, 0);
                         quadVerts[2].SetTexCoord(1, 0, WALLTEX, 0);
                         quadVerts[1].SetTexCoord(0, 0, WALLTEX, 0);
                         addWallTile = true;
