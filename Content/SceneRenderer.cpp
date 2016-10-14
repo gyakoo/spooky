@@ -16,7 +16,8 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_loadingComplete(false),
 	m_deviceResources(deviceResources),
     m_map(deviceResources),
-    m_sprite3D(deviceResources)
+    m_sprite3D(deviceResources),
+    m_test(5,0.45f,6)
 {
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
@@ -89,6 +90,17 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         XMUINT2 ppos = m_map.ConvertToMapPosition(m_camera.GetPosition());
         m_map.GenerateThumbTex(m_mapSettings.m_tileCount,&ppos);
     }
+
+
+    {
+        using namespace SimpleMath;
+        Vector3 camPos(m_camera.GetPosition());
+        Vector3 srcPos(m_test);
+        Vector3 dir = camPos -srcPos; dir.Normalize();
+        srcPos += dir*timer.GetElapsedSeconds(); srcPos.y = m_test.y;
+        m_test = srcPos;
+    }
+
 }
 
 // Renders one frame using the vertex and pixel shaders.
@@ -103,7 +115,7 @@ void SceneRenderer::Render()
 
     // SPRITEs rendering
     m_sprite3D.Begin(m_camera);
-    m_sprite3D.Render(0, XMFLOAT3(5, 0.5f, 6), XMFLOAT2(1, 1));
+    m_sprite3D.Render(0, m_test, XMFLOAT2(1, 1));
     m_sprite3D.Render(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
     m_sprite3D.Render(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
     m_sprite3D.End();
@@ -111,9 +123,9 @@ void SceneRenderer::Render()
     auto sprite2D = m_deviceResources->GetGameResources()->GetSprites();
     auto& spr = m_sprite3D.GetSprite(2);
     auto s = m_deviceResources->GetOutputSize();
-    sprite2D->Begin();
-    sprite2D->Draw(spr.m_textureSRV.Get(), XMFLOAT2(s.Width / 2, s.Height-200), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(1.0f,1.0f));
-    sprite2D->End();
+    //sprite2D->Begin();
+    //sprite2D->Draw(spr.m_textureSRV.Get(), XMFLOAT2(s.Width / 2, s.Height-200), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(1.0f,1.0f));
+    //sprite2D->End();
 }
 
 void SceneRenderer::CreateDeviceDependentResources()
