@@ -25,7 +25,7 @@ namespace SpookyAdulthood
 
         static DirectX::XMFLOAT2 DrawGlobalsPos; // def 10,10
 
-        static void Render(const std::shared_ptr<DX::DeviceResources>& device);
+        static void Draw3D(const std::shared_ptr<DX::DeviceResources>& device);
         static void Update(const DX::StepTimer& timer);
         static void OnKeyDown(Windows::System::VirtualKey virtualKey);
     };

@@ -27,6 +27,9 @@ namespace SpookyAdulthood
         float m_height;
         float m_radius;
         float m_aspectRatio;
+        float m_fovAngleYRad;
+        float m_near, m_far;
+        XMFLOAT4X4 m_orientMatrix;
     private:
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
@@ -45,6 +48,7 @@ namespace SpookyAdulthood
         const float dt = (float)timer.GetElapsedSeconds();
         const float rotDelta = dt*XM_PIDIV4;
         const float movDelta = dt * (m_running ? 3.0f : 1.0f);
+        const float hvel = m_running ? 8.0f : 5.0f;
 
         // rotation input
         m_pitchYaw.y += rotDelta*0.8f*ms.x;
@@ -62,7 +66,7 @@ namespace SpookyAdulthood
         if (kb.Q) m_height += movDelta;
         else if (kb.E) m_height -= movDelta;
 
-        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y);
+        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y+sin(m_runningTime*hvel)*0.05f*cos(m_runningTime*hvel)*0.1f);
         XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
         if (movFw || movSt)
         {
@@ -86,10 +90,9 @@ namespace SpookyAdulthood
             m_camXZ = collisionFun(cp,np,m_radius);
             m_camXZ = XMVectorSetZ(m_camXZ, -XMVectorGetZ(m_camXZ));
             m_runningTime += (float)timer.GetElapsedSeconds();
-        }
+        }        
 
         // walking pseudo effect
-        const float hvel = m_running ? 8.0f : 5.0f;
         const float offsX = cos(m_runningTime*hvel)*0.04f;
         const float offsY = sin(m_runningTime*hvel)*0.05f;
         // rotate camera and translate
@@ -102,5 +105,20 @@ namespace SpookyAdulthood
 
         // udpate view mat
         XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
+
+        if (m_near >= 0.0f)
+        {
+            //if (m_running)
+            //{
+            //    const float var = 4.0f+sinf(m_runningTime)*4.0f;
+            //    ComputeProjection((CAM_DEFAULT_FOVY+var)*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
+            //}
+            //else
+            {
+                const float varA = 8.0f + sinf(m_runningTime)*8.0f;
+                const float finA = CAM_DEFAULT_FOVY + varA;
+                ComputeProjection(finA*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
+            }
+        }
     }
 }

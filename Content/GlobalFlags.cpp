@@ -23,7 +23,7 @@ namespace SpookyAdulthood
         return !v ? Colors::Red : Colors::Yellow;
     }
 
-    void GlobalFlags::Render(const std::shared_ptr<DX::DeviceResources>& device)
+    void GlobalFlags::Draw3D(const std::shared_ptr<DX::DeviceResources>& device)
     {
         static wchar_t buff[256];
         if (DrawFlags)

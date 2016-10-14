@@ -212,7 +212,7 @@
     <ClInclude Include="Content\CameraFirstPerson.h" />
     <ClInclude Include="Content\GlobalFlags.h" />
     <ClInclude Include="Content\LevelMap.h" />
-    <ClInclude Include="Content\Sprite3D.h" />
+    <ClInclude Include="Content\Sprite.h" />
     <ClInclude Include="SpookyAdulthoodMain.h" />
     <ClInclude Include="Common\DirectXHelper.h" />
     <ClInclude Include="Common\StepTimer.h" />
@@ -229,7 +229,7 @@
     <ClCompile Include="Content\GlobalFlags.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />
     <ClCompile Include="Content\ShaderStructures.cpp" />
-    <ClCompile Include="Content\Sprite3D.cpp" />
+    <ClCompile Include="Content\Sprite.cpp" />
     <ClCompile Include="SpookyAdulthoodMain.cpp" />
     <ClCompile Include="Content\UIRenderer.cpp" />
     <ClCompile Include="Content\SceneRenderer.cpp" />

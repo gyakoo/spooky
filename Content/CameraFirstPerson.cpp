@@ -6,6 +6,7 @@ using namespace SpookyAdulthood;
 CameraFirstPerson::CameraFirstPerson(float fovYDeg)
     : m_pitchYaw(0, XM_PI), m_height(CAM_DEFAULT_HEIGHT), m_radius(CAM_DEFAULT_RADIUS)
     , m_aspectRatio(1.0f), m_runningTime(0.0f)
+    , m_near(-1)
 {
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;
@@ -31,6 +32,11 @@ void CameraFirstPerson::ComputeProjection(float fovAngleYRad, float aspectRatio,
         XMMatrixTranspose(perspectiveMatrix * xmmOrientation)
     );
     m_aspectRatio = aspectRatio;
+
+    m_fovAngleYRad = fovAngleYRad;
+    m_near = Near;
+    m_far = Far;
+    m_orientMatrix = orientationMatrix;
 }
 
 void CameraFirstPerson::ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up)

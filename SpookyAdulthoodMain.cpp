@@ -53,7 +53,7 @@ void SpookyAdulthoodMain::Update()
 
 // Renders the current frame according to the current application state.
 // Returns true if the frame was rendered and is ready to be displayed.
-bool SpookyAdulthoodMain::Render() 
+bool SpookyAdulthoodMain::Draw3D() 
 {
 	// Don't try to render anything before the first Update.
 	if (m_timer.GetFrameCount() == 0)
@@ -79,7 +79,7 @@ bool SpookyAdulthoodMain::Render()
 	// TODO: Replace this with your app's content rendering functions.
 	m_sceneRenderer->Render();
 	m_fpsTextRenderer->Render();
-    GlobalFlags::Render(m_deviceResources);
+    GlobalFlags::Draw3D(m_deviceResources);
 
 	return true;
 }

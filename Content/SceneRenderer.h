@@ -5,7 +5,7 @@
 #include "..\Common\StepTimer.h"
 #include "Content\LevelMap.h"
 #include "Content\CameraFirstPerson.h"
-#include "Content\Sprite3D.h"
+#include "Content\Sprite.h"
 
 namespace SpookyAdulthood
 {
@@ -25,7 +25,7 @@ namespace SpookyAdulthood
 
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
-        Sprite3DManager m_sprite3D;
+        SpriteManager m_sprite3D;
         CameraFirstPerson  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;

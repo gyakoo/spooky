@@ -130,7 +130,7 @@ void App::Run()
             
 			m_main->Update();
 
-			if (m_main->Render())
+			if (m_main->Draw3D())
 			{
 				m_deviceResources->Present();
 			}

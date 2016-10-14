@@ -67,12 +67,12 @@
     <ClCompile Include="Content\CameraFirstPerson.cpp">
       <Filter>Content</Filter>
     </ClCompile>
-    <ClCompile Include="Content\Sprite3D.cpp" />
     <ClCompile Include="Content\GlobalFlags.cpp" />
     <ClCompile Include="Content\ShaderStructures.cpp" />
     <ClCompile Include="Content\CollisionAndSolving2D.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="Content\Sprite.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -90,11 +90,11 @@
     <ClInclude Include="Content\CameraFirstPerson.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <ClInclude Include="Content\Sprite3D.h" />
     <ClInclude Include="Content\GlobalFlags.h" />
     <ClInclude Include="Content\CollisionAndSolving2D.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="Content\Sprite.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Assets\StoreLogo.png">

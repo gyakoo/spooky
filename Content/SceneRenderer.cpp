@@ -3,7 +3,7 @@
 #include "..\Common\DirectXHelper.h"
 
 #include "CollisionAndSolving2D.h"
-#include "Sprite3D.h"
+#include "Sprite.h"
 #include "GlobalFlags.h"
 
 using namespace SpookyAdulthood;
@@ -98,7 +98,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         Vector3 srcPos(m_test);
         Vector3 dir = camPos -srcPos; dir.Normalize();
         srcPos += dir*timer.GetElapsedSeconds(); srcPos.y = m_test.y;
-        m_test = srcPos;
+        //m_test = srcPos;
     }
 
 }
@@ -114,11 +114,11 @@ void SceneRenderer::Render()
     m_map.Render(m_camera);
 
     // SPRITEs rendering
-    m_sprite3D.Begin(m_camera);
-    m_sprite3D.Render(0, m_test, XMFLOAT2(1, 1));
-    m_sprite3D.Render(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
-    m_sprite3D.Render(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
-    m_sprite3D.End();
+    m_sprite3D.Begin3D(m_camera);
+    m_sprite3D.Draw3D(0, m_test, XMFLOAT2(1, 1));
+    m_sprite3D.Draw3D(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
+    m_sprite3D.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
+    m_sprite3D.End3D();
 
     auto sprite2D = m_deviceResources->GetGameResources()->GetSprites();
     auto& spr = m_sprite3D.GetSprite(2);
