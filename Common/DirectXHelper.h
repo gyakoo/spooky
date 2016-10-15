@@ -66,6 +66,11 @@ namespace DX
 	}
 #endif
 
+    inline DirectX::XMFLOAT2 WindowCoordsToScreenSpace(const DirectX::XMFLOAT2& wcoodrs, const DirectX::XMFLOAT2& winSize)
+    {
+        return DirectX::XMFLOAT2(0, 0);
+    }
+
     inline uint32_t VectorColorToRGBA(DirectX::XMFLOAT4 fcolor)
     {
         uint32_t c = 0;

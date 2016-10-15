@@ -25,7 +25,7 @@ namespace SpookyAdulthood
 
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
-        SpriteManager m_sprite3D;
+        SpriteManager m_sprite;
         CameraFirstPerson  m_camera;
         LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;

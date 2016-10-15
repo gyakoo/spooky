@@ -106,10 +106,9 @@
     <Image Include="Assets\atlaslevel.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\baby.png">
+    <Image Include="Assets\gun.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\baby.dds" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

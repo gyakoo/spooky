@@ -713,77 +713,74 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
     // vertex shader and input layout
     auto loadVSTask = DX::ReadDataAsync(L"BaseVertexShader.cso");
     auto loadPSTask = DX::ReadDataAsync(L"BasePixelShader.cso");
+    auto loadSpriteVS = DX::ReadDataAsync(L"ScreenSpriteVS.cso");
+    auto loadSpritePS = DX::ReadDataAsync(L"ScreenSpritePS.cso");
 
     m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
     m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");
     m_commonStates = std::make_unique<DirectX::CommonStates>(device->GetD3DDevice());
+    m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexPositionColor>>(device->GetD3DDeviceContext());
+
     DX::ThrowIfFailed(
         DirectX::CreateWICTextureFromFile(
             device->GetD3DDevice(), L"assets\\white.png",
             (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
             m_textureWhiteSRV.ReleaseAndGetAddressOf()));
 
-    // VS constant buffer
+    // BASE VS constant buffer
     {
         CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateBuffer(
                 &constantBufferDesc,
                 nullptr,
-                &m_VSconstantBuffer
+                m_baseVSCB.GetAddressOf()
             )
         );
     }
-    // PS Constant buffer
+    // BASE PS Constant buffer
     {
         CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateBuffer(
                 &constantBufferDesc,
                 nullptr,
-                &m_PSconstantBuffer
+                m_basePSCB.GetAddressOf()
             )
         );
     }
 
-
-    loadVSTask.then([this, device](const std::vector<byte>& fileData) {
-
-        DX::ThrowIfFailed(
-            device->GetD3DDevice()->CreateVertexShader(
-                &fileData[0],
-                fileData.size(),
-                nullptr,
-                &m_vertexShader
-            )
-        );
-
+    // BASE SHADERS
+    auto createBaseVS = loadVSTask.then([this, device](const std::vector<byte>& fileData) {
+        const HRESULT hr = device->GetD3DDevice()->CreateVertexShader(fileData.data(), fileData.size(), nullptr, m_baseVS.GetAddressOf());
+        DX::ThrowIfFailed(hr);
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateInputLayout(
                 SpookyAdulthood::VertexPositionNormalColorTextureNdx::InputElements,
                 SpookyAdulthood::VertexPositionNormalColorTextureNdx::InputElementCount,
                 &fileData[0],
                 fileData.size(),
-                &m_inputLayout
+                m_baseIL.GetAddressOf()
             )
         );
-        m_ready = m_pixelShader != nullptr;
     });
 
-    loadPSTask.then([this, device](const std::vector<byte>& fileData) {
-        // Pixel shader
-        {
-            DX::ThrowIfFailed(
-                device->GetD3DDevice()->CreatePixelShader(
-                    &fileData[0],
-                    fileData.size(),
-                    nullptr,
-                    &m_pixelShader
-                )
-            );
-        }        
-        m_ready = m_inputLayout != nullptr;
+    auto createBasePS = loadPSTask.then([this, device](const std::vector<byte>& fileData) {
+        const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(fileData.data(), fileData.size(), nullptr, m_basePS.GetAddressOf());
+        DX::ThrowIfFailed(hr);
     });
+
+    // SCREEN SPRITE SHADERS
+    auto createSSVS = loadSpriteVS.then([this, device](const std::vector<byte>& filedata) {
+        const HRESULT hr = device->GetD3DDevice()->CreateVertexShader(filedata.data(), filedata.size(), nullptr, m_spriteVS.GetAddressOf());
+        DX::ThrowIfFailed(hr);
+    });
+    auto createSSPS = loadSpritePS.then([this, device](const std::vector<byte>& filedata) {
+        const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(filedata.data(), filedata.size(), nullptr, m_spritePS.GetAddressOf());
+        DX::ThrowIfFailed(hr);
+    });
+
+    (createBaseVS && createBasePS && createSSVS && createSSPS).then([this]() { m_ready = true; });
 }
 
 DX::GameDXResources::~GameDXResources()
@@ -791,12 +788,15 @@ DX::GameDXResources::~GameDXResources()
     m_ready = false;
     m_textureWhiteSRV.Reset();
     m_textureWhite.Reset();
-    m_vertexShader.Reset();
-    m_pixelShader.Reset();
-    m_VSconstantBuffer.Reset();
-    m_PSconstantBuffer.Reset();
-    m_inputLayout.Reset();
+    m_baseVS.Reset();
+    m_basePS.Reset();
+    m_spriteVS.Reset();
+    m_spritePS.Reset();
+    m_baseVSCB.Reset();
+    m_basePSCB.Reset();
+    m_baseIL.Reset();
     m_sprites.reset();
     m_fontConsole.reset();
     m_commonStates.reset();
+    m_batch.reset();
 }

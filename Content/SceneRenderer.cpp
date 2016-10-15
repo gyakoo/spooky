@@ -16,7 +16,7 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_loadingComplete(false),
 	m_deviceResources(deviceResources),
     m_map(deviceResources),
-    m_sprite3D(deviceResources),
+    m_sprite(deviceResources),
     m_test(5,0.45f,6)
 {
     CreateDeviceDependentResources();
@@ -114,15 +114,28 @@ void SceneRenderer::Render()
     m_map.Render(m_camera);
 
     // SPRITEs rendering
-    m_sprite3D.Begin3D(m_camera);
-    m_sprite3D.Draw3D(0, m_test, XMFLOAT2(1, 1));
-    m_sprite3D.Draw3D(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
-    m_sprite3D.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
-    m_sprite3D.End3D();
+    m_sprite.Begin3D(m_camera);
+    m_sprite.Draw3D(0, m_test, XMFLOAT2(1, 1));
+    m_sprite.Draw3D(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
+    m_sprite.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
+    m_sprite.End3D();
+    
 
-    auto sprite2D = m_deviceResources->GetGameResources()->m_sprites.get();
-    auto& spr = m_sprite3D.GetSprite(2);
-    auto s = m_deviceResources->GetOutputSize();
+    // GUN RENDER
+    {
+        m_sprite.Begin2D();
+        float rvel = m_camera.m_running ? 1.0f : 0.5f;
+        float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
+        float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;
+        m_sprite.Draw2D(2, XMFLOAT2(offsx, -0.7f+offsy ), XMFLOAT2(0.5f, 0.7f), 0.0f);
+        m_sprite.End2D();
+    }
+
+    auto linebatch = m_deviceResources->GetGameResources()->m_batch.get();
+
+    //auto sprite2D = m_deviceResources->GetGameResources()->m_sprites.get();
+    //auto& spr = m_sprite.GetSprite(2);
+    //auto s = m_deviceResources->GetOutputSize();
     //sprite2D->Begin();
     //sprite2D->Draw(spr.m_textureSRV.Get(), XMFLOAT2(s.Width / 2, s.Height-200), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(1.0f,1.0f));
     //sprite2D->End();
@@ -136,10 +149,10 @@ void SceneRenderer::CreateDeviceDependentResources()
     });
 
     auto sprTask = concurrency::create_task([this] {
-        m_sprite3D.CreateDeviceDependentResources();
-        m_sprite3D.CreateSprite(L"assets\\zombie.png");
-        m_sprite3D.CreateSprite(L"assets\\zombie2.png");
-        m_sprite3D.CreateSprite(L"assets\\baby.png");
+        m_sprite.CreateDeviceDependentResources();
+        m_sprite.CreateSprite(L"assets\\zombie.png");
+        m_sprite.CreateSprite(L"assets\\zombie2.png");
+        m_sprite.CreateSprite(L"assets\\gun.png");
     });
 
     (mapCreateTask && sprTask).then([this] () 
@@ -152,6 +165,6 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 {
 	m_loadingComplete = false;
     m_map.CreateDeviceDependentResources();
-    m_sprite3D.ReleaseDeviceDependentResources();
+    m_sprite.ReleaseDeviceDependentResources();
 }
 

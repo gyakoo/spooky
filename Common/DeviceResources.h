@@ -37,15 +37,21 @@ namespace DX
         GameDXResources(const DX::DeviceResources* device);
         ~GameDXResources();
 
-        Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_inputLayout;
-        Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_vertexShader;
-        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_pixelShader;
-        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_VSconstantBuffer;
-        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_PSconstantBuffer;
+        Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_baseIL;
+        Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_baseVS;
+        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_basePS;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_baseVSCB;
+        Microsoft::WRL::ComPtr<ID3D11Buffer>		m_basePSCB;
+
+        Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_spriteVS;
+        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_spritePS;
+
         std::unique_ptr<DirectX::SpriteBatch>       m_sprites;
         std::unique_ptr<DirectX::CommonStates>      m_commonStates;
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>		m_textureWhite;
+        std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_batch;// DEBUG LINES
+
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
         RandomProvider m_random;
         bool m_ready;

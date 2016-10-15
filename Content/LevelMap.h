@@ -185,7 +185,6 @@ namespace SpookyAdulthood
 
         // DX resources
         std::shared_ptr<DX::DeviceResources> m_device;
-        std::unique_ptr<DirectX::PrimitiveBatch<VertexPositionColor>> m_batch;// DEBUG LINES
         Microsoft::WRL::ComPtr<ID3D11Texture2D>  m_atlasTexture;
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_atlasTextureSRV;
     };

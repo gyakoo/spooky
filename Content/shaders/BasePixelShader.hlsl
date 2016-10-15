@@ -41,7 +41,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
     {
         const float aspect = texAtlasSize.w;
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
-        const float l = length(xy)*0.4f;
+        const float l = length(xy)*0.6f;
         float val = val = l*saturate(2/dist); // origin and depth
         fogDensity *= val;
     }

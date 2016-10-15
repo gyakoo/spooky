@@ -30,7 +30,6 @@ namespace SpookyAdulthood
         float m_fovAngleYRad;
         float m_near, m_far;
         XMFLOAT4X4 m_orientMatrix;
-    private:
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
         float m_runningTime;

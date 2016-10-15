@@ -36,7 +36,7 @@ namespace SpookyAdulthood
         
         void Begin2D();
         void End2D();
-        void Draw2D(int spriteIndex, const XMFLOAT2& position, const XMFLOAT2& size);
+        void Draw2D(int spriteIndex, const XMFLOAT2& position, const XMFLOAT2& size, float rot);
 
         int CreateSprite(const std::wstring& pathToTex, int at = -1);
         Sprite& GetSprite(int ndx);

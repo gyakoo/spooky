@@ -565,7 +565,6 @@ void LevelMap::CreateDeviceDependentResources()
                 m_atlasTextureSRV.ReleaseAndGetAddressOf()));
     });
 
-    m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexPositionColor>>(m_device->GetD3DDeviceContext());
 }
 
 void LevelMap::ReleaseDeviceDependentResources()
@@ -576,7 +575,6 @@ void LevelMap::ReleaseDeviceDependentResources()
         leaf->ReleaseDeviceDependentResources();
     }
 
-    m_batch.reset();
     m_atlasTexture.Reset();
     m_atlasTextureSRV.Reset();
 }
@@ -619,8 +617,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     {
         for (const auto& room : m_leaves)
         {
-            if (!room->m_collisionSegments || !m_batch) continue;
-            m_batch->Begin();
+            if (!room->m_collisionSegments ) continue;
+            m_device->GetGameResources()->m_batch->Begin();
             XMFLOAT3 s, e;
             XMFLOAT4 c(DirectX::Colors::Yellow.f); std::swap(c.x, c.w);
             for (const auto& seg : *room->m_collisionSegments)
@@ -628,9 +626,9 @@ void LevelMap::Render(const CameraFirstPerson& camera)
                 s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
                 e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
                 VertexPositionColor v1(s, c), v2(e, c);
-                m_batch->DrawLine(v1, v2);
+                m_device->GetGameResources()->m_batch->DrawLine(v1, v2);
             }
-            m_batch->End();
+            m_device->GetGameResources()->m_batch->End();
         }
     }
 
@@ -669,19 +667,19 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     auto dxCommon = m_device->GetGameResources();
     if (!dxCommon->m_ready) return false;
     auto context = m_device->GetD3DDeviceContext();
-    context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(),0,NULL,&cbData,0,0,0);
+    context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->IASetInputLayout(dxCommon->m_inputLayout.Get());
-    context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-    context->VSSetConstantBuffers1(0, 1, dxCommon->m_VSconstantBuffer.GetAddressOf(), nullptr, nullptr);
+    context->IASetInputLayout(dxCommon->m_baseIL.Get());
+    context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
+    context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
     ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
     static float a = 0.0f; 
     PixelShaderConstantBuffer pscb = { { 16,16, camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio } };
-    context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
-    context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
-    context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+    context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
+    context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
+    context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);
     context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
     context->OMSetBlendState(dxCommon->m_commonStates->Opaque(), nullptr, 0xffffffff);
     if ( GlobalFlags::DrawWireframe )

@@ -29,7 +29,7 @@ namespace SpookyAdulthood
             vt(XMFLOAT3(0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(1,0)),
             vt(XMFLOAT3(-0.5f, 0.5f,0), XMFLOAT3(0,0.45f,1), white, XMFLOAT2(0,0))
         };
-        unsigned short indices[6] = { 0, 1, 2, 0, 2, 3 };
+        unsigned short indices[6] = { 0, 3, 2, 0, 2, 1 };
 
         // VB
         D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
@@ -140,17 +140,17 @@ namespace SpookyAdulthood
 
         // set state for render
         context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        context->IASetInputLayout(dxCommon->m_inputLayout.Get());
-        context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-        context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
+        context->IASetInputLayout(dxCommon->m_baseIL.Get());
+        context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
+        context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);
         ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
         context->PSSetSamplers(0, 1, &sampler);
         PixelShaderConstantBuffer pscb = { { 1,1,camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio } };
         context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
-        context->RSSetState(dxCommon->m_commonStates->CullNone());
-        context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
-        context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
+        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
+        context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
+        context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
         m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
         m_cbData.view = camera.m_view;
         m_cbData.projection = camera.m_projection;
@@ -191,8 +191,8 @@ namespace SpookyAdulthood
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
 
             // render
-            context->UpdateSubresource1(dxCommon->m_VSconstantBuffer.Get(), 0, NULL, &m_cbData, 0, 0, 0);
-            context->VSSetConstantBuffers1(0, 1, dxCommon->m_VSconstantBuffer.GetAddressOf(), nullptr, nullptr);
+            context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &m_cbData, 0, 0, 0);
+            context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
             context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());
             UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
             UINT offset = 0;
@@ -209,37 +209,70 @@ namespace SpookyAdulthood
 
     void SpriteManager::Begin2D()
     {
-        //DX::ThrowIfFalse(!m_rendering[R2D]);
-        //m_rendering[R2D] = true;
+        DX::ThrowIfFalse(!m_rendering[R2D]);
+        m_rendering[R2D] = true;
 
-        //auto dxCommon = m_device->GetGameResources();
-        //if (!dxCommon->m_ready) return;
-        //auto context = m_device->GetD3DDeviceContext();
-
+        auto dxCommon = m_device->GetGameResources();
+        if (!dxCommon->m_ready) return;
+        auto context = m_device->GetD3DDeviceContext();
+        
         //// set state for render
-        //context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        //context->IASetInputLayout(dxCommon->m_inputLayout.Get());
-        //context->VSSetShader(dxCommon->m_vertexShader.Get(), nullptr, 0);
-        //context->PSSetShader(dxCommon->m_pixelShader.Get(), nullptr, 0);
-        //ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
-        //context->PSSetSamplers(0, 1, &sampler);
-        //PixelShaderConstantBuffer pscb = { 0 };
-        //context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
-        //context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
-        //context->RSSetState(dxCommon->m_commonStates->CullNone());
-        //context->UpdateSubresource1(dxCommon->m_PSconstantBuffer.Get(), 0, NULL, &pscb, 0, 0, 0);
-        //context->PSSetConstantBuffers(0, 1, dxCommon->m_PSconstantBuffer.GetAddressOf());
-        //m_camInvYaw = XMMatrixRotationY(-0); // billboard oriented to cam (Y constrained)
-        //
-        //m_spritesToRender[R2D].clear();
+        context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        context->IASetInputLayout(dxCommon->m_baseIL.Get());
+        context->VSSetShader(dxCommon->m_spriteVS.Get(), nullptr, 0);
+        context->PSSetShader(dxCommon->m_spritePS.Get(), nullptr, 0);
+        ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
+        context->PSSetSamplers(0, 1, &sampler);
+        context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthNone(), 0);
+        context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
+        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());        
+        m_spritesToRender[R2D].clear();
     }
     void SpriteManager::End2D()
     {
+        DX::ThrowIfFalse(m_rendering[R2D]);
+        m_rendering[R2D] = false;
+
+        auto dxCommon = m_device->GetGameResources();
+        if (!dxCommon->m_ready) return;
+        auto context = m_device->GetD3DDeviceContext();
+
+        for (const auto& sprI : m_spritesToRender[R2D])
+        {
+            auto& sprite = m_sprites[sprI.m_index];
+            const auto& position = sprI.m_position;
+            const auto& size = sprI.m_size;
+
+            // simple translate rotate
+            XMMATRIX mr = XMMatrixRotationZ(sprI.m_distToCameraSq);
+            mr.r[3] = XMVectorSet(position.x, position.y, 0.0f, 1.0f);
+            XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
+            XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
+
+            context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &m_cbData, 0, 0, 0);
+            context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
+            context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());
+            UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
+            UINT offset = 0;
+            context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+            context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+            context->DrawIndexed(6, 0, 0);
+        }
 
     }
-    void SpriteManager::Draw2D(int spriteIndex, const XMFLOAT2& position, const XMFLOAT2& size)
+    void SpriteManager::Draw2D(int spriteIndex, const XMFLOAT2& position, const XMFLOAT2& size, float rot)
     {
+        DX::ThrowIfFalse(m_rendering[R2D]); // Begin not called
 
+        using namespace DirectX::SimpleMath;
+        if (!m_vertexBuffer)
+            return;
+        if (spriteIndex < 0 || spriteIndex >= (int)m_sprites.size())
+            return;
+
+        XMFLOAT3 pos(position.x, position.y, 0.0f);
+        SpriteRender sprR = { (size_t)spriteIndex, pos, size, rot };
+        m_spritesToRender[R2D].push_back(sprR);
     }
 
 };
