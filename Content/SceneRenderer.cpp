@@ -124,10 +124,10 @@ void SceneRenderer::Render()
     // GUN RENDER
     {
         m_sprite.Begin2D();
-        float rvel = m_camera.m_running ? 1.0f : 0.5f;
+        float rvel = (m_camera.m_moving && m_camera.m_running) ? 1.0f : 0.5f;
         float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
         float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;
-        m_sprite.Draw2D(2, XMFLOAT2(offsx, -0.7f+offsy ), XMFLOAT2(0.5f, 0.7f), 0.0f);
+        m_sprite.Draw2D(2, XMFLOAT2(offsx, -0.7f+offsy ), XMFLOAT2(0.7f/m_camera.m_aspectRatio, 0.7f), 0.0f);
         m_sprite.End2D();
     }
 

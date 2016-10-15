@@ -24,6 +24,7 @@ namespace SpookyAdulthood
         XMFLOAT4X4 m_view;
         XMFLOAT2 m_pitchYaw;
         bool m_running;
+        bool m_moving;
         float m_height;
         float m_radius;
         float m_aspectRatio;
@@ -47,7 +48,7 @@ namespace SpookyAdulthood
         const float dt = (float)timer.GetElapsedSeconds();
         const float rotDelta = dt*XM_PIDIV4;
         const float movDelta = dt * (m_running ? 3.0f : 1.0f);
-        const float hvel = m_running ? 8.0f : 5.0f;
+        float hvel = 5.0f;
 
         // rotation input
         m_pitchYaw.y += rotDelta*0.8f*ms.x;
@@ -65,7 +66,7 @@ namespace SpookyAdulthood
         if (kb.Q) m_height += movDelta;
         else if (kb.E) m_height -= movDelta;
 
-        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y+sin(m_runningTime*hvel)*0.05f*cos(m_runningTime*hvel)*0.1f);
+        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y + sin(m_runningTime*hvel)*0.02f);
         XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
         if (movFw || movSt)
         {
@@ -86,10 +87,17 @@ namespace SpookyAdulthood
             XMVECTOR cp = m_camXZ, np = newPos;
             cp = XMVectorSetZ(cp, -XMVectorGetZ(cp));
             np = XMVectorSetZ(np, -XMVectorGetZ(np));
-            m_camXZ = collisionFun(cp,np,m_radius);
+            m_camXZ = collisionFun(cp, np, m_radius);
             m_camXZ = XMVectorSetZ(m_camXZ, -XMVectorGetZ(m_camXZ));
             m_runningTime += (float)timer.GetElapsedSeconds();
-        }        
+            m_moving = true;
+            if (m_running)
+                hvel = 8.0f;
+        }
+        else
+        {
+            m_moving = false;
+        }
 
         // walking pseudo effect
         const float offsX = cos(m_runningTime*hvel)*0.04f;
