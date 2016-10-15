@@ -34,28 +34,63 @@ float4 main(PixelShaderInput input) : SV_TARGET
     float alpha = texColor.a;
 
     float4 color = alpha*float4(texColor.rgb*input.color.rgb, 1.0f);
-    
+    const float aspect = texAtlasSize.w;
+    float dist = length(input.viewSpace); // range based
+
+    if (texColor.r!=1 || texColor.g!=0 || texColor.b!=0) // red bypass fog
+    {
+        // Changing fog density depending on circle from origin 
+        const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
+        const float l = length(xy)*0.7f;
+        float val = val = l*saturate(2 / dist); // origin and depth
+        fogDensity *= val;
+
+        // Fog 1/exp2
+        const float dfd = dist*fogDensity;
+        const float fogFactor = saturate(1.0f / exp(dfd*dfd));
+        color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor));
+    }
+    else
+    {
+        color.rgb *= saturate(1.0f - input.sPos.z / 6.0f);
+    }
+
+    return color;
+}
+
+// blocky
+/*
+float4 main(PixelShaderInput input) : SV_TARGET
+{
+    const float4 fogColor = float4(0, 0, 0, 1.0f);
+    float fogDensity = 1.0f;
+
+    // texturing
+    float2 texAtlasFac = 1.0f / texAtlasSize.xy;
+    float2 uv = input.tindex*texAtlasFac;
+    const float dxy = float2(0.07, 0.07);
+    uv += input.uv*texAtlasFac;
+    float4 texColor = texDiffuse.Sample(samPoint, uv);
+    float alpha = texColor.a;
+    float4 color = alpha*float4(texColor.rgb*input.color.rgb, 1.0f);    
     float dist = length(input.viewSpace); // range based
 
     // Changing fog density depending on circle from origin 
-    {
-        const float aspect = texAtlasSize.w;
-        const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
-        const float l = length(xy)*0.6f;
-        float val = val = l*saturate(2/dist); // origin and depth
-        fogDensity *= val;
-    }
-//    else
-//    {
-//        fogDensity = 0.5f;
-//   }
+    const float aspect = texAtlasSize.w;
+    const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
+    const float l = length(floor(xy/dxy))*0.02;
+    float val = l;// *saturate(2 / dist); // origin and depth
+    fogDensity *= val;
 
     // Fog 1/exp2
     {
         const float dfd = dist*fogDensity;
         const float fogFactor = saturate(1.0f / exp(dfd*dfd));
         color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor));
+        
     }
 
     return color;
 }
+
+*/

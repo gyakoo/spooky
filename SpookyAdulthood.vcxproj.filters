@@ -109,6 +109,15 @@
     <Image Include="Assets\gun.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\hand.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\puky.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\pointinghand.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

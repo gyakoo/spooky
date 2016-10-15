@@ -34,7 +34,7 @@ namespace SpookyAdulthood
         void End3D();
         void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size);
         
-        void Begin2D();
+        void Begin2D(const CameraFirstPerson& camera);
         void End2D();
         void Draw2D(int spriteIndex, const XMFLOAT2& position, const XMFLOAT2& size, float rot);
 
@@ -49,6 +49,7 @@ namespace SpookyAdulthood
         XMMATRIX m_camInvYaw;
         ModelViewProjectionConstantBuffer m_cbData;
         std::vector<SpriteRender> m_spritesToRender[2];
+        float m_aspectRatio;
         XMFLOAT3 m_camPosition;
         bool m_rendering[2];
     };

@@ -31,7 +31,6 @@ namespace SpookyAdulthood
         LevelMapGenerationSettings m_mapSettings;
         float	m_degreesPerSecond;
         bool	m_loadingComplete;        
-        XMFLOAT3 m_test;
 	};
 }
 

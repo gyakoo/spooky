@@ -193,7 +193,10 @@
   <ItemGroup>
     <Image Include="Assets\atlaslevel.png" />
     <Image Include="Assets\gun.png" />
+    <Image Include="Assets\hand.png" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
+    <Image Include="Assets\pointinghand.png" />
+    <Image Include="Assets\puky.png" />
     <Image Include="Assets\SplashScreen.scale-200.png" />
     <Image Include="Assets\Square150x150Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.scale-200.png" />

@@ -16,8 +16,7 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 	m_loadingComplete(false),
 	m_deviceResources(deviceResources),
     m_map(deviceResources),
-    m_sprite(deviceResources),
-    m_test(5,0.45f,6)
+    m_sprite(deviceResources)
 {
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
@@ -92,15 +91,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     }
 
 
-    {
-        using namespace SimpleMath;
-        Vector3 camPos(m_camera.GetPosition());
-        Vector3 srcPos(m_test);
-        Vector3 dir = camPos -srcPos; dir.Normalize();
-        srcPos += dir*(float)timer.GetElapsedSeconds(); srcPos.y = m_test.y;
-        //m_test = srcPos;
-    }
-
+    
 }
 
 // Renders one frame using the vertex and pixel shaders.
@@ -115,7 +106,9 @@ void SceneRenderer::Render()
 
     // SPRITEs rendering
     m_sprite.Begin3D(m_camera);
-    m_sprite.Draw3D(0, m_test, XMFLOAT2(1, 1));
+    m_sprite.Draw3D(0, XMFLOAT3(5, 0.45f, 6), XMFLOAT2(0.3, 0.3));
+    m_sprite.Draw3D(0, XMFLOAT3(6, 0.65f, 5), XMFLOAT2(0.3, 0.3));
+    m_sprite.Draw3D(0, XMFLOAT3(9, 0.75f, 4), XMFLOAT2(0.3, 0.3));
     m_sprite.Draw3D(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
     m_sprite.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
     m_sprite.End3D();
@@ -123,22 +116,16 @@ void SceneRenderer::Render()
 
     // GUN RENDER
     {
-        m_sprite.Begin2D();
+        m_sprite.Begin2D(m_camera);
         float rvel = (m_camera.m_moving && m_camera.m_running) ? 1.0f : 0.5f;
         float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
         float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;
-        m_sprite.Draw2D(2, XMFLOAT2(offsx, -0.7f+offsy ), XMFLOAT2(0.7f/m_camera.m_aspectRatio, 0.7f), 0.0f);
+        m_sprite.Draw2D(2, XMFLOAT2(offsx, -0.7f+offsy ), XMFLOAT2(0.7f, 0.7f), 0.0f);
+
+        m_sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.07f, 0.09f), -m_camera.m_pitchYaw.y);
+
         m_sprite.End2D();
     }
-
-    auto linebatch = m_deviceResources->GetGameResources()->m_batch.get();
-
-    //auto sprite2D = m_deviceResources->GetGameResources()->m_sprites.get();
-    //auto& spr = m_sprite.GetSprite(2);
-    //auto s = m_deviceResources->GetOutputSize();
-    //sprite2D->Begin();
-    //sprite2D->Draw(spr.m_textureSRV.Get(), XMFLOAT2(s.Width / 2, s.Height-200), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(1.0f,1.0f));
-    //sprite2D->End();
 }
 
 void SceneRenderer::CreateDeviceDependentResources()
@@ -150,9 +137,10 @@ void SceneRenderer::CreateDeviceDependentResources()
 
     auto sprTask = concurrency::create_task([this] {
         m_sprite.CreateDeviceDependentResources();
-        m_sprite.CreateSprite(L"assets\\zombie.png");
-        m_sprite.CreateSprite(L"assets\\zombie2.png");
+        m_sprite.CreateSprite(L"assets\\puky.png");
+        m_sprite.CreateSprite(L"assets\\hand.png");
         m_sprite.CreateSprite(L"assets\\gun.png");
+        m_sprite.CreateSprite(L"assets\\pointinghand.png");
     });
 
     (mapCreateTask && sprTask).then([this] () 

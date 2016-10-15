@@ -207,10 +207,11 @@ namespace SpookyAdulthood
         return m_sprites[ndx];
     }
 
-    void SpriteManager::Begin2D()
+    void SpriteManager::Begin2D(const CameraFirstPerson& camera)
     {
         DX::ThrowIfFalse(!m_rendering[R2D]);
         m_rendering[R2D] = true;
+        m_aspectRatio = camera.m_aspectRatio;
 
         auto dxCommon = m_device->GetGameResources();
         if (!dxCommon->m_ready) return;
@@ -228,6 +229,7 @@ namespace SpookyAdulthood
         context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());        
         m_spritesToRender[R2D].clear();
     }
+
     void SpriteManager::End2D()
     {
         DX::ThrowIfFalse(m_rendering[R2D]);
@@ -246,7 +248,7 @@ namespace SpookyAdulthood
             // simple translate rotate
             XMMATRIX mr = XMMatrixRotationZ(sprI.m_distToCameraSq);
             mr.r[3] = XMVectorSet(position.x, position.y, 0.0f, 1.0f);
-            XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
+            XMMATRIX ms = XMMatrixScaling(size.x/m_aspectRatio, size.y, 1.0f);
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
 
             context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &m_cbData, 0, 0, 0);
