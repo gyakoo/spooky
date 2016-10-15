@@ -153,6 +153,8 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
     if (settings.m_generateThumbTex)
         GenerateThumbTex(settings.m_tileCount);
     CreateDeviceDependentResources();
+    if (m_device && m_device->GetGameResources())
+        m_device->GetGameResources()->m_levelTime = .0f;
 }
 
 void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth)
@@ -585,6 +587,9 @@ void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camer
     m_cameraCurLeaf = GetLeafAt(pos);
     if (m_cameraCurLeaf)
         m_cameraCurLeaf->m_tag = 0x00ff00ff;
+
+    if (m_device && m_device->GetGameResources())
+        m_device->GetGameResources()->m_levelTime += (float)timer.GetElapsedSeconds();
 }
 
 void LevelMap::Render(const CameraFirstPerson& camera)
@@ -676,7 +681,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
     static float a = 0.0f; 
-    PixelShaderConstantBuffer pscb = { { 16,16, camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio } };
+    PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {0,0,0,0} };
     context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
     context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);
@@ -784,9 +789,9 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
             quadVerts[i].color = argb;
         }
         auto& random = device->GetGameResources()->m_random;
-        const UINT FLOORTEX = random.Get(0, 4);
+        const UINT FLOORTEX = 0;// random.Get(0, 4);
         const UINT CEILINGTEX = random.Get(0, 4);
-        const UINT WALLTEX = random.Get(0, 4);
+        const UINT WALLTEX = 0;// random.Get(0, 4);
         unsigned short cvi = 0; // current vertex index
         float x, z;
         for (uint32_t _z = area.m_y0; _z <= area.m_y1; ++_z)

@@ -620,6 +620,14 @@ void DX::DeviceResources::Trim()
 	m_d3dDevice.As(&dxgiDevice);
 
 	dxgiDevice->Trim();
+    if (m_gameResources && m_gameResources->m_audioEngine)
+        m_gameResources->m_audioEngine->Suspend();
+}
+
+void DX::DeviceResources::Resume()
+{
+    if (m_gameResources && m_gameResources->m_audioEngine)
+        m_gameResources->m_audioEngine->Resume();
 }
 
 // Present the contents of the swap chain to the screen.
@@ -708,7 +716,7 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 
 
 DX::GameResources::GameResources(const DX::DeviceResources* device)
-    : m_ready(false)
+    : m_ready(false), m_levelTime(0.0f)
 {
     // vertex shader and input layout
     auto loadVSTask = DX::ReadDataAsync(L"BaseVertexShader.cso");
@@ -732,9 +740,13 @@ DX::GameResources::GameResources(const DX::DeviceResources* device)
             (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
             m_textureWhiteSRV.ReleaseAndGetAddressOf()));
 
-    // SOUNDS
-    static const wchar_t* soundNames[] = { L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav", 
-        L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav" };
+    // SOUNDS, init values
+    static const wchar_t* soundNames[] = { 
+        L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav", 
+        L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
+        L"assets\\sounds\\heartbeat.wav"};
+    static const float volumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f };
+    static const float pitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f };
     m_soundEffects.resize(SFX_MAX);
     m_sounds.resize(SFX_MAX);
     for (int i = 0; i < SFX_MAX; ++i)
@@ -742,6 +754,8 @@ DX::GameResources::GameResources(const DX::DeviceResources* device)
         concurrency::create_task([this,i] {
             m_soundEffects[i] = std::move(std::make_unique<SoundEffect>(m_audioEngine.get(), soundNames[i]));
             m_sounds[i] = std::move(m_soundEffects[i]->CreateInstance());
+            m_sounds[i]->SetVolume(volumes[i]);
+            m_sounds[i]->SetPitch(pitches[i]);
         });
     }
 

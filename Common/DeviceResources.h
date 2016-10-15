@@ -59,6 +59,7 @@ namespace DX
         std::vector<std::unique_ptr<DirectX::SoundEffect>> m_soundEffects;
         std::vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
+        float m_levelTime;
         bool m_ready;
 
         void SoundPlay(uint32_t index, bool loop=true)const;

@@ -191,6 +191,8 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Image Include="Assets\sprites\anx1.png" />
+    <Image Include="Assets\sprites\anx2.png" />
     <Image Include="Assets\textures\atlaslevel.png" />
     <Image Include="Assets\sprites\gun.png" />
     <Image Include="Assets\sprites\hand.png" />

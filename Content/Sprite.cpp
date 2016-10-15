@@ -142,10 +142,8 @@ namespace SpookyAdulthood
         context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
-        context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);
-        ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
-        context->PSSetSamplers(0, 1, &sampler);
-        PixelShaderConstantBuffer pscb = { { 1,1,camera.m_running ? 1.0f : 0.0f,camera.m_aspectRatio } };
+        context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
+        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, {0,0,0,0} };
         context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
         context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
@@ -191,6 +189,10 @@ namespace SpookyAdulthood
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
 
             // render
+            ID3D11SamplerState* sampler = dxCommon->m_commonStates->AnisotropicClamp();
+            if (sprI.m_distToCameraSq < 7.0f*7.0f)
+                sampler = dxCommon->m_commonStates->PointClamp();   
+            context->PSSetSamplers(0, 1, &sampler);
             context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &m_cbData, 0, 0, 0);
             context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
             context->PSSetShaderResources(0, 1, sprite.m_textureSRV.GetAddressOf());

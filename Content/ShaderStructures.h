@@ -16,6 +16,7 @@ namespace SpookyAdulthood
     struct PixelShaderConstantBuffer
     {
         DirectX::XMFLOAT4 texAtlasSize;
+        DirectX::XMFLOAT4 other;
     };
 
 

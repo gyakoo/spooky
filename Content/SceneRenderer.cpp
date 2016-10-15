@@ -39,7 +39,6 @@ void SceneRenderer::SpawnPlayer()
         gameRes->SoundPlay(DX::GameResources::SFX_BREATH);
         gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
         gameRes->SoundPlay(DX::GameResources::SFX_HEART);
-        gameRes->SoundPitch(DX::GameResources::SFX_HEART, -0.5f);
     }
 }
 
@@ -154,8 +153,9 @@ void SceneRenderer::Render()
     m_sprite.Draw3D(0, XMFLOAT3(5, 0.45f, 6), XMFLOAT2(0.3, 0.3));
     m_sprite.Draw3D(0, XMFLOAT3(6, 0.65f, 5), XMFLOAT2(0.3, 0.3));
     m_sprite.Draw3D(0, XMFLOAT3(9, 0.75f, 4), XMFLOAT2(0.3, 0.3));
-    m_sprite.Draw3D(1, XMFLOAT3(7, 0.5f, 9), XMFLOAT2(1, 1));
-    m_sprite.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f,0.5f));
+    m_sprite.Draw3D(4, XMFLOAT3(7, 0.75f, 9), XMFLOAT2(0.7f, 1.5f));
+    m_sprite.Draw3D(2, XMFLOAT3(9, 0.25f, 3), XMFLOAT2(0.5f, 0.5f));
+    m_sprite.Draw3D(5, XMFLOAT3(5, 0.95f, 2), XMFLOAT2(0.7f,1.9f));
     m_sprite.End3D();
     
 
@@ -182,10 +182,12 @@ void SceneRenderer::CreateDeviceDependentResources()
 
     auto sprTask = concurrency::create_task([this] {
         m_sprite.CreateDeviceDependentResources();
-        m_sprite.CreateSprite(L"assets\\sprites\\puky.png");
-        m_sprite.CreateSprite(L"assets\\sprites\\hand.png");
-        m_sprite.CreateSprite(L"assets\\sprites\\gun.png");
-        m_sprite.CreateSprite(L"assets\\sprites\\pointinghand.png");
+        m_sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
+        m_sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
+        m_sprite.CreateSprite(L"assets\\sprites\\gun.png"); // 2
+        m_sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
+        m_sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
+        m_sprite.CreateSprite(L"assets\\sprites\\anx2.png"); // 5
     });
 
     (mapCreateTask && sprTask).then([this] () 

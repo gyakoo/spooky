@@ -15,7 +15,8 @@ SamplerState samPoint;
 
 cbuffer constants
 {
-    float4 texAtlasSize;  // xy=atlas size, z=<undefined>, w=aspect ratio
+    float4 texAtlasSize;  // xy=atlas size, z=global Time, w=aspect ratio
+    float4 other;
 };
 
 
@@ -41,7 +42,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
     {
         // Changing fog density depending on circle from origin 
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
-        const float l = length(xy)*0.7f;
+        const float levelTime = texAtlasSize.z;
+        const float l = length(xy)* (0.5+sin(levelTime*0.5f)*0.3f);
         float val = val = l*saturate(2 / dist); // origin and depth
         fogDensity *= val;
 
@@ -49,10 +51,11 @@ float4 main(PixelShaderInput input) : SV_TARGET
         const float dfd = dist*fogDensity;
         const float fogFactor = saturate(1.0f / exp(dfd*dfd));
         color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor));
+        color.a *= 5 / dist;
     }
     else
     {
-        color.rgb *= saturate(1.0f - input.sPos.z / 6.0f);
+        //color.rgb *= saturate(1.0f - input.sPos.z / 6.0f);
     }
 
     return color;

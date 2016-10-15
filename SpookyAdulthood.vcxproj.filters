@@ -112,6 +112,12 @@
     <Image Include="Assets\sprites\pointinghand.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\sprites\anx1.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\sprites\anx2.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
