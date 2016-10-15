@@ -94,28 +94,22 @@
     <Image Include="Assets\StoreLogo.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\white.png">
+    <Image Include="Assets\sprites\gun.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\zombie.png">
+    <Image Include="Assets\sprites\hand.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\zombie2.png">
+    <Image Include="Assets\sprites\puky.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\atlaslevel.png">
+    <Image Include="Assets\textures\atlaslevel.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\gun.png">
+    <Image Include="Assets\textures\white.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="Assets\hand.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\puky.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\pointinghand.png">
+    <Image Include="Assets\sprites\pointinghand.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
@@ -124,7 +118,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SpookyAdulthood_TemporaryKey.pfx" />
-    <None Include="Assets\Courier_16.spritefont" />
+    <None Include="Assets\fonts\Courier_16.spritefont" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\shaders\BasePixelShader.hlsl">
@@ -135,5 +129,11 @@
     </FxCompile>
     <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl" />
     <FxCompile Include="Content\shaders\ScreenSpriteVS.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Assets\sounds\breathing.wav" />
+    <Media Include="Assets\sounds\piano.wav" />
+    <Media Include="Assets\sounds\shotgun.wav" />
+    <Media Include="Assets\sounds\walk.wav" />
   </ItemGroup>
 </Project>

@@ -19,6 +19,8 @@
 #include <iterator>
 #include <utility>
 #include <map>
+#include <ppl.h>
+#include <atomic>
 
 // game
 #include "Common/StepTimer.h"

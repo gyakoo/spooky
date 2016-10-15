@@ -220,7 +220,7 @@ void DX::DeviceResources::CreateDeviceResources()
 			&m_d2dContext
 			)
 		);    
-    m_gameResources = std::make_unique<GameDXResources>(this);
+    m_gameResources = std::make_unique<GameResources>(this);
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -707,7 +707,7 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 }
 
 
-DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
+DX::GameResources::GameResources(const DX::DeviceResources* device)
     : m_ready(false)
 {
     // vertex shader and input layout
@@ -717,15 +717,33 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
     auto loadSpritePS = DX::ReadDataAsync(L"ScreenSpritePS.cso");
 
     m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
-    m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\Courier_16.spritefont");
+    m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\fonts\\Courier_16.spritefont");
     m_commonStates = std::make_unique<DirectX::CommonStates>(device->GetD3DDevice());
     m_batch = std::make_unique<DirectX::PrimitiveBatch<VertexPositionColor>>(device->GetD3DDeviceContext());
+    AUDIO_ENGINE_FLAGS aeflags = AudioEngine_Default;
+#ifdef _DEBUG
+    aeflags = aeflags | AudioEngine_Debug;
+#endif
+    m_audioEngine = std::make_unique<DirectX::AudioEngine>(aeflags);
 
     DX::ThrowIfFailed(
         DirectX::CreateWICTextureFromFile(
-            device->GetD3DDevice(), L"assets\\white.png",
+            device->GetD3DDevice(), L"assets\\textures\\white.png",
             (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
             m_textureWhiteSRV.ReleaseAndGetAddressOf()));
+
+    // SOUNDS
+    static const wchar_t* soundNames[] = { L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav", 
+        L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav" };
+    m_soundEffects.resize(SFX_MAX);
+    m_sounds.resize(SFX_MAX);
+    for (int i = 0; i < SFX_MAX; ++i)
+    {
+        concurrency::create_task([this,i] {
+            m_soundEffects[i] = std::move(std::make_unique<SoundEffect>(m_audioEngine.get(), soundNames[i]));
+            m_sounds[i] = std::move(m_soundEffects[i]->CreateInstance());
+        });
+    }
 
     // BASE VS constant buffer
     {
@@ -779,11 +797,12 @@ DX::GameDXResources::GameDXResources(const DX::DeviceResources* device)
         const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(filedata.data(), filedata.size(), nullptr, m_spritePS.GetAddressOf());
         DX::ThrowIfFailed(hr);
     });
+       
 
     (createBaseVS && createBasePS && createSSVS && createSSPS).then([this]() { m_ready = true; });
 }
 
-DX::GameDXResources::~GameDXResources()
+DX::GameResources::~GameResources()
 {
     m_ready = false;
     m_textureWhiteSRV.Reset();
@@ -799,4 +818,64 @@ DX::GameDXResources::~GameDXResources()
     m_fontConsole.reset();
     m_commonStates.reset();
     m_batch.reset();
+    m_audioEngine.reset();
+}
+
+void DX::GameResources::SoundPlay(uint32_t index, bool loop) const
+{
+    if (index >= m_sounds.size()) return;
+    auto s = m_sounds[index].get();
+    if (!s) return;
+    if (s->GetState() == DirectX::PLAYING)
+        s->Stop();
+    s->Play(loop);
+}
+
+void DX::GameResources::SoundStop(uint32_t index) const
+{
+    if (index >= m_sounds.size()) return;
+    auto s = m_sounds[index].get();
+    if (!s) return;
+    s->Stop();
+}
+
+void DX::GameResources::SoundPause(uint32_t index) const
+{
+    if (index >= m_sounds.size()) return;
+    auto s = m_sounds[index].get();
+    if (!s) return;
+    s->Pause();
+}
+
+void DX::GameResources::SoundResume(uint32_t index) const
+{
+    if (index >= m_sounds.size()) return;
+    auto s = m_sounds[index].get();
+    if (!s) return;
+    switch (s->GetState())
+    {
+    case DirectX::STOPPED: s->Play(s->IsLooped()); break;
+    case DirectX::PAUSED: s->Resume(); break;
+    }
+}
+
+SoundEffectInstance* DX::GameResources::SoundGet(uint32_t index) const
+{
+    if (index >= m_sounds.size()) return nullptr;
+    return m_sounds[index].get();
+}
+
+void DX::GameResources::SoundPitch(uint32_t index, float p)
+{
+    if (index >= m_sounds.size()) return;
+    auto s = m_sounds[index].get();
+    if (!s) return;
+    s->SetPitch(p);
+}
+void DX::GameResources::SoundVolume(uint32_t index, float v)
+{
+    if (index >= m_sounds.size()) return;
+    auto s = m_sounds[index].get();
+    if (!s) return;
+    s->SetVolume(v);
 }

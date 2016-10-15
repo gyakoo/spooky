@@ -11,11 +11,13 @@ namespace SpookyAdulthood
 #define CAM_DEFAULT_RADIUS 0.25f
     struct CameraFirstPerson
     {
+        enum eAction{ AC_NONE, AC_SHOOT };
+
         CameraFirstPerson(float fovYDeg = CAM_DEFAULT_FOVY);
         void ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix);
         void ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up = XMFLOAT3(0, 1, 0));
-        template<typename T>
-        void Update(DX::StepTimer const& timer, T& collisionFun);
+        template<typename T, typename A>
+        void Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun);
         XMFLOAT3 GetPosition() const { return m_xyz; }
         void SetPosition(const XMFLOAT3& p);
         XMFLOAT3 GetForward() const;
@@ -34,15 +36,33 @@ namespace SpookyAdulthood
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
         float m_runningTime;
+        float m_timeShoot;
+        bool m_leftDown;
     };
 
     // there are better(faster) ways to do this, anyways
-    template<typename T>
-    void CameraFirstPerson::Update(DX::StepTimer const& timer, T& collisionFun)
+    template<typename T, typename A>
+    void CameraFirstPerson::Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun)
     {
         auto ms = DirectX::Mouse::Get().GetState();
         auto kb = DirectX::Keyboard::Get().GetState();
         m_running = kb.LeftShift;
+        if (ms.leftButton)
+        {
+            if (!m_leftDown)
+            {
+                m_leftDown = true;
+                actionFun(AC_SHOOT);
+                m_timeShoot = 0.5f;
+            }
+        }
+        else
+        {
+            if (m_leftDown)
+            {
+                m_leftDown = false;
+            }
+        }
 
         // update cam
         const float dt = (float)timer.GetElapsedSeconds();
@@ -66,8 +86,9 @@ namespace SpookyAdulthood
         if (kb.Q) m_height += movDelta;
         else if (kb.E) m_height -= movDelta;
 
+        m_timeShoot -= dt;
         XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y + sin(m_runningTime*hvel)*0.02f);
-        XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x);
+        XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x - max(m_timeShoot*0.2f,0.0f) + cos(m_runningTime*hvel)*0.01f);
         if (movFw || movSt)
         {
             // normalize if moving two axes to avoid strafe+fw cheat
@@ -89,7 +110,7 @@ namespace SpookyAdulthood
             np = XMVectorSetZ(np, -XMVectorGetZ(np));
             m_camXZ = collisionFun(cp, np, m_radius);
             m_camXZ = XMVectorSetZ(m_camXZ, -XMVectorGetZ(m_camXZ));
-            m_runningTime += (float)timer.GetElapsedSeconds();
+            m_runningTime += dt;
             m_moving = true;
             if (m_running)
                 hvel = 8.0f;
@@ -102,6 +123,7 @@ namespace SpookyAdulthood
         // walking pseudo effect
         const float offsX = cos(m_runningTime*hvel)*0.04f;
         const float offsY = sin(m_runningTime*hvel)*0.05f;
+        
         // rotate camera and translate
         XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ)-offsX, -m_height-offsY, XMVectorGetZ(m_camXZ));
         XMStoreFloat3(&m_xyz, m_camXZ);
@@ -115,17 +137,9 @@ namespace SpookyAdulthood
 
         if (m_near >= 0.0f)
         {
-            //if (m_running)
-            //{
-            //    const float var = 4.0f+sinf(m_runningTime)*4.0f;
-            //    ComputeProjection((CAM_DEFAULT_FOVY+var)*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
-            //}
-            //else
-            {
-                const float varA = 8.0f + sinf(m_runningTime)*8.0f;
-                const float finA = CAM_DEFAULT_FOVY + varA;
-                ComputeProjection(finA*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
-            }
+            const float varA = 8.0f + sinf(m_runningTime)*8.0f;
+            const float finA = CAM_DEFAULT_FOVY + varA;
+            ComputeProjection(finA*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
         }
     }
 }

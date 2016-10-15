@@ -560,7 +560,7 @@ void LevelMap::CreateDeviceDependentResources()
     auto& loadTexTask = concurrency::create_task([this]() {
         DX::ThrowIfFailed(
             DirectX::CreateWICTextureFromFile(
-                m_device->GetD3DDevice(), L"assets\\atlaslevel.png",
+                m_device->GetD3DDevice(), L"assets\\textures\\atlaslevel.png",
                 (ID3D11Resource**)m_atlasTexture.ReleaseAndGetAddressOf(),
                 m_atlasTextureSRV.ReleaseAndGetAddressOf()));
     });

@@ -22,6 +22,7 @@ namespace SpookyAdulthood
 
     private:
         void SpawnPlayer();
+        void UpdateAudio(DX::StepTimer const& timer);
 
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;

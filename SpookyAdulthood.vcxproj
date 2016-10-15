@@ -191,21 +191,19 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Image Include="Assets\atlaslevel.png" />
-    <Image Include="Assets\gun.png" />
-    <Image Include="Assets\hand.png" />
+    <Image Include="Assets\textures\atlaslevel.png" />
+    <Image Include="Assets\sprites\gun.png" />
+    <Image Include="Assets\sprites\hand.png" />
     <Image Include="Assets\LockScreenLogo.scale-200.png" />
-    <Image Include="Assets\pointinghand.png" />
-    <Image Include="Assets\puky.png" />
+    <Image Include="Assets\sprites\pointinghand.png" />
+    <Image Include="Assets\sprites\puky.png" />
     <Image Include="Assets\SplashScreen.scale-200.png" />
     <Image Include="Assets\Square150x150Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.scale-200.png" />
     <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Image Include="Assets\StoreLogo.png" />
-    <Image Include="Assets\white.png" />
+    <Image Include="Assets\textures\white.png" />
     <Image Include="Assets\Wide310x150Logo.scale-200.png" />
-    <Image Include="Assets\zombie.png" />
-    <Image Include="Assets\zombie2.png" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -248,7 +246,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
-    <None Include="Assets\Courier_16.spritefont">
+    <None Include="Assets\fonts\Courier_16.spritefont">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">true</DeploymentContent>
@@ -298,6 +296,12 @@
     <ProjectReference Include="DirectXTK\DirectXTK_Windows10.vcxproj">
       <Project>{f4776924-619c-42c7-88b2-82c947ccc9e7}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="Assets\sounds\breathing.wav" />
+    <Media Include="Assets\sounds\piano.wav" />
+    <Media Include="Assets\sounds\shotgun.wav" />
+    <Media Include="Assets\sounds\walk.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

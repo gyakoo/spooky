@@ -33,6 +33,15 @@ void SceneRenderer::SpawnPlayer()
     XMUINT2 mapPos = m_map.GetRandomPosition();
     XMFLOAT3 p(mapPos.x + 0.5f, 0, mapPos.y + 0.5f);
     m_camera.SetPosition(p);
+    auto gameRes = m_deviceResources->GetGameResources();
+    if (gameRes && gameRes->m_audioEngine)
+    {
+        gameRes->SoundPlay(DX::GameResources::SFX_BREATH);
+        gameRes->SoundVolume(DX::GameResources::SFX_BREATH, 0.4f);
+
+        gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
+        gameRes->SoundVolume(DX::GameResources::SFX_PIANO, 0.05f);
+    }
 }
 
 // Initializes view parameters when the window size changes.
@@ -55,7 +64,8 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
 
     // Update map and camera (input, collisions and visibility)
     m_map.Update(timer, m_camera);
-    m_camera.Update(timer, [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR 
+    m_camera.Update(timer, 
+    [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR 
     { 
         if (GlobalFlags::CollisionsEnabled)
         {
@@ -67,8 +77,19 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         }
         else 
             return nextPos;
+    },
+    [this](CameraFirstPerson::eAction ac)
+    {
+        auto gameRes = m_deviceResources->GetGameResources();
+        if (!gameRes) return;
+        auto audio = gameRes->m_audioEngine.get();
+        if (!audio) return;
+        gameRes->SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
     });
 
+    // Audio
+    UpdateAudio(timer);
+    
     // some other input
     if (GlobalFlags::GenerateNewLevel)
     {
@@ -89,9 +110,34 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         XMUINT2 ppos = m_map.ConvertToMapPosition(m_camera.GetPosition());
         m_map.GenerateThumbTex(m_mapSettings.m_tileCount,&ppos);
     }
-
-
     
+}
+void SceneRenderer::UpdateAudio(DX::StepTimer const& timer)
+{
+    auto gameRes = m_deviceResources->GetGameResources();
+    if (!gameRes) return;
+    auto audio = gameRes->m_audioEngine.get();
+    if (!audio) return;
+
+    if (m_camera.m_moving)
+    {
+        gameRes->SoundResume(DX::GameResources::SFX_WALK);
+        gameRes->SoundPitch(DX::GameResources::SFX_WALK, m_camera.m_running ? 0.5f : 0.0f);
+    }
+    else
+    {
+        gameRes->SoundPause(DX::GameResources::SFX_WALK);
+    }
+
+
+
+    // Update AUDIO
+    if (audio)
+    {
+        if (!audio->IsCriticalError())
+            audio->Update();
+    }
+
 }
 
 // Renders one frame using the vertex and pixel shaders.
@@ -137,10 +183,10 @@ void SceneRenderer::CreateDeviceDependentResources()
 
     auto sprTask = concurrency::create_task([this] {
         m_sprite.CreateDeviceDependentResources();
-        m_sprite.CreateSprite(L"assets\\puky.png");
-        m_sprite.CreateSprite(L"assets\\hand.png");
-        m_sprite.CreateSprite(L"assets\\gun.png");
-        m_sprite.CreateSprite(L"assets\\pointinghand.png");
+        m_sprite.CreateSprite(L"assets\\sprites\\puky.png");
+        m_sprite.CreateSprite(L"assets\\sprites\\hand.png");
+        m_sprite.CreateSprite(L"assets\\sprites\\gun.png");
+        m_sprite.CreateSprite(L"assets\\sprites\\pointinghand.png");
     });
 
     (mapCreateTask && sprTask).then([this] () 

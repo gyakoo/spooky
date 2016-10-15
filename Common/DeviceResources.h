@@ -32,10 +32,11 @@ namespace DX
     //* ***************************************************************** *//
     //* Global GAME dx/misc resources
     //* ***************************************************************** *//
-    struct GameDXResources // common
+    struct GameResources // common
     {
-        GameDXResources(const DX::DeviceResources* device);
-        ~GameDXResources();
+        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_MAX};
+        GameResources(const DX::DeviceResources* device);
+        ~GameResources();
 
         Microsoft::WRL::ComPtr<ID3D11InputLayout>	m_baseIL;
         Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_baseVS;
@@ -53,8 +54,20 @@ namespace DX
         std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_batch;// DEBUG LINES
 
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
+
+        std::unique_ptr<DirectX::AudioEngine>       m_audioEngine;
+        std::vector<std::unique_ptr<DirectX::SoundEffect>> m_soundEffects;
+        std::vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
         bool m_ready;
+
+        void SoundPlay(uint32_t index, bool loop=true)const;
+        void SoundStop(uint32_t index)const;
+        void SoundPause(uint32_t index)const;
+        void SoundResume(uint32_t index)const ;
+        void SoundPitch(uint32_t index, float p);
+        void SoundVolume(uint32_t index, float v);
+        DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
     };
 
 	// Controls all the DirectX device resources.
@@ -99,7 +112,7 @@ namespace DX
 		D2D1::Matrix3x2F			GetOrientationTransform2D() const		{ return m_orientationTransform2D; }
 
         // GAME DX Common resources
-        GameDXResources*            GetGameResources() const                { return m_gameResources.get(); }
+        GameResources*            GetGameResources() const                { return m_gameResources.get(); }
 
 	private:
 		void CreateDeviceIndependentResources();
@@ -151,7 +164,7 @@ namespace DX
 		IDeviceNotify* m_deviceNotify;
 
         // game dx resources        
-        std::unique_ptr<GameDXResources> m_gameResources;
+        std::unique_ptr<GameResources> m_gameResources;
 
     };
 }
