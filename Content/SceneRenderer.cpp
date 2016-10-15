@@ -37,10 +37,9 @@ void SceneRenderer::SpawnPlayer()
     if (gameRes && gameRes->m_audioEngine)
     {
         gameRes->SoundPlay(DX::GameResources::SFX_BREATH);
-        gameRes->SoundVolume(DX::GameResources::SFX_BREATH, 0.4f);
-
         gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
-        gameRes->SoundVolume(DX::GameResources::SFX_PIANO, 0.05f);
+        gameRes->SoundPlay(DX::GameResources::SFX_HEART);
+        gameRes->SoundPitch(DX::GameResources::SFX_HEART, -0.5f);
     }
 }
 

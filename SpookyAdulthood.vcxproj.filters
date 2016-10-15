@@ -135,5 +135,6 @@
     <Media Include="Assets\sounds\piano.wav" />
     <Media Include="Assets\sounds\shotgun.wav" />
     <Media Include="Assets\sounds\walk.wav" />
+    <Media Include="Assets\sounds\heartbeat.wav" />
   </ItemGroup>
 </Project>

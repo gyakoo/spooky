@@ -52,6 +52,12 @@ void App::Initialize(CoreApplicationView^ applicationView)
 	CoreApplication::Resuming +=
 		ref new EventHandler<Platform::Object^>(this, &App::OnResuming);
 
+    CoreApplication::EnteredBackground += 
+        ref new Windows::Foundation::EventHandler<Windows::ApplicationModel::EnteredBackgroundEventArgs ^>(this, &SpookyAdulthood::App::OnEnteredBackground);
+
+    CoreApplication::LeavingBackground += ref new Windows::Foundation::EventHandler<Windows::ApplicationModel::LeavingBackgroundEventArgs ^>(this, &SpookyAdulthood::App::OnLeavingBackground);
+
+
     m_keyboard = std::make_unique<DirectX::Keyboard>();
     m_mouse = std::make_unique<DirectX::Mouse>();
 
@@ -182,6 +188,7 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 	// does not occur if the app was previously terminated.
 
 	// Insert your code here.
+    m_deviceResources->Resume();
 }
 
 // Window event handlers.
@@ -232,4 +239,16 @@ void SpookyAdulthood::App::OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Wind
     {
         ToggleToFullscreen();
     }
+}
+
+
+void SpookyAdulthood::App::OnEnteredBackground(Platform::Object ^sender, Windows::ApplicationModel::EnteredBackgroundEventArgs ^args)
+{
+    if (m_deviceResources) m_deviceResources->Trim();
+}
+
+
+void SpookyAdulthood::App::OnLeavingBackground(Platform::Object ^sender, Windows::ApplicationModel::LeavingBackgroundEventArgs ^args)
+{
+    if (m_deviceResources ) m_deviceResources->Resume();
 }

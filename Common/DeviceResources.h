@@ -34,7 +34,7 @@ namespace DX
     //* ***************************************************************** *//
     struct GameResources // common
     {
-        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_MAX};
+        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_HEART, SFX_MAX};
         GameResources(const DX::DeviceResources* device);
         ~GameResources();
 
@@ -83,6 +83,7 @@ namespace DX
 		void HandleDeviceLost();
 		void RegisterDeviceNotify(IDeviceNotify* deviceNotify);
 		void Trim();
+        void Resume();
 		void Present();
 
 		// The size of the render target, in pixels.

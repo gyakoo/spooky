@@ -47,6 +47,8 @@ namespace SpookyAdulthood
 		bool m_windowClosed;
 		bool m_windowVisible;
         
+        void OnEnteredBackground(Platform::Object ^sender, Windows::ApplicationModel::EnteredBackgroundEventArgs ^args);
+        void OnLeavingBackground(Platform::Object ^sender, Windows::ApplicationModel::LeavingBackgroundEventArgs ^args);
     };
 }
 
