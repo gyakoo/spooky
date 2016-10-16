@@ -789,7 +789,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
             quadVerts[i].color = argb;
         }
         auto& random = device->GetGameResources()->m_random;
-        const UINT FLOORTEX = 0;// random.Get(0, 4);
+        const UINT FLOORTEX = random.Get(0, 1);
         const UINT CEILINGTEX = random.Get(0, 4);
         const UINT WALLTEX = 0;// random.Get(0, 4);
         unsigned short cvi = 0; // current vertex index
@@ -828,7 +828,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                     quadVerts[3].SetTexCoord(0, 1, CEILINGTEX, 2);
                     for (auto& v : quadVerts) { v.normal = XMFLOAT3(0, -1, 0); }
                     std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
-                    const unsigned short inds[6] = { /*tri0*/cvi, cvi + 1, cvi + 2, /*tri1*/cvi, cvi + 2, cvi + 3 };
+                    const unsigned short inds[6] = { cvi, cvi + 1, cvi + 2, cvi, cvi + 2, cvi + 3 };
                     cvi += 4; // 
                     std::copy(inds, inds + 6, std::back_inserter(indices));
                 }

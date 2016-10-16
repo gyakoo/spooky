@@ -73,7 +73,7 @@ namespace SpookyAdulthood
         // rotation input
         m_pitchYaw.y += rotDelta*0.8f*ms.x;
         m_pitchYaw.x += rotDelta*0.5f*ms.y;
-        m_pitchYaw.x = Clamp(m_pitchYaw.x, -0.4f, 0.4f);
+        m_pitchYaw.x = Clamp(m_pitchYaw.x, -0.3f, 0.3f);
 
         // movement input
         float movFw = 0.0f;

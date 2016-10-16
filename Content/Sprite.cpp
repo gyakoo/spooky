@@ -189,9 +189,7 @@ namespace SpookyAdulthood
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
 
             // render
-            ID3D11SamplerState* sampler = dxCommon->m_commonStates->AnisotropicClamp();
-            if (sprI.m_distToCameraSq < 7.0f*7.0f)
-                sampler = dxCommon->m_commonStates->PointClamp();   
+            ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();   
             context->PSSetSamplers(0, 1, &sampler);
             context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &m_cbData, 0, 0, 0);
             context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
