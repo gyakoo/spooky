@@ -33,6 +33,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
     float2 uv = input.tindex*texAtlasFac;
     float4 texColor = texDiffuse.Sample(samPoint, uv+input.uv*texAtlasFac);
     float alpha = texColor.a;
+    if (alpha < 0.02f) discard;
 
     float4 color = alpha*float4(texColor.rgb*input.color.rgb, 1.0f);
     const float aspect = texAtlasSize.w;
