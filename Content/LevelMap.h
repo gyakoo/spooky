@@ -46,7 +46,7 @@ namespace SpookyAdulthood
     //* ***************************************************************** *//
     struct LevelMapBSPNode
     {
-        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(0){}
+        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(-1){}
 
         enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_VERT, WALL_HORIZ };
         enum PortalDir { NONE, NORTH, SOUTH, WEST, EAST };
@@ -64,6 +64,7 @@ namespace SpookyAdulthood
         LevelMapBSPNodePtr m_children[2];
         NodeDXResourcesPtr m_dx; // only valid when IsLeaf()
         std::shared_ptr<SegmentList> m_collisionSegments;
+        std::vector<XMUINT2> m_pillars;
         int m_teleportNdx;
         int m_leafNdx;
         uint32_t m_tag;
