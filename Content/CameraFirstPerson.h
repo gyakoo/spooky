@@ -38,12 +38,14 @@ namespace SpookyAdulthood
         float m_runningTime;
         float m_timeShoot;
         bool m_leftDown;
+        float m_rightDownTime;
     };
 
     // there are better(faster) ways to do this, anyways
     template<typename T, typename A>
     void CameraFirstPerson::Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun)
     {
+        const float dt = (float)timer.GetElapsedSeconds();
         auto ms = DirectX::Mouse::Get().GetState();
         auto kb = DirectX::Keyboard::Get().GetState();
         m_running = kb.LeftShift;
@@ -64,8 +66,16 @@ namespace SpookyAdulthood
             }
         }
 
+        if (ms.rightButton)
+        {
+            m_rightDownTime += dt;
+        }
+        else
+        {
+            m_rightDownTime = 0.0f;
+        }
+
         // update cam
-        const float dt = (float)timer.GetElapsedSeconds();
         const float rotDelta = dt*XM_PIDIV4;
         const float movDelta = dt * (m_running ? 3.0f : 1.0f);
         float hvel = 5.0f;

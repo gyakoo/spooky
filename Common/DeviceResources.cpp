@@ -714,6 +714,13 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 	return rotation;
 }
 
+// default values for SOUNDS
+static const wchar_t* g_sndNames[] = {
+    L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav",
+    L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
+    L"assets\\sounds\\heartbeat.wav" };
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f };
 
 DX::GameResources::GameResources(const DX::DeviceResources* device)
     : m_ready(false), m_levelTime(0.0f)
@@ -740,22 +747,16 @@ DX::GameResources::GameResources(const DX::DeviceResources* device)
             (ID3D11Resource**)m_textureWhite.ReleaseAndGetAddressOf(),
             m_textureWhiteSRV.ReleaseAndGetAddressOf()));
 
-    // SOUNDS, init values
-    static const wchar_t* soundNames[] = { 
-        L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav", 
-        L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
-        L"assets\\sounds\\heartbeat.wav"};
-    static const float volumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f };
-    static const float pitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f };
+    // SOUNDS, init values    
     m_soundEffects.resize(SFX_MAX);
     m_sounds.resize(SFX_MAX);
     for (int i = 0; i < SFX_MAX; ++i)
     {
         concurrency::create_task([this,i] {
-            m_soundEffects[i] = std::move(std::make_unique<SoundEffect>(m_audioEngine.get(), soundNames[i]));
+            m_soundEffects[i] = std::move(std::make_unique<SoundEffect>(m_audioEngine.get(), g_sndNames[i]));
             m_sounds[i] = std::move(m_soundEffects[i]->CreateInstance());
-            m_sounds[i]->SetVolume(volumes[i]);
-            m_sounds[i]->SetPitch(pitches[i]);
+            m_sounds[i]->SetVolume(g_sndVolumes[i]);
+            m_sounds[i]->SetPitch(g_sndPitches[i]);
         });
     }
 
@@ -886,10 +887,13 @@ void DX::GameResources::SoundPitch(uint32_t index, float p)
     if (!s) return;
     s->SetPitch(p);
 }
+
 void DX::GameResources::SoundVolume(uint32_t index, float v)
 {
     if (index >= m_sounds.size()) return;
     auto s = m_sounds[index].get();
     if (!s) return;
+    if (v < .0f)
+        v = g_sndVolumes[index];
     s->SetVolume(v);
 }

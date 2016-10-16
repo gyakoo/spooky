@@ -143,7 +143,7 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
-        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, {0,0,0,0} };
+        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { min(camera.m_rightDownTime,1.f),0,0,0} };
         context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
         context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());

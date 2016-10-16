@@ -133,6 +133,12 @@
     <Image Include="Assets\sprites\garg1.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="Assets\sprites\bodpile1.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Assets\sprites\girl1.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

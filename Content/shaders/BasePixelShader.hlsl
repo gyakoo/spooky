@@ -33,7 +33,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
     float2 uv = input.tindex*texAtlasFac;
     float4 texColor = texDiffuse.Sample(samPoint, uv+input.uv*texAtlasFac);
     float alpha = texColor.a;
-    if (alpha < 0.02f) discard;
+    if (alpha < 0.02f) discard; // hmm not sure
 
     float4 color = alpha*float4(texColor.rgb*input.color.rgb, 1.0f);
     const float aspect = texAtlasSize.w;
@@ -44,14 +44,14 @@ float4 main(PixelShaderInput input) : SV_TARGET
         // Changing fog density depending on circle from origin 
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
         const float levelTime = texAtlasSize.z;
-        const float l = length(xy)* 0.6f;
+        const float l = length(xy) * 0.5f;
         float val = val = l*saturate(2 / dist); // origin and depth
         fogDensity *= val;
 
         // Fog 1/exp2
         const float dfd = dist*fogDensity;
         const float fogFactor = saturate(1.0f / exp(dfd*dfd));
-        color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor));
+        color.rgb = lerp(color.rgb, fogColor.rgb, (1 - fogFactor)) * other.x;
         //color.a *= 5 / dist;
     }
     else
