@@ -194,6 +194,7 @@
     <Image Include="Assets\sprites\anx1.png" />
     <Image Include="Assets\sprites\dep1.png" />
     <Image Include="Assets\sprites\crosshair.png" />
+    <Image Include="Assets\sprites\garg1.png" />
     <Image Include="Assets\sprites\grave1.png" />
     <Image Include="Assets\sprites\msgdie.png" />
     <Image Include="Assets\sprites\tree1.png" />

@@ -159,6 +159,7 @@ void SceneRenderer::Render()
         m_sprite.Draw3D(6, XMFLOAT3(5, 0.25f, i+2), XMFLOAT2(0.5f,0.5f));
     m_sprite.Draw3D(8, XMFLOAT3(2, 0.95f, 4.5f), XMFLOAT2(0.7f, 1.9f));
     m_sprite.Draw3D(9, XMFLOAT3(7, 1.0f, 2), XMFLOAT2(0.5f, .35f));
+    m_sprite.Draw3D(10, XMFLOAT3(8, 0.75f, 3), XMFLOAT2(1.5f, 1.5f));
     m_sprite.End3D();
 
     // GUN RENDER
@@ -194,6 +195,7 @@ void SceneRenderer::CreateDeviceDependentResources()
         m_sprite.CreateSprite(L"assets\\sprites\\crosshair.png"); // 7
         m_sprite.CreateSprite(L"assets\\sprites\\tree1.png"); // 8
         m_sprite.CreateSprite(L"assets\\sprites\\msgdie.png"); // 9
+        m_sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
     });
 
     (mapCreateTask && sprTask).then([this] () 

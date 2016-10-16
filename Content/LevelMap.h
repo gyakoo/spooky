@@ -64,7 +64,7 @@ namespace SpookyAdulthood
         LevelMapBSPNodePtr m_children[2];
         NodeDXResourcesPtr m_dx; // only valid when IsLeaf()
         std::shared_ptr<SegmentList> m_collisionSegments;
-        std::vector<XMUINT2> m_pillars;
+        std::unique_ptr<std::vector<XMUINT2>> m_pillars;
         int m_teleportNdx;
         int m_leafNdx;
         uint32_t m_tag;
