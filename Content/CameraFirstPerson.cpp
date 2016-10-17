@@ -54,8 +54,12 @@ void CameraFirstPerson::SetPosition(const XMFLOAT3& p)
     m_camXZ = XMLoadFloat3(&_p);
 }
 
-XMFLOAT3 CameraFirstPerson::GetForward() const
+float CameraFirstPerson::ComputeHeightAtHit(const XMFLOAT3& hit)
 {
-    return XMFLOAT3(0, 0, 0);
-}
+    XMVECTOR cp = XMVectorSetY( XMLoadFloat3(&GetPosition()), 0);
+    XMVECTOR vh = XMVectorSetY( XMLoadFloat3(&hit), 0);
 
+    const float l = XMVectorGetX(XMVector3Length(XMVectorSubtract(vh, cp)));
+    const float h = l * tan(-m_pitchYaw.x);
+    return h;
+}

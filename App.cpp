@@ -33,9 +33,9 @@ App::App() :
 	m_windowClosed(false),
 	m_windowVisible(true)
 {
-    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
-    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchViewSize= Windows::Foundation::Size(800,600);
-    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::PreferredLaunchViewSize;
+    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
+    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchViewSize= Windows::Foundation::Size(800,600);
+    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::PreferredLaunchViewSize;
 }
 
 // The first method called when the IFrameworkView is being created.
@@ -134,12 +134,12 @@ void App::Run()
 		{
 			CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
             
-			m_main->Update();
-
-			if (m_main->Draw3D())
-			{
-				m_deviceResources->Present();
-			}
+            if (m_main)
+            {
+                m_main->Update();
+                if (m_main->Draw3D())
+                    m_deviceResources->Present();
+            }
 		}
 		else
 		{
@@ -196,7 +196,8 @@ void App::OnResuming(Platform::Object^ sender, Platform::Object^ args)
 void App::OnWindowSizeChanged(CoreWindow^ sender, WindowSizeChangedEventArgs^ args)
 {
 	m_deviceResources->SetLogicalSize(Size(sender->Bounds.Width, sender->Bounds.Height));
-	m_main->CreateWindowSizeDependentResources();
+    if ( m_main )
+	    m_main->CreateWindowSizeDependentResources();
 }
 
 void App::OnVisibilityChanged(CoreWindow^ sender, VisibilityChangedEventArgs^ args)
@@ -218,13 +219,15 @@ void App::OnDpiChanged(DisplayInformation^ sender, Object^ args)
 	// you should always retrieve it using the GetDpi method.
 	// See DeviceResources.cpp for more details.
 	m_deviceResources->SetDpi(sender->LogicalDpi);
-	m_main->CreateWindowSizeDependentResources();
+	if ( m_main )
+        m_main->CreateWindowSizeDependentResources();
 }
 
 void App::OnOrientationChanged(DisplayInformation^ sender, Object^ args)
 {
 	m_deviceResources->SetCurrentOrientation(sender->CurrentOrientation);
-	m_main->CreateWindowSizeDependentResources();
+    if (m_main)
+        m_main->CreateWindowSizeDependentResources();
 }
 
 void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
@@ -234,7 +237,8 @@ void App::OnDisplayContentsInvalidated(DisplayInformation^ sender, Object^ args)
 
 void SpookyAdulthood::App::OnKeyDown(Windows::UI::Core::CoreWindow ^sender, Windows::UI::Core::KeyEventArgs ^args)
 {
-    m_main->OnKeyDown(args->VirtualKey);
+    if (m_main)
+        m_main->OnKeyDown(args->VirtualKey);
     if (args->VirtualKey == Windows::System::VirtualKey::F5)
     {
         ToggleToFullscreen();

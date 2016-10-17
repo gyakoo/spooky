@@ -21,6 +21,7 @@ namespace SpookyAdulthood
         XMFLOAT2 m_size;
         float m_distSqOrRot;
         bool m_isAnim;
+        bool m_disableDepth;
     };
 
     struct SpriteAnimation
@@ -50,7 +51,7 @@ namespace SpookyAdulthood
 
         void Begin3D(const CameraFirstPerson& camera);
         void End3D();
-        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size);
+        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth=false);
         
         void Begin2D(const CameraFirstPerson& camera);
         void End2D();

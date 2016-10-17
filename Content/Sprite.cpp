@@ -3,6 +3,7 @@
 #include "../Common/DirectXHelper.h"
 #include "../Common/DeviceResources.h"
 #include "CameraFirstPerson.h"
+#include "GlobalFlags.h"
 
 using namespace DirectX;
 
@@ -78,7 +79,7 @@ namespace SpookyAdulthood
         }
     }
     
-    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size)
+    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth)
     {
         DX::ThrowIfFalse(m_rendering[R3D]); // Begin not called
 
@@ -90,7 +91,7 @@ namespace SpookyAdulthood
 
         const float x = m_camPosition.x - position.x;
         const float y = m_camPosition.z - position.z;
-        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false };
+        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false, disableDepth };
         m_spritesToRender[R3D].push_back(sprR);
     }
 
@@ -142,9 +143,9 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
-        float t = max(min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.35f, 0));
-        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,0,0,0} };
-        context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
+        float t = max(min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.35f, 0));      
+        if (GlobalFlags::AllLit) t = 1.0f;
+        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,1.0f-int(GlobalFlags::AllLit),0,0} };
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
         context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
         context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
@@ -189,6 +190,8 @@ namespace SpookyAdulthood
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
 
             // render
+            auto depthS = sprI.m_disableDepth ? dxCommon->m_commonStates->DepthNone() : dxCommon->m_commonStates->DepthDefault();
+            context->OMSetDepthStencilState(depthS, 0);
             ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();   
             context->PSSetSamplers(0, 1, &sampler);
             context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &m_cbData, 0, 0, 0);

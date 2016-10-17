@@ -16,7 +16,7 @@ SamplerState samPoint;
 cbuffer constants
 {
     float4 texAtlasSize;  // xy=atlas size, z=global Time, w=aspect ratio
-    float4 other;
+    float4 other; // x=color.rgb multiplier, y=0|1 all lit
 };
 
 
@@ -46,7 +46,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
         const float levelTime = texAtlasSize.z;
         const float l = length(xy) * 0.5f;
         float val = val = l*saturate(2 / dist); // origin and depth
-        fogDensity *= val;
+        fogDensity *= val*other.y;
 
         // Fog 1/exp2
         const float dfd = dist*fogDensity;

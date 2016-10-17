@@ -48,8 +48,20 @@ void SpookyAdulthoodMain::Update()
 		m_sceneRenderer->Update(m_timer);
 		m_fpsTextRenderer->Update(m_timer);
         GlobalFlags::Update(m_timer);
-        if (m_deviceResources->GetGameResources() )
-            m_deviceResources->GetGameResources()->m_sprite.Update(m_timer);
+        auto gameRes = m_deviceResources->GetGameResources();
+        if (gameRes && gameRes->m_ready)
+        {
+            // Update SPRITE MANAGER
+            gameRes->m_sprite.Update(m_timer);
+            
+            // Update AUDIO
+            auto audio = gameRes->m_audioEngine.get();
+            if (audio)
+            {
+                if (!audio->IsCriticalError())
+                    audio->Update();
+            }
+        }
 	});
 }
 

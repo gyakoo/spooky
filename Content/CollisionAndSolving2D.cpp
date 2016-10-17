@@ -80,17 +80,20 @@ namespace SpookyAdulthood
         int j = 0;
         for (const auto& collSeg : *segs)
         {
-            //// -- get closest intersection if any            
-            for (int i = 0; i < ARRAYSIZE(charSegments); ++i)
+            if (!collSeg.IsDisabled()) // if segment isn't disabled
             {
-                const Segment& s = charSegments[i];
-                if (FPSCDRaycast(s[0], s[1], collSeg.start, collSeg.end, &hit, &frac) )
+                //// -- get closest intersection if any            
+                for (int i = 0; i < ARRAYSIZE(charSegments); ++i)
                 {
-                    if (frac < minFrac)
+                    const Segment& s = charSegments[i];
+                    if (FPSCDRaycast(s[0], s[1], collSeg.start, collSeg.end, &hit, &frac))
                     {
-                        minFrac = frac;
-                        closest = j;
-                        minHit = hit;
+                        if (frac < minFrac)
+                        {
+                            minFrac = frac;
+                            closest = j;
+                            minHit = hit;
+                        }
                     }
                 }
             }
@@ -111,5 +114,12 @@ namespace SpookyAdulthood
 
         return nextPos;
     }
+
+    bool CollisionIntersectSegment(const CollSegment& seg, const XMFLOAT2& origin, const XMFLOAT2& dir, XMFLOAT2& outHit, float& outFrac)
+    {
+        XMFLOAT2 endP(origin.x + dir.x*1000.0f, origin.y + dir.y*1000.0f);
+        return FPSCDRaycast(origin, endP, seg.start, seg.end, &outHit, &outFrac);
+    }
+
 
 };

@@ -20,7 +20,7 @@ namespace SpookyAdulthood
         void Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun);
         XMFLOAT3 GetPosition() const { return m_xyz; }
         void SetPosition(const XMFLOAT3& p);
-        XMFLOAT3 GetForward() const;
+        float ComputeHeightAtHit(const XMFLOAT3& hit);
 
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_view;
@@ -35,6 +35,7 @@ namespace SpookyAdulthood
         XMFLOAT4X4 m_orientMatrix;
         XMVECTOR m_camXZ;
         XMFLOAT3 m_xyz;
+        XMFLOAT3 m_forward;
         float m_runningTime;
         float m_timeShoot;
         float m_timeToNextShoot;
@@ -104,7 +105,7 @@ namespace SpookyAdulthood
 
         m_timeShoot -= dt;
         m_timeToNextShoot -= dt;
-        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y + sin(m_runningTime*hvel)*0.02f);
+        XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y + sin(m_runningTime*hvel)*0.02f);        
         XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x - max(m_timeShoot*0.2f,0.0f) + cos(m_runningTime*hvel)*0.01f);
         if (movFw || movSt)
         {
@@ -147,6 +148,9 @@ namespace SpookyAdulthood
         m_xyz.y = m_height;
         m_xyz.z = -m_xyz.z;
         XMMATRIX m = XMMatrixMultiply(ry, rx);
+        XMStoreFloat3(&m_forward, m.r[2]);
+        m_forward.y = -m_forward.y;
+        m_forward.z = -m_forward.z;
         m = XMMatrixMultiply(t, m);
 
         // udpate view mat

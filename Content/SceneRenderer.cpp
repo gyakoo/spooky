@@ -20,8 +20,8 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 
-    m_mapSettings.m_tileCount = XMUINT2(60, 60);
-    m_mapSettings.m_minTileCount = XMUINT2(3, 3);
+    m_mapSettings.m_tileCount = XMUINT2(35, 35);
+    m_mapSettings.m_minTileCount = XMUINT2(4, 4);
     m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
     m_map.Generate(m_mapSettings);
     SpawnPlayer();    
@@ -88,7 +88,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     // Audio
     UpdateAudio(timer);
     
-    // some other input
+
     if (GlobalFlags::GenerateNewLevel)
     {
         GlobalFlags::GenerateNewLevel = false;
@@ -126,16 +126,6 @@ void SceneRenderer::UpdateAudio(DX::StepTimer const& timer)
     {
         gameRes->SoundPause(DX::GameResources::SFX_WALK);
     }
-
-
-
-    // Update AUDIO
-    if (audio)
-    {
-        if (!audio->IsCriticalError())
-            audio->Update();
-    }
-
 }
 
 // Renders one frame using the vertex and pixel shaders.
@@ -165,6 +155,19 @@ void SceneRenderer::Render()
     sprite.Draw3D(11, XMFLOAT3(2, 0.3f, 7), XMFLOAT2(1.5f, 0.6f));
     sprite.Draw3D(11, XMFLOAT3(2.35f, 0.3f, 7.34f), XMFLOAT2(1.5f, 0.6f));
     sprite.Draw3D(12, XMFLOAT3(3.35f, 0.7f, 7.34f), XMFLOAT2(0.6f, 1.0f));
+
+
+    // some other input
+    if (GlobalFlags::TestRaycast)
+    {
+        XMFLOAT3 hit;
+        if (m_map.Raycast(m_camera.GetPosition(), m_camera.m_forward, hit))
+        {
+            hit.y = m_camera.ComputeHeightAtHit(hit);            
+            sprite.Draw3D(0,hit, XMFLOAT2(0.3, 0.3), true);
+        }
+    }
+
     sprite.End3D();
 
     // GUN RENDER

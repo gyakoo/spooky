@@ -630,6 +630,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             {
                 s.x = seg.start.x; s.y = 0.0f; s.z = seg.start.y;
                 e.x = seg.end.x; e.y = 0.0f; e.z = seg.end.y;
+                if (seg.IsDisabled())
+                    s.y = e.y = 0.4f;
                 VertexPositionColor v1(s, c), v2(e, c);
                 m_device->GetGameResources()->m_batch->DrawLine(v1, v2);
             }
@@ -681,7 +683,8 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
     float t = max( min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.7f,0));
-    PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {t,0,0,0} };
+    if (GlobalFlags::AllLit) t = 1.0f;
+    PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {t,1.0f-int(GlobalFlags::AllLit),0,0} };
     context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
     context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);
@@ -737,8 +740,49 @@ const SegmentList* LevelMap::GetCurrentCollisionSegments()
 }
 
 
-bool LevelMap::Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir)
+bool LevelMap::Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit)
 {
+    // get room where origin is
+    // check against all collision segments for that room,
+    // if portal hit move origin to portal origin and check again for the room that portal connects with
+    const auto& leaf = GetLeafAt(origin);
+    if (!leaf->m_collisionSegments) 
+        return false;
+
+    XMFLOAT2 origin2D(origin.x, origin.z);
+    XMFLOAT2 dir2D(dir.x, dir.z);
+    
+    XMFLOAT2 minHit, hit;
+    float minFrac = FLT_MAX, frac;
+    int minCSIndex = -1;
+    const int count = (int)leaf->m_collisionSegments->size();
+    for (int i =0 ; i < count; ++i )
+    {
+        const auto& cs = leaf->m_collisionSegments->at(i);
+        if (CollisionIntersectSegment(cs, origin2D, dir2D, hit, frac) && frac < minFrac)
+        {
+            minFrac = frac;
+            minHit = hit;
+            minCSIndex = i;
+        }
+    }
+
+    // was there any hit?
+    if (minCSIndex != -1)
+    {
+        const auto& cs = leaf->m_collisionSegments->at(minCSIndex);
+        if ( cs.IsPortalOpen() )
+        {
+            XMFLOAT3 newOrigin3D(minHit.x + dir.x*0.05f, 0.0f, minHit.y+dir.z*0.05f);
+            return Raycast(newOrigin3D, dir, outHit);
+        }
+        else
+        {
+            outHit = XMFLOAT3(minHit.x, 0.0f, minHit.y);
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -976,6 +1020,10 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
     const float ys[2] = { (float)m_area.m_y0, (float)m_area.m_y1 };
 
     CollSegment lastSeg;
+    lastSeg.flags = CollSegment::WALL;
+    
+    CollSegment portalSeg;     
+    portalSeg.flags = CollSegment::PORTAL | CollSegment::DISABLED;
 
     // north/south
     for (int i = 0; i < 2; ++i)
@@ -990,6 +1038,11 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
             {
                 if (lastSeg.IsValid())
                     m_collisionSegments->push_back(lastSeg);
+                // portal segment
+                portalSeg.start = portalSeg.end = lastSeg.end;
+                portalSeg.end.x += 1.0f;
+                portalSeg.normal = lastSeg.normal;
+                m_collisionSegments->push_back(portalSeg);
                 lastSeg.start.x = lastSeg.end.x = ix + 1.0f;
             }
             else
@@ -1014,6 +1067,11 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
             {
                 if (lastSeg.IsValid())
                     m_collisionSegments->push_back(lastSeg);
+                // portal segment
+                portalSeg.start = portalSeg.end = lastSeg.end;
+                portalSeg.end.y += 1.0f;
+                portalSeg.normal = lastSeg.normal;
+                m_collisionSegments->push_back(portalSeg);
                 lastSeg.start.y = lastSeg.end.y = iy + 1.0f;
             }
             else
