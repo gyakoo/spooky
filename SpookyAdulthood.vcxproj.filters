@@ -156,6 +156,7 @@
     </FxCompile>
     <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl" />
     <FxCompile Include="Content\shaders\ScreenSpriteVS.hlsl" />
+    <FxCompile Include="Content\shaders\PostPS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="Assets\sounds\breathing.wav" />

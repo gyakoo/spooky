@@ -680,7 +680,8 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
-    PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {min(camera.m_rightDownTime*2.0f,1.f),0,0,0} };
+    float t = max( min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.7f,0));
+    PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {t,0,0,0} };
     context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
     context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);

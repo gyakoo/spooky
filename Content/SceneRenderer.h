@@ -19,6 +19,7 @@ namespace SpookyAdulthood
 		void ReleaseDeviceDependentResources();
 		void Update(DX::StepTimer const& timer);
 		void Render();
+        const CameraFirstPerson& GetCamera() { return m_camera; }
 
     private:
         void SpawnPlayer();

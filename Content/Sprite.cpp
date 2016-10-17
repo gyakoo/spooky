@@ -143,7 +143,8 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
-        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { min(camera.m_rightDownTime,1.f),0,0,0} };
+        float t = max(min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.35f, 0));
+        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,0,0,0} };
         context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
         context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
@@ -277,7 +278,7 @@ namespace SpookyAdulthood
         m_spritesToRender[R2D].push_back(sprR);
     }
 
-    void SpriteManager::DrawScreenQuad(ID3D11ShaderResourceView* srv)
+    void SpriteManager::DrawScreenQuad(ID3D11ShaderResourceView* srv, const XMFLOAT4& params0, const XMFLOAT4& params1)
     {
         auto dxCommon = m_device->GetGameResources();
         if (!dxCommon->m_ready) return;
@@ -287,14 +288,17 @@ namespace SpookyAdulthood
         context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_spriteVS.Get(), nullptr, 0);
-        context->PSSetShader(dxCommon->m_spritePS.Get(), nullptr, 0);
+        context->PSSetShader(dxCommon->m_postPS.Get(), nullptr, 0);
         ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
         context->PSSetSamplers(0, 1, &sampler);
+        PixelShaderConstantBuffer pscb = { params0, params1 };
+        context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
+        context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
         context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthNone(), 0);
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
         context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
 
-        // simple translate rotate
+        // 
         ModelViewProjectionConstantBuffer cbData;
         XMMATRIX ms = XMMatrixScaling(2.0f, 2.0f, 2.0f);
         XMStoreFloat4x4(&cbData.model, XMMatrixTranspose(ms));

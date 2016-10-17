@@ -47,6 +47,7 @@ namespace DX
 
         Microsoft::WRL::ComPtr<ID3D11VertexShader>	m_spriteVS;
         Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_spritePS;
+        Microsoft::WRL::ComPtr<ID3D11PixelShader>	m_postPS;
 
         std::unique_ptr<DirectX::SpriteBatch>       m_sprites;
         SpookyAdulthood::SpriteManager              m_sprite;

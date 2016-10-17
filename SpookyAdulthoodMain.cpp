@@ -76,14 +76,23 @@ bool SpookyAdulthoodMain::Draw3D()
 
     // Render the scene objects to RT
 	m_sceneRenderer->Render();
-	m_fpsTextRenderer->Render();
-    GlobalFlags::Draw3D(m_deviceResources);
+	
 
     // Render quad on screen
-    targets[0] = { m_deviceResources->GetBackBufferRenderTargetView() };
-    context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
-    context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-    m_deviceResources->GetGameResources()->m_sprite.DrawScreenQuad(m_deviceResources->GetTempRenderTargetSRV());
+    {
+        targets[0] = { m_deviceResources->GetBackBufferRenderTargetView() };
+        context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
+        context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+        auto& cam = m_sceneRenderer->GetCamera();
+        // params (flash)
+        float t = max(0, 1.0f - 16.0f*(0.5f - cam.m_timeShoot));
+        XMFLOAT4 params0(t*0.2f, t*0.2f, t*0.2f, 0);
+        m_deviceResources->GetGameResources()->m_sprite.DrawScreenQuad(m_deviceResources->GetTempRenderTargetSRV(), params0);
+
+        // HUD on the final RT
+        m_fpsTextRenderer->Render();
+        GlobalFlags::Draw3D(m_deviceResources);
+    }
 
 	return true;
 }

@@ -766,6 +766,7 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     auto loadPSTask = DX::ReadDataAsync(L"BasePixelShader.cso");
     auto loadSpriteVS = DX::ReadDataAsync(L"ScreenSpriteVS.cso");
     auto loadSpritePS = DX::ReadDataAsync(L"ScreenSpritePS.cso");
+    auto loadPostPS = DX::ReadDataAsync(L"PostPS.cso");
 
     m_sprites = std::make_unique<SpriteBatch>(device->GetD3DDeviceContext());
     m_fontConsole = std::make_unique<DirectX::SpriteFont>(device->GetD3DDevice(), L"assets\\fonts\\Courier_16.spritefont");
@@ -840,17 +841,22 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     });
 
     // SCREEN SPRITE SHADERS
-    auto createSSVS = loadSpriteVS.then([this, device](const std::vector<byte>& filedata) {
-        const HRESULT hr = device->GetD3DDevice()->CreateVertexShader(filedata.data(), filedata.size(), nullptr, m_spriteVS.GetAddressOf());
+    auto createSSVS = loadSpriteVS.then([this, device](const std::vector<byte>& fileData) {
+        const HRESULT hr = device->GetD3DDevice()->CreateVertexShader(fileData.data(), fileData.size(), nullptr, m_spriteVS.GetAddressOf());
         DX::ThrowIfFailed(hr);
     });
-    auto createSSPS = loadSpritePS.then([this, device](const std::vector<byte>& filedata) {
-        const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(filedata.data(), filedata.size(), nullptr, m_spritePS.GetAddressOf());
+    auto createSSPS = loadSpritePS.then([this, device](const std::vector<byte>& fileData) {
+        const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(fileData.data(), fileData.size(), nullptr, m_spritePS.GetAddressOf());
+        DX::ThrowIfFailed(hr);
+    });
+
+    auto createPostPS = loadPostPS.then([this, device](const std::vector<byte>& fileData) {
+        const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(fileData.data(), fileData.size(), nullptr, m_postPS.GetAddressOf());
         DX::ThrowIfFailed(hr);
     });
        
 
-    (createBaseVS && createBasePS && createSSVS && createSSPS).then([this]() { m_ready = true; });
+    (createBaseVS && createBasePS && createSSVS && createSSPS && createPostPS).then([this]() { m_ready = true; });
 }
 
 DX::GameResources::~GameResources()
@@ -862,6 +868,7 @@ DX::GameResources::~GameResources()
     m_basePS.Reset();
     m_spriteVS.Reset();
     m_spritePS.Reset();
+    m_postPS.Reset();
     m_baseVSCB.Reset();
     m_basePSCB.Reset();
     m_baseIL.Reset();
