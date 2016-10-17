@@ -171,9 +171,13 @@ void SceneRenderer::Render()
     {
         sprite.Begin2D(m_camera);
         float rvel = (m_camera.m_moving && m_camera.m_running) ? 1.0f : 0.5f;
+        float t = max(0.0f, m_camera.m_timeShoot);
         float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
-        float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;
-        sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f+offsy ), XMFLOAT2(0.9f, 0.9f), 0.0f); // 
+        float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;        
+        sprite.Draw2D(17, XMFLOAT2(offsx*0.8f, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f); // pumpkins
+        sprite.Draw2D(18, XMFLOAT2(offsx*0.7f, -0.6f + offsy*1.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // candies
+        sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f + offsy-t*0.08f), XMFLOAT2(0.9f, 0.9f), 0.0f); // cannon
+        sprite.Draw2D(16, XMFLOAT2(offsx, -0.6f + offsy - t*0.08f), XMFLOAT2(0.9f, 0.9f), 0.0f); // flashlight
         //sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.08f, 0.1f), -m_camera.m_pitchYaw.y);        
         sprite.Draw2DAnimation(0, XMFLOAT2(offsx, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f);
 
@@ -193,7 +197,7 @@ void SceneRenderer::CreateDeviceDependentResources()
         sprite.CreateDeviceDependentResources();
         sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
         sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
-        sprite.CreateSprite(L"assets\\sprites\\gun.png"); // 2
+        sprite.CreateSprite(L"assets\\sprites\\gun0.png"); // 2
         sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
         sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
         sprite.CreateSprite(L"assets\\sprites\\dep1.png"); // 5
@@ -207,8 +211,11 @@ void SceneRenderer::CreateDeviceDependentResources()
         sprite.CreateSprite(L"assets\\sprites\\gunshoot0.png"); // 13
         sprite.CreateSprite(L"assets\\sprites\\gunshoot1.png"); // 14
         sprite.CreateSprite(L"assets\\sprites\\gunshoot2.png"); // 15
+        sprite.CreateSprite(L"assets\\sprites\\gun1.png"); // 16
+        sprite.CreateSprite(L"assets\\sprites\\gun2.png"); // 17
+        sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
 
-        sprite.CreateAnimation(std::vector<int>{13, 14, 15}, 24.0f); // 0
+        sprite.CreateAnimation(std::vector<int>{13, 14, 15}, 20.0f); // 0
         sprite.CreateAnimationInstance(0); // 0
     });
 

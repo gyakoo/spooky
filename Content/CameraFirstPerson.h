@@ -6,7 +6,7 @@ namespace DX { class StepTimer;  }
 
 namespace SpookyAdulthood
 {
-#define CAM_DEFAULT_HEIGHT 0.8f
+#define CAM_DEFAULT_HEIGHT 0.45f
 #define CAM_DEFAULT_FOVY 70.0f
 #define CAM_DEFAULT_RADIUS 0.25f
     struct CameraFirstPerson
@@ -37,6 +37,7 @@ namespace SpookyAdulthood
         XMFLOAT3 m_xyz;
         float m_runningTime;
         float m_timeShoot;
+        float m_timeToNextShoot;
         bool m_leftDown;
         float m_rightDownTime;
     };
@@ -49,20 +50,25 @@ namespace SpookyAdulthood
         auto ms = DirectX::Mouse::Get().GetState();
         auto kb = DirectX::Keyboard::Get().GetState();
         m_running = kb.LeftShift;
-        if (ms.leftButton)
+
+        if (m_timeToNextShoot <= 0.0f)
         {
-            if (!m_leftDown)
+            if (ms.leftButton)
             {
-                m_leftDown = true;
-                actionFun(AC_SHOOT);
-                m_timeShoot = 0.5f;
+                if (!m_leftDown)
+                {
+                    m_leftDown = true;
+                    actionFun(AC_SHOOT);
+                    m_timeShoot = 0.5f;
+                    m_timeToNextShoot = 0.85f;
+                }
             }
-        }
-        else
-        {
-            if (m_leftDown)
+            else
             {
-                m_leftDown = false;
+                if (m_leftDown)
+                {
+                    m_leftDown = false;
+                }
             }
         }
 
@@ -97,6 +103,7 @@ namespace SpookyAdulthood
         else if (kb.E) m_height -= movDelta;
 
         m_timeShoot -= dt;
+        m_timeToNextShoot -= dt;
         XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y + sin(m_runningTime*hvel)*0.02f);
         XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x - max(m_timeShoot*0.2f,0.0f) + cos(m_runningTime*hvel)*0.01f);
         if (movFw || movSt)

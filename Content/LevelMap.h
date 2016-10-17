@@ -157,6 +157,8 @@ namespace SpookyAdulthood
         LevelMapBSPNodePtr GetLeafAt(const XMFLOAT3& pos);
         const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
 
+        bool Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir);
+
 	private:
         friend struct LevelMapBSPNode;
         void Destroy();

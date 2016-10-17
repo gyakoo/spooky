@@ -736,6 +736,13 @@ const SegmentList* LevelMap::GetCurrentCollisionSegments()
     return m_cameraCurLeaf->m_collisionSegments.get();
 }
 
+
+bool LevelMap::Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir)
+{
+    return false;
+}
+
+
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////
