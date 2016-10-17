@@ -48,6 +48,8 @@ void SpookyAdulthoodMain::Update()
 		m_sceneRenderer->Update(m_timer);
 		m_fpsTextRenderer->Update(m_timer);
         GlobalFlags::Update(m_timer);
+        if (m_deviceResources->GetGameResources() )
+            m_deviceResources->GetGameResources()->m_sprite.Update(m_timer);
 	});
 }
 

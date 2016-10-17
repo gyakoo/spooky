@@ -77,8 +77,7 @@ namespace SpookyAdulthood
             CreateSprite(m_sprites[i].m_filename, i);
         }
     }
-
-
+    
     void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size)
     {
         DX::ThrowIfFalse(m_rendering[R3D]); // Begin not called
@@ -91,7 +90,7 @@ namespace SpookyAdulthood
 
         const float x = m_camPosition.x - position.x;
         const float y = m_camPosition.z - position.z;
-        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y };
+        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false };
         m_spritesToRender[R3D].push_back(sprR);
     }
 
@@ -167,7 +166,7 @@ namespace SpookyAdulthood
         {
             const auto& sa = m_sprites[a.m_index];
             const auto& sb = m_sprites[b.m_index];
-            return a.m_distToCameraSq > b.m_distToCameraSq;
+            return a.m_distSqOrRot > b.m_distSqOrRot;
         });
 
         auto dxCommon = m_device->GetGameResources();
@@ -242,12 +241,27 @@ namespace SpookyAdulthood
 
         for (const auto& sprI : m_spritesToRender[R2D])
         {
-            auto& sprite = m_sprites[sprI.m_index];
+            int finalIndex = -1;
+            if (sprI.m_isAnim)
+            {
+                const auto& animInst = m_animInstances[sprI.m_index];
+                if (animInst.m_active)
+                {
+                    const auto& anim = m_animations[animInst.m_animIndex];
+                    finalIndex = anim.m_indices[ animInst.m_curFrame % anim.m_indices.size() ];
+                }
+                else
+                {
+                    continue;
+                }
+            }            
+            finalIndex = max(int(sprI.m_index), finalIndex);
+            const auto& sprite = m_sprites[finalIndex];
             const auto& position = sprI.m_position;
             const auto& size = sprI.m_size;
 
             // simple translate rotate
-            XMMATRIX mr = XMMatrixRotationZ(sprI.m_distToCameraSq);
+            XMMATRIX mr = XMMatrixRotationZ(sprI.m_distSqOrRot);
             mr.r[3] = XMVectorSet(position.x, position.y, 0.0f, 1.0f);
             XMMATRIX ms = XMMatrixScaling(size.x/m_aspectRatio, size.y, 1.0f);
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
@@ -263,6 +277,7 @@ namespace SpookyAdulthood
         }
 
     }
+    
     void SpriteManager::Draw2D(int spriteIndex, const XMFLOAT2& position, const XMFLOAT2& size, float rot)
     {
         DX::ThrowIfFalse(m_rendering[R2D]); // Begin not called
@@ -274,9 +289,62 @@ namespace SpookyAdulthood
             return;
 
         XMFLOAT3 pos(position.x, position.y, 0.0f);
-        SpriteRender sprR = { (size_t)spriteIndex, pos, size, rot };
+        SpriteRender sprR = { (size_t)spriteIndex, pos, size, rot, false };
         m_spritesToRender[R2D].push_back(sprR);
     }
+
+    void SpriteManager::Draw2DAnimation(int instIndex, const XMFLOAT2& position, const XMFLOAT2& size, float rot)
+    {
+        DX::ThrowIfFalse(m_rendering[R2D]); // Begin not called
+        if (instIndex < 0 || instIndex >= (int)m_animInstances.size()) return;
+        const auto& ai = m_animInstances[instIndex];
+        if (ai.m_animIndex < 0 || ai.m_animIndex >= (int)m_animations.size()) return;
+
+        XMFLOAT3 pos(position.x, position.y, 0.0f);
+        SpriteRender sprR = { (size_t)instIndex, pos, size, rot, true };
+        m_spritesToRender[R2D].push_back(sprR);
+    }
+
+    int SpriteManager::CreateAnimation(const std::vector<int>& spritesIndices, float fps, bool loop)
+    {
+        SpriteAnimation anim = { spritesIndices, 1.0f / fps, loop };
+        m_animations.push_back(anim);
+        return (int)m_animations.size() - 1;
+    }
+
+    int SpriteManager::CreateAnimationInstance(int animationIndex, int _at)
+    {
+        // look for a free usable slot (m_active==false)
+        int at = -1;
+        if (_at == -1 || _at <0 || _at >= (int)m_animInstances.size())
+        {
+            for (size_t i = 0; i < m_animInstances.size(); ++i)
+            {
+                if (!m_animInstances[i].m_active)
+                {
+                    at = (int)i;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            at = _at;
+        }
+        SpriteAnimationInstance sprAnimInst = { animationIndex, 0,  0.0f, true };
+        if (at == -1)
+        {
+            at = (int)m_animInstances.size();
+            m_animInstances.push_back(sprAnimInst);
+        }
+        else
+        {
+            m_animInstances[at] = sprAnimInst;
+        }
+
+        return at;
+    }
+
 
     void SpriteManager::DrawScreenQuad(ID3D11ShaderResourceView* srv, const XMFLOAT4& params0, const XMFLOAT4& params1)
     {
@@ -314,6 +382,29 @@ namespace SpookyAdulthood
 
         ID3D11ShaderResourceView* nullsrv = nullptr;
         context->PSSetShaderResources(0, 1, &nullsrv);
+    }
+
+    void SpriteManager::Update(const DX::StepTimer& timer)
+    {
+        const float dt = (float)timer.GetElapsedSeconds();
+
+        // update all animations
+        for (auto& a : m_animInstances)
+        {
+            if (!a.m_active) 
+                continue;
+            const SpriteAnimation& anim = m_animations[a.m_animIndex];            
+            a.m_frameTime += dt;
+            if (a.m_frameTime >= anim.m_period)
+            {
+                a.m_frameTime -= anim.m_period;
+                a.m_curFrame++;
+                if (a.m_curFrame >= (int)anim.m_indices.size())
+                {
+                    a.m_active = false;
+                }
+            }
+        }
     }
 
 

@@ -62,7 +62,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     // Update map and camera (input, collisions and visibility)
     m_map.Update(timer, m_camera);
     m_camera.Update(timer, 
-    [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR 
+    [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR  // CALLED FOR COLLISION HANDLING
     { 
         if (GlobalFlags::CollisionsEnabled)
         {
@@ -75,13 +75,14 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         else 
             return nextPos;
     },
-    [this](CameraFirstPerson::eAction ac)
+    [this](CameraFirstPerson::eAction ac) // CALLED WHEN ACTION (shoot)
     {
         auto gameRes = m_deviceResources->GetGameResources();
         if (!gameRes) return;
         auto audio = gameRes->m_audioEngine.get();
         if (!audio) return;
         gameRes->SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
+        gameRes->m_sprite.CreateAnimationInstance(0, 0);
     });
 
     // Audio
@@ -172,9 +173,9 @@ void SceneRenderer::Render()
         float rvel = (m_camera.m_moving && m_camera.m_running) ? 1.0f : 0.5f;
         float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
         float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;
-        sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f+offsy ), XMFLOAT2(0.9f, 0.9f), 0.0f);
-        sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.08f, 0.1f), -m_camera.m_pitchYaw.y);
-        //sprite.Draw2D(7, XMFLOAT2(0,0), XMFLOAT2(0.01f, 0.01f), 0);
+        sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f+offsy ), XMFLOAT2(0.9f, 0.9f), 0.0f); // 
+        //sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.08f, 0.1f), -m_camera.m_pitchYaw.y);        
+        sprite.Draw2DAnimation(0, XMFLOAT2(offsx, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f);
 
         sprite.End2D();
     }
@@ -203,6 +204,12 @@ void SceneRenderer::CreateDeviceDependentResources()
         sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
         sprite.CreateSprite(L"assets\\sprites\\bodpile1.png"); // 11
         sprite.CreateSprite(L"assets\\sprites\\girl1.png"); // 12
+        sprite.CreateSprite(L"assets\\sprites\\gunshoot0.png"); // 13
+        sprite.CreateSprite(L"assets\\sprites\\gunshoot1.png"); // 14
+        sprite.CreateSprite(L"assets\\sprites\\gunshoot2.png"); // 15
+
+        sprite.CreateAnimation(std::vector<int>{13, 14, 15}, 24.0f); // 0
+        sprite.CreateAnimationInstance(0); // 0
     });
 
     (mapCreateTask && sprTask).then([this] () 

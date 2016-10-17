@@ -26,24 +26,12 @@
     <ClInclude Include="Content\ShaderStructures.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <Image Include="Assets\LockScreenLogo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\SplashScreen.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square150x150Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square44x44Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Wide310x150Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
+    <Filter Include="Assets\img">
+      <UniqueIdentifier>{b1e2c5f2-1566-48f3-91f1-0741dd212f71}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\snd">
+      <UniqueIdentifier>{55d8ebd4-852c-47c4-a1a0-6c46673090ea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
@@ -61,12 +49,18 @@
     <ClCompile Include="Content\CameraFirstPerson.cpp">
       <Filter>Content</Filter>
     </ClCompile>
-    <ClCompile Include="Content\GlobalFlags.cpp" />
-    <ClCompile Include="Content\ShaderStructures.cpp" />
     <ClCompile Include="Content\CollisionAndSolving2D.cpp">
       <Filter>Common</Filter>
     </ClCompile>
-    <ClCompile Include="Content\Sprite.cpp" />
+    <ClCompile Include="Content\GlobalFlags.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\Sprite.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\ShaderStructures.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -84,60 +78,91 @@
     <ClInclude Include="Content\CameraFirstPerson.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <ClInclude Include="Content\GlobalFlags.h" />
     <ClInclude Include="Content\CollisionAndSolving2D.h">
       <Filter>Common</Filter>
     </ClInclude>
-    <ClInclude Include="Content\Sprite.h" />
+    <ClInclude Include="Content\GlobalFlags.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Sprite.h">
+      <Filter>Content</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\StoreLogo.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\gun.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\hand.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\puky.png">
-      <Filter>Assets</Filter>
+    <Image Include="Assets\sprites\anx1.png">
+      <Filter>Assets\img</Filter>
     </Image>
     <Image Include="Assets\textures\atlaslevel.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\textures\white.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\pointinghand.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\anx1.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\grave1.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\crosshair.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\tree1.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\dep1.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\msgdie.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\sprites\garg1.png">
-      <Filter>Assets</Filter>
+      <Filter>Assets\img</Filter>
     </Image>
     <Image Include="Assets\sprites\bodpile1.png">
-      <Filter>Assets</Filter>
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\crosshair.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\dep1.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\garg1.png">
+      <Filter>Assets\img</Filter>
     </Image>
     <Image Include="Assets\sprites\girl1.png">
-      <Filter>Assets</Filter>
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\grave1.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\gun.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\hand.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\LockScreenLogo.scale-200.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\msgdie.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\pointinghand.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\puky.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\SplashScreen.scale-200.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.scale-200.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\Square150x150Logo.scale-200.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\StoreLogo.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\tree1.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\textures\white.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\Wide310x150Logo.scale-200.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\gunshoot1.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\gunshoot2.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\gunshoot0.png">
+      <Filter>Assets\img</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
@@ -145,7 +170,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SpookyAdulthood_TemporaryKey.pfx" />
-    <None Include="Assets\fonts\Courier_16.spritefont" />
+    <None Include="Assets\fonts\Courier_16.spritefont">
+      <Filter>Assets\img</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\shaders\BasePixelShader.hlsl">
@@ -154,15 +181,31 @@
     <FxCompile Include="Content\shaders\BaseVertexShader.hlsl">
       <Filter>Content</Filter>
     </FxCompile>
-    <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl" />
-    <FxCompile Include="Content\shaders\ScreenSpriteVS.hlsl" />
-    <FxCompile Include="Content\shaders\PostPS.hlsl" />
+    <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\shaders\ScreenSpriteVS.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\shaders\PostPS.hlsl">
+      <Filter>Content</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <Media Include="Assets\sounds\breathing.wav" />
-    <Media Include="Assets\sounds\piano.wav" />
-    <Media Include="Assets\sounds\shotgun.wav" />
-    <Media Include="Assets\sounds\walk.wav" />
-    <Media Include="Assets\sounds\heartbeat.wav" />
+    <Media Include="Assets\sounds\breathing.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\heartbeat.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\piano.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\shotgun.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\walk.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
   </ItemGroup>
 </Project>

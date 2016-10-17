@@ -198,6 +198,9 @@
     <Image Include="Assets\sprites\garg1.png" />
     <Image Include="Assets\sprites\girl1.png" />
     <Image Include="Assets\sprites\grave1.png" />
+    <Image Include="Assets\sprites\gunshoot0.png" />
+    <Image Include="Assets\sprites\gunshoot1.png" />
+    <Image Include="Assets\sprites\gunshoot2.png" />
     <Image Include="Assets\sprites\msgdie.png" />
     <Image Include="Assets\sprites\tree1.png" />
     <Image Include="Assets\textures\atlaslevel.png" />
