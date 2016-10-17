@@ -740,7 +740,7 @@ const SegmentList* LevelMap::GetCurrentCollisionSegments()
 }
 
 
-bool LevelMap::Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit)
+bool LevelMap::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit)
 {
     // get room where origin is
     // check against all collision segments for that room,
@@ -774,7 +774,7 @@ bool LevelMap::Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& ou
         if ( cs.IsPortalOpen() )
         {
             XMFLOAT3 newOrigin3D(minHit.x + dir.x*0.05f, 0.0f, minHit.y+dir.z*0.05f);
-            return Raycast(newOrigin3D, dir, outHit);
+            return RaycastDir(newOrigin3D, dir, outHit);
         }
         else
         {
@@ -785,6 +785,28 @@ bool LevelMap::Raycast(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& ou
 
     return false;
 }
+
+bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit)
+{
+    XMFLOAT3 dir(end.x - origin.x, end.y - origin.y, end.z - origin.z);
+    const float distSq = dir.x*dir.x + dir.y*dir.y + dir.z*dir.z;
+#ifdef _DEBUG
+    if (distSq == 0) return false;
+#endif
+    const float invSq = 1.0f / sqrtf(distSq);
+    dir.x *= invSq; dir.y *= invSq; dir.z *= invSq;
+
+    bool wasHit = false;
+    if (RaycastDir(origin, dir, outHit))
+    {
+        XMFLOAT3 toHit(outHit.x - origin.x, outHit.y - origin.y, outHit.z - origin.z);
+        const float lenToHitSq = toHit.x*toHit.x + toHit.y*toHit.y + toHit.z*toHit.z;
+        wasHit = lenToHitSq <= distSq;
+    }
+    return wasHit;
+}
+
+
 
 
 #pragma endregion

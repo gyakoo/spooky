@@ -161,7 +161,12 @@ void SceneRenderer::Render()
     if (GlobalFlags::TestRaycast)
     {
         XMFLOAT3 hit;
-        if (m_map.Raycast(m_camera.GetPosition(), m_camera.m_forward, hit))
+        //if (m_map.RaycastDir(m_camera.GetPosition(), m_camera.m_forward, hit))
+        XMFLOAT3 end(m_camera.GetPosition());
+        end.x += m_camera.m_forward.x*5.0f;
+        end.y += m_camera.m_forward.y*5.0f;
+        end.z += m_camera.m_forward.z*5.0f;
+        if ( m_map.RaycastSeg(m_camera.GetPosition(), end, hit) )
         {
             hit.y = m_camera.ComputeHeightAtHit(hit);            
             sprite.Draw3D(0,hit, XMFLOAT2(0.3, 0.3), true);
