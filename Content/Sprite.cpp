@@ -277,4 +277,40 @@ namespace SpookyAdulthood
         m_spritesToRender[R2D].push_back(sprR);
     }
 
+    void SpriteManager::DrawScreenQuad(ID3D11ShaderResourceView* srv)
+    {
+        auto dxCommon = m_device->GetGameResources();
+        if (!dxCommon->m_ready) return;
+        auto context = m_device->GetD3DDeviceContext();
+
+        //// set state for render
+        context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        context->IASetInputLayout(dxCommon->m_baseIL.Get());
+        context->VSSetShader(dxCommon->m_spriteVS.Get(), nullptr, 0);
+        context->PSSetShader(dxCommon->m_spritePS.Get(), nullptr, 0);
+        ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();
+        context->PSSetSamplers(0, 1, &sampler);
+        context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthNone(), 0);
+        context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
+        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
+
+        // simple translate rotate
+        ModelViewProjectionConstantBuffer cbData;
+        XMMATRIX ms = XMMatrixScaling(2.0f, 2.0f, 2.0f);
+        XMStoreFloat4x4(&cbData.model, XMMatrixTranspose(ms));
+
+        context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(), 0, NULL, &cbData, 0, 0, 0);
+        context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
+        context->PSSetShaderResources(0, 1, &srv);
+        UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
+        UINT offset = 0;
+        context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+        context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+        context->DrawIndexed(6, 0, 0);
+
+        ID3D11ShaderResourceView* nullsrv = nullptr;
+        context->PSSetShaderResources(0, 1, &nullsrv);
+    }
+
+
 };

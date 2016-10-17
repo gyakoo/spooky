@@ -68,18 +68,22 @@ bool SpookyAdulthoodMain::Draw3D()
 	context->RSSetViewports(1, &viewport);
 
 	// Reset render targets to the screen.
-	ID3D11RenderTargetView *const targets[1] = { m_deviceResources->GetBackBufferRenderTargetView() };
+    //ID3D11RenderTargetView *const targets[1] = { m_deviceResources->GetBackBufferRenderTargetView() };
+    ID3D11RenderTargetView * targets[1] = { m_deviceResources->GetTempRenderTargetView() };
 	context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
-
-	// Clear the back buffer and depth stencil view.
-	context->ClearRenderTargetView(m_deviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::Black);
+	context->ClearRenderTargetView(m_deviceResources->GetTempRenderTargetView(), DirectX::Colors::Black);
 	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	// Render the scene objects.
-	// TODO: Replace this with your app's content rendering functions.
+    // Render the scene objects to RT
 	m_sceneRenderer->Render();
 	m_fpsTextRenderer->Render();
     GlobalFlags::Draw3D(m_deviceResources);
+
+    // Render quad on screen
+    targets[0] = { m_deviceResources->GetBackBufferRenderTargetView() };
+    context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
+    context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_deviceResources->GetGameResources()->m_sprite.DrawScreenQuad(m_deviceResources->GetTempRenderTargetSRV());
 
 	return true;
 }

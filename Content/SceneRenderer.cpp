@@ -15,8 +15,7 @@ using namespace Windows::Foundation;
 SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
 	m_loadingComplete(false),
 	m_deviceResources(deviceResources),
-    m_map(deviceResources),
-    m_sprite(deviceResources)
+    m_map(deviceResources)
 {
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
@@ -147,36 +146,37 @@ void SceneRenderer::Render()
 
     // LEVEL rendering
     m_map.Render(m_camera);
+    auto& sprite = m_deviceResources->GetGameResources()->m_sprite;
 
     // SPRITEs rendering
-    m_sprite.Begin3D(m_camera);
-    m_sprite.Draw3D(0, XMFLOAT3(5, 0.45f, 6), XMFLOAT2(0.3, 0.3));
-    m_sprite.Draw3D(0, XMFLOAT3(6, 0.65f, 5), XMFLOAT2(0.3, 0.3));
-    m_sprite.Draw3D(0, XMFLOAT3(9, 0.75f, 4), XMFLOAT2(0.3, 0.3));
-    m_sprite.Draw3D(4, XMFLOAT3(7, 0.75f, 9), XMFLOAT2(0.7f, 1.5f));
-    m_sprite.Draw3D(5, XMFLOAT3(5, 0.95f, 2), XMFLOAT2(0.7f, 1.9f));
+    sprite.Begin3D(m_camera);
+    sprite.Draw3D(0, XMFLOAT3(5, 0.45f, 6), XMFLOAT2(0.3, 0.3));
+    sprite.Draw3D(0, XMFLOAT3(6, 0.65f, 5), XMFLOAT2(0.3, 0.3));
+    sprite.Draw3D(0, XMFLOAT3(9, 0.75f, 4), XMFLOAT2(0.3, 0.3));
+    sprite.Draw3D(4, XMFLOAT3(7, 0.75f, 9), XMFLOAT2(0.7f, 1.5f));
+    sprite.Draw3D(5, XMFLOAT3(5, 0.95f, 2), XMFLOAT2(0.7f, 1.9f));
     for ( int i = 0; i < 6; ++i )
-        m_sprite.Draw3D(6, XMFLOAT3(5, 0.25f, i+2), XMFLOAT2(0.5f,0.5f));
-    m_sprite.Draw3D(8, XMFLOAT3(2, 0.95f, 4.5f), XMFLOAT2(0.7f, 1.9f));
-    m_sprite.Draw3D(8, XMFLOAT3(3, 0.95f, 5.5f), XMFLOAT2(0.7f, 1.9f));
-    m_sprite.Draw3D(9, XMFLOAT3(7, 1.0f, 2), XMFLOAT2(0.5f, .35f));
-    m_sprite.Draw3D(10, XMFLOAT3(8, 0.75f, 3), XMFLOAT2(1.5f, 1.5f));
-    m_sprite.Draw3D(11, XMFLOAT3(2, 0.3f, 7), XMFLOAT2(1.5f, 0.6f));
-    m_sprite.Draw3D(11, XMFLOAT3(2.35f, 0.3f, 7.34f), XMFLOAT2(1.5f, 0.6f));
-    m_sprite.Draw3D(12, XMFLOAT3(3.35f, 0.7f, 7.34f), XMFLOAT2(0.6f, 1.0f));
-    m_sprite.End3D();
+        sprite.Draw3D(6, XMFLOAT3(5, 0.25f, i+2), XMFLOAT2(0.5f,0.5f));
+    sprite.Draw3D(8, XMFLOAT3(2, 0.95f, 4.5f), XMFLOAT2(0.7f, 1.9f));
+    sprite.Draw3D(8, XMFLOAT3(3, 0.95f, 5.5f), XMFLOAT2(0.7f, 1.9f));
+    sprite.Draw3D(9, XMFLOAT3(7, 1.0f, 2), XMFLOAT2(0.5f, .35f));
+    sprite.Draw3D(10, XMFLOAT3(8, 0.75f, 3), XMFLOAT2(1.5f, 1.5f));
+    sprite.Draw3D(11, XMFLOAT3(2, 0.3f, 7), XMFLOAT2(1.5f, 0.6f));
+    sprite.Draw3D(11, XMFLOAT3(2.35f, 0.3f, 7.34f), XMFLOAT2(1.5f, 0.6f));
+    sprite.Draw3D(12, XMFLOAT3(3.35f, 0.7f, 7.34f), XMFLOAT2(0.6f, 1.0f));
+    sprite.End3D();
 
     // GUN RENDER
     {
-        m_sprite.Begin2D(m_camera);
+        sprite.Begin2D(m_camera);
         float rvel = (m_camera.m_moving && m_camera.m_running) ? 1.0f : 0.5f;
         float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
         float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;
-        m_sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f+offsy ), XMFLOAT2(0.9f, 0.9f), 0.0f);
-        m_sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.08f, 0.1f), -m_camera.m_pitchYaw.y);
-        //m_sprite.Draw2D(7, XMFLOAT2(0,0), XMFLOAT2(0.01f, 0.01f), 0);
+        sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f+offsy ), XMFLOAT2(0.9f, 0.9f), 0.0f);
+        sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.08f, 0.1f), -m_camera.m_pitchYaw.y);
+        //sprite.Draw2D(7, XMFLOAT2(0,0), XMFLOAT2(0.01f, 0.01f), 0);
 
-        m_sprite.End2D();
+        sprite.End2D();
     }
 }
 
@@ -188,20 +188,21 @@ void SceneRenderer::CreateDeviceDependentResources()
     });
 
     auto sprTask = concurrency::create_task([this] {
-        m_sprite.CreateDeviceDependentResources();
-        m_sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
-        m_sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
-        m_sprite.CreateSprite(L"assets\\sprites\\gun.png"); // 2
-        m_sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
-        m_sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
-        m_sprite.CreateSprite(L"assets\\sprites\\dep1.png"); // 5
-        m_sprite.CreateSprite(L"assets\\sprites\\grave1.png"); // 6
-        m_sprite.CreateSprite(L"assets\\sprites\\crosshair.png"); // 7
-        m_sprite.CreateSprite(L"assets\\sprites\\tree1.png"); // 8
-        m_sprite.CreateSprite(L"assets\\sprites\\msgdie.png"); // 9
-        m_sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
-        m_sprite.CreateSprite(L"assets\\sprites\\bodpile1.png"); // 11
-        m_sprite.CreateSprite(L"assets\\sprites\\girl1.png"); // 12
+        auto& sprite = m_deviceResources->GetGameResources()->m_sprite;
+        sprite.CreateDeviceDependentResources();
+        sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
+        sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
+        sprite.CreateSprite(L"assets\\sprites\\gun.png"); // 2
+        sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
+        sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
+        sprite.CreateSprite(L"assets\\sprites\\dep1.png"); // 5
+        sprite.CreateSprite(L"assets\\sprites\\grave1.png"); // 6
+        sprite.CreateSprite(L"assets\\sprites\\crosshair.png"); // 7
+        sprite.CreateSprite(L"assets\\sprites\\tree1.png"); // 8
+        sprite.CreateSprite(L"assets\\sprites\\msgdie.png"); // 9
+        sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
+        sprite.CreateSprite(L"assets\\sprites\\bodpile1.png"); // 11
+        sprite.CreateSprite(L"assets\\sprites\\girl1.png"); // 12
     });
 
     (mapCreateTask && sprTask).then([this] () 
@@ -214,6 +215,5 @@ void SceneRenderer::ReleaseDeviceDependentResources()
 {
 	m_loadingComplete = false;
     m_map.CreateDeviceDependentResources();
-    m_sprite.ReleaseDeviceDependentResources();
 }
 

@@ -220,7 +220,7 @@ void DX::DeviceResources::CreateDeviceResources()
 			&m_d2dContext
 			)
 		);    
-    m_gameResources = std::make_unique<GameResources>(this);
+    m_gameResources = std::make_unique<GameResources>(std::shared_ptr<DeviceResources>(this));
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -456,6 +456,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 // Determine the dimensions of the render target and whether it will be scaled down.
 void DX::DeviceResources::UpdateRenderTargetSize()
 {
+    Windows::Foundation::Size oldSize = m_outputSize;
 	m_effectiveDpi = m_dpi;
 
 	// To improve battery life on high resolution devices, render to a smaller render target
@@ -482,6 +483,41 @@ void DX::DeviceResources::UpdateRenderTargetSize()
 	// Prevent zero size DirectX content from being created.
 	m_outputSize.Width = max(m_outputSize.Width, 1);
 	m_outputSize.Height = max(m_outputSize.Height, 1);
+
+
+    // Temporary RT
+    if ( !m_tempRTTexture || oldSize != m_outputSize )
+    {
+        // Setup the render target texture description.
+        D3D11_TEXTURE2D_DESC textureDesc = { 0 };
+        textureDesc.Width = (UINT)m_outputSize.Width;
+        textureDesc.Height = (UINT)m_outputSize.Height;
+        textureDesc.MipLevels = 1;
+        textureDesc.ArraySize = 1;
+        textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        textureDesc.SampleDesc.Count = 1;
+        textureDesc.Usage = D3D11_USAGE_DEFAULT;
+        textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        textureDesc.CPUAccessFlags = 0;
+        textureDesc.MiscFlags = 0;
+        DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&textureDesc, nullptr, m_tempRTTexture.ReleaseAndGetAddressOf()));
+
+        // to use texture as render target
+        D3D11_RENDER_TARGET_VIEW_DESC rtViewDesc;
+        rtViewDesc.Format = textureDesc.Format;
+        rtViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        rtViewDesc.Texture2D.MipSlice = 0;
+        DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView((ID3D11Resource*)m_tempRTTexture.Get(), &rtViewDesc, m_tempRTView.ReleaseAndGetAddressOf()));
+
+        // to use texture in as shader resource
+        D3D11_SHADER_RESOURCE_VIEW_DESC shaderViewDesc;
+        shaderViewDesc.Format = textureDesc.Format;
+        shaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+        shaderViewDesc.Texture2D.MostDetailedMip = 0;
+        shaderViewDesc.Texture2D.MipLevels = 1;
+        DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView((ID3D11Resource*)m_tempRTTexture.Get(), &shaderViewDesc, m_tempRTSRV.ReleaseAndGetAddressOf()));
+    }
+
 }
 
 // This method is called when the CoreWindow is created (or re-created).
@@ -722,9 +758,9 @@ static const wchar_t* g_sndNames[] = {
 static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f };
 static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f };
 
-DX::GameResources::GameResources(const DX::DeviceResources* device)
-    : m_ready(false), m_levelTime(0.0f)
-{
+DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
+    : m_ready(false), m_levelTime(0.0f), m_sprite(device)
+{   
     // vertex shader and input layout
     auto loadVSTask = DX::ReadDataAsync(L"BaseVertexShader.cso");
     auto loadPSTask = DX::ReadDataAsync(L"BasePixelShader.cso");
@@ -834,6 +870,7 @@ DX::GameResources::~GameResources()
     m_commonStates.reset();
     m_batch.reset();
     m_audioEngine.reset();
+    m_sprite.ReleaseDeviceDependentResources();
 }
 
 void DX::GameResources::SoundPlay(uint32_t index, bool loop) const

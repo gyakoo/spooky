@@ -41,6 +41,8 @@ namespace SpookyAdulthood
         int CreateSprite(const std::wstring& pathToTex, int at = -1);
         Sprite& GetSprite(int ndx);
 
+        void DrawScreenQuad(ID3D11ShaderResourceView* srv);
+
     private:
         std::shared_ptr<DX::DeviceResources>    m_device;
         Microsoft::WRL::ComPtr<ID3D11Buffer>	m_vertexBuffer;

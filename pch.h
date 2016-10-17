@@ -21,6 +21,7 @@
 #include <map>
 #include <ppl.h>
 #include <atomic>
+#include <concurrent_vector.h>
 
 // game
 #include "Common/StepTimer.h"

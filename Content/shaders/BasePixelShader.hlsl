@@ -58,7 +58,6 @@ float4 main(PixelShaderInput input) : SV_TARGET
     {
         //color.rgb *= saturate(1.0f - input.sPos.z / 6.0f);
     }
-
     return color;
 }
 
