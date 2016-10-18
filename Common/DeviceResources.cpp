@@ -449,7 +449,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 	// Grayscale text anti-aliasing is recommended for all Windows Store apps.
 	m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
-    if ( m_gameResources && m_gameResources->m_ready)
+    if ( m_gameResources && m_gameResources->m_readyToRender)
         m_gameResources->m_sprites->SetRotation(ComputeDisplayRotation());
 }
 
@@ -469,7 +469,7 @@ void DX::DeviceResources::UpdateRenderTargetSize()
 		// When the device is in portrait orientation, height > width. Compare the
 		// larger dimension against the width threshold and the smaller dimension
 		// against the height threshold.
-		if (max(width, height) > DisplayMetrics::WidthThreshold && min(width, height) > DisplayMetrics::HeightThreshold)
+		if (std::max(width, height) > DisplayMetrics::WidthThreshold && std::min(width, height) > DisplayMetrics::HeightThreshold)
 		{
 			// To scale the app we change the effective DPI. Logical size does not change.
 			m_effectiveDpi /= 2.0f;
@@ -481,8 +481,8 @@ void DX::DeviceResources::UpdateRenderTargetSize()
 	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_effectiveDpi);
 
 	// Prevent zero size DirectX content from being created.
-	m_outputSize.Width = max(m_outputSize.Width, 1);
-	m_outputSize.Height = max(m_outputSize.Height, 1);
+	m_outputSize.Width = std::max(m_outputSize.Width, 1.0f);
+	m_outputSize.Height = std::max(m_outputSize.Height, 1.0f);
 
 
     // Temporary RT
@@ -759,7 +759,7 @@ static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f };
 static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f };
 
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
-    : m_ready(false), m_levelTime(0.0f), m_sprite(device)
+    : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
 {   
     // vertex shader and input layout
     auto loadVSTask = DX::ReadDataAsync(L"BaseVertexShader.cso");
@@ -854,14 +854,16 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
         const HRESULT hr = device->GetD3DDevice()->CreatePixelShader(fileData.data(), fileData.size(), nullptr, m_postPS.GetAddressOf());
         DX::ThrowIfFailed(hr);
     });
-       
 
-    (createBaseVS && createBasePS && createSSVS && createSSPS && createPostPS).then([this]() { m_ready = true; });
+    (createBaseVS && createBasePS && createSSVS && createSSPS && createPostPS).then([this]() 
+    { 
+        m_readyToRender = true; 
+    });
 }
 
 DX::GameResources::~GameResources()
 {
-    m_ready = false;
+    m_readyToRender = false;
     m_textureWhiteSRV.Reset();
     m_textureWhite.Reset();
     m_baseVS.Reset();

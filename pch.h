@@ -1,5 +1,17 @@
 ﻿#pragma once
 
+#pragma warning(push)
+#pragma warning(disable : 4005)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+//#define NODRAWTEXT
+//#define NOGDI
+//#define NOBITMAP
+//#define NOMCX
+//#define NOSERVICE
+//#define NOHELP
+#pragma warning(pop)
+
 #include <wrl.h>
 #include <wrl/client.h>
 #include <dxgi1_4.h>
@@ -49,4 +61,14 @@ template<typename T, typename R, typename K>
 inline T Clamp(const T& v, const R& _min, const K& _max)
 {
     return v < _min ? _min : (v>_max?_max:v);
+}
+
+// Calls the provided work function and returns the number of milliseconds 
+// that it takes to call that function.
+template <class Function>
+inline __int64 time_call(Function&& f)
+{
+    __int64 begin = GetTickCount64();
+    f();
+    return GetTickCount64() - begin;
 }

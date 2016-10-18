@@ -672,7 +672,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
     auto dxCommon = m_device->GetGameResources();
-    if (!dxCommon->m_ready) return false;
+    if (!dxCommon->m_readyToRender) return false;
     auto context = m_device->GetD3DDeviceContext();
     context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -682,7 +682,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
-    float t = max( min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.7f,0));
+    float t = std::max( std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(camera.m_timeShoot*0.7f,0.0f));
     if (GlobalFlags::AllLit) t = 1.0f;
     PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {t,1.0f-int(GlobalFlags::AllLit),0,0} };
     context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
@@ -759,7 +759,7 @@ bool LevelMap::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3&
     for (int i =0 ; i < count; ++i )
     {
         const auto& cs = leaf->m_collisionSegments->at(i);
-        if (CollisionIntersectSegment(cs, origin2D, dir2D, hit, frac) && frac < minFrac)
+        if (IntersectRaySegment(origin2D, dir2D, cs, hit, frac) && frac < minFrac)
         {
             minFrac = frac;
             minHit = hit;

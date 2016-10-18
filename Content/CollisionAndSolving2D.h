@@ -19,5 +19,8 @@ namespace SpookyAdulthood
 
     XMFLOAT2 CollisionAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius, int iter=3);
 
-    bool CollisionIntersectSegment(const CollSegment& seg, const XMFLOAT2& origin, const XMFLOAT2& dir, XMFLOAT2& outHit, float& outFrac);
+    bool IntersectRaySegment(const XMFLOAT2& origin, const XMFLOAT2& dir, const CollSegment& seg,  XMFLOAT2& outHit, float& outFrac);
+
+    bool IntersectRaySphere(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& center, float radius, XMFLOAT3& outHit, float& outFrac);
+
 }

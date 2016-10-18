@@ -61,6 +61,9 @@
     <ClCompile Include="Content\ShaderStructures.cpp">
       <Filter>Content</Filter>
     </ClCompile>
+    <ClCompile Include="Content\Entity.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -85,6 +88,9 @@
       <Filter>Content</Filter>
     </ClInclude>
     <ClInclude Include="Content\Sprite.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\Entity.h">
       <Filter>Content</Filter>
     </ClInclude>
   </ItemGroup>

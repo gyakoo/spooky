@@ -225,6 +225,7 @@
     <ClInclude Include="Common\DeviceResources.h" />
     <ClInclude Include="Content\CollisionAndSolving2D.h" />
     <ClInclude Include="Content\CameraFirstPerson.h" />
+    <ClInclude Include="Content\Entity.h" />
     <ClInclude Include="Content\GlobalFlags.h" />
     <ClInclude Include="Content\LevelMap.h" />
     <ClInclude Include="Content\Sprite.h" />
@@ -241,6 +242,7 @@
     <ClCompile Include="Common\DeviceResources.cpp" />
     <ClCompile Include="Content\CollisionAndSolving2D.cpp" />
     <ClCompile Include="Content\CameraFirstPerson.cpp" />
+    <ClCompile Include="Content\Entity.cpp" />
     <ClCompile Include="Content\GlobalFlags.cpp" />
     <ClCompile Include="Content\LevelMap.cpp" />
     <ClCompile Include="Content\ShaderStructures.cpp" />

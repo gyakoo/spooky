@@ -115,10 +115,72 @@ namespace SpookyAdulthood
         return nextPos;
     }
 
-    bool CollisionIntersectSegment(const CollSegment& seg, const XMFLOAT2& origin, const XMFLOAT2& dir, XMFLOAT2& outHit, float& outFrac)
+    bool IntersectRaySegment(const XMFLOAT2& origin, const XMFLOAT2& dir, const CollSegment& seg, XMFLOAT2& outHit, float& outFrac)
     {
         XMFLOAT2 endP(origin.x + dir.x*1000.0f, origin.y + dir.y*1000.0f);
         return FPSCDRaycast(origin, endP, seg.start, seg.end, &outHit, &outFrac);
+    }
+
+    static inline bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float &x1)
+    {
+        const float discr = b * b - 4 * a * c;
+        if (discr < 0) return false;
+        else if (discr == 0) x0 = x1 = -0.5 * b / a;
+        else {
+            float q = (b > 0) ?
+                -0.5 * (b + sqrt(discr)) :
+                -0.5 * (b - sqrt(discr));
+            x0 = q / a;
+            x1 = c / q;
+        }
+        if (x0 > x1) std::swap(x0, x1);
+
+        return true;
+    }
+
+    static inline float DotProduct(const XMFLOAT3& a, const XMFLOAT3& b)
+    {
+        return a.x*b.x + a.y*b.y + a.z*b.z;
+    }
+
+    bool IntersectRaySphere(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& center, float radius, XMFLOAT3& outHit, float& outFrac)
+    {
+        const XMFLOAT3 L(origin.x - center.x, origin.y - center.y, origin.z - center.z);
+        const float a = DotProduct(dir, dir);
+        const float b = 2.0f * DotProduct(dir, L);
+        const float c = DotProduct(L,L) - radius;
+        float t0, t1;
+        if (!solveQuadratic(a, b, c, t0, t1))
+            return false;
+        if (t0 > t1)
+            std::swap(t0, t1);
+        if (t0 < 0.0f)
+        {
+            t0 = t1; // if t0 is negative, use t1 instead
+            if (t0 < 0.0f) 
+                return false; // both negatives
+        }
+        outFrac = t0;
+        outHit.x = origin.x + dir.x *t0;
+        outHit.y = origin.y + dir.y *t0;
+        outHit.z = origin.z + dir.z *t0;
+        return true;
+    }
+
+    bool IntersectRayPlane(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& normal, const XMFLOAT3& p, XMFLOAT3& outHit, float& outFrac)
+    {
+        const float den = DotProduct(normal, dir);
+        if (den > 1e-6f )
+        {
+            XMFLOAT3 po(p.x - origin.x, p.y - origin.y, p.z - origin.z);
+            const float f = DotProduct(po, normal) / den;
+            outHit.x = origin.x + dir.x*f;
+            outHit.y = origin.y + dir.y*f;
+            outHit.z = origin.z + dir.z*f;
+            outFrac = f;
+            return f >= 0.0f;
+        }
+        return false;
     }
 
 

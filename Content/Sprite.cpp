@@ -135,7 +135,7 @@ namespace SpookyAdulthood
         m_rendering[R3D] = true;
 
         auto dxCommon = m_device->GetGameResources();
-        if (!dxCommon->m_ready) return;
+        if (!dxCommon->m_readyToRender) return;
         auto context = m_device->GetD3DDeviceContext();
 
         // set state for render
@@ -143,11 +143,12 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
-        float t = max(min(camera.m_rightDownTime*2.0f, 1.f), max(camera.m_timeShoot*0.35f, 0));      
+        float t = std::max(std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(camera.m_timeShoot*0.35f, 0.0f));
         if (GlobalFlags::AllLit) t = 1.0f;
         PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,1.0f-int(GlobalFlags::AllLit),0,0} };
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
-        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
+        auto rsState = GlobalFlags::DrawWireframe ? dxCommon->m_commonStates->Wireframe() : dxCommon->m_commonStates->CullCounterClockwise();
+        context->RSSetState(rsState);
         context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
         context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
         m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
@@ -171,7 +172,7 @@ namespace SpookyAdulthood
         });
 
         auto dxCommon = m_device->GetGameResources();
-        if (!dxCommon->m_ready) return;
+        if (!dxCommon->m_readyToRender) return;
         auto context = m_device->GetD3DDeviceContext();
 
         for (const auto& sprI : m_spritesToRender[R3D])
@@ -217,7 +218,7 @@ namespace SpookyAdulthood
         m_aspectRatio = camera.m_aspectRatio;
 
         auto dxCommon = m_device->GetGameResources();
-        if (!dxCommon->m_ready) return;
+        if (!dxCommon->m_readyToRender) return;
         auto context = m_device->GetD3DDeviceContext();
         
         //// set state for render
@@ -229,7 +230,7 @@ namespace SpookyAdulthood
         context->PSSetSamplers(0, 1, &sampler);
         context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthNone(), 0);
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
-        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());        
+        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
         m_spritesToRender[R2D].clear();
     }
 
@@ -239,7 +240,7 @@ namespace SpookyAdulthood
         m_rendering[R2D] = false;
 
         auto dxCommon = m_device->GetGameResources();
-        if (!dxCommon->m_ready) return;
+        if (!dxCommon->m_readyToRender) return;
         auto context = m_device->GetD3DDeviceContext();
 
         for (const auto& sprI : m_spritesToRender[R2D])
@@ -258,7 +259,7 @@ namespace SpookyAdulthood
                     continue;
                 }
             }            
-            finalIndex = max(int(sprI.m_index), finalIndex);
+            finalIndex = std::max(int(sprI.m_index), finalIndex);
             const auto& sprite = m_sprites[finalIndex];
             const auto& position = sprI.m_position;
             const auto& size = sprI.m_size;
@@ -352,7 +353,7 @@ namespace SpookyAdulthood
     void SpriteManager::DrawScreenQuad(ID3D11ShaderResourceView* srv, const XMFLOAT4& params0, const XMFLOAT4& params1)
     {
         auto dxCommon = m_device->GetGameResources();
-        if (!dxCommon->m_ready) return;
+        if (!dxCommon->m_readyToRender) return;
         auto context = m_device->GetD3DDeviceContext();
 
         //// set state for render

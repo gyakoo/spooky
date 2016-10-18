@@ -106,7 +106,7 @@ namespace SpookyAdulthood
         m_timeShoot -= dt;
         m_timeToNextShoot -= dt;
         XMMATRIX ry = XMMatrixRotationY(m_pitchYaw.y + sin(m_runningTime*hvel)*0.02f);        
-        XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x - max(m_timeShoot*0.2f,0.0f) + cos(m_runningTime*hvel)*0.01f);
+        XMMATRIX rx = XMMatrixRotationX(m_pitchYaw.x - std::max(m_timeShoot*0.2f,0.0f) + cos(m_runningTime*hvel)*0.01f);
         if (movFw || movSt)
         {
             // normalize if moving two axes to avoid strafe+fw cheat

@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <random>
 #include "Content/Sprite.h"
+#include "Content/Entity.h"
+
 namespace DX
 {
 	// Provides an interface for an application that owns DeviceResources to be notified of the device being lost or created.
@@ -51,6 +53,7 @@ namespace DX
 
         std::unique_ptr<DirectX::SpriteBatch>       m_sprites;
         SpookyAdulthood::SpriteManager              m_sprite;
+        SpookyAdulthood::EntityManager              m_entityMgr;
         std::unique_ptr<DirectX::CommonStates>      m_commonStates;
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>		m_textureWhite;
@@ -63,7 +66,7 @@ namespace DX
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
         float m_levelTime;
-        bool m_ready;
+        bool m_readyToRender;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundStop(uint32_t index)const;
