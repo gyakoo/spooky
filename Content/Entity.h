@@ -84,5 +84,16 @@ namespace SpookyAdulthood
         XMFLOAT3 m_origin;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityGun : public Entity
+    {
+        enum { PUMPKIN=0, CANDIES, CANNON, FLASHLIGHT, SPRITES_MAX };
+        EntityGun();
+        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);        
+
+        int m_spriteIndices[SPRITES_MAX];
+        int m_animIndex;
+    };
 
 };

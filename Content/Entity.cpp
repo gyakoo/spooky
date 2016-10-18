@@ -20,6 +20,8 @@ void Entity::Update(float stepTime)
 
 void Entity::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
 {
+    if (m_spriteIndex == -1)
+        return;
     if ((m_flags & SPRITE3D) != 0)
     {
         sprite.Draw3D(m_spriteIndex, m_pos, m_size);
@@ -182,6 +184,8 @@ void EntityManager::CreateDeviceDependentResources()
     auto fluffy = std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f));
     AddEntity(fluffy);
     fluffy->m_timeOut = 10.0f;
+
+    AddEntity(std::make_shared<EntityGun>());
 }
 
 void EntityManager::ReleaseDeviceDependentResources()
@@ -208,8 +212,35 @@ EntityFluffy::~EntityFluffy()
     m_pos.x = 0.0f;
 }
 
-
 void EntityFluffy::Update(float stepTime)
 {
-    m_pos.y = m_origin.y + sin(m_totalTime*0.5f)*stepTime;
+    m_pos.y = m_origin.y + sin(m_totalTime)*stepTime;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityGun::EntityGun()
+    : Entity(SPRITE2D | ANIMATION2D)
+{
+    m_spriteIndices[PUMPKIN] = 17;
+    m_spriteIndices[CANDIES] = 18;
+    m_spriteIndices[CANNON] = 2;
+    m_spriteIndices[FLASHLIGHT] = 16;
+    m_animIndex = 0;
+}
+
+void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
+{
+    if (!SupportPass(pass)) return;
+    // don't call super
+    float rvel = (camera.m_moving && camera.m_running) ? 1.0f : 0.5f;
+    float t = std::max(0.0f, camera.m_timeShoot);
+    float offsx = sin(camera.m_runningTime*7.0f)*0.015f*rvel;
+    float offsy = sin(camera.m_runningTime*5.0f)*0.015f*rvel + camera.m_pitchYaw.x*0.1f;
+    sprite.Draw2D(m_spriteIndices[PUMPKIN], XMFLOAT2(offsx*0.8f, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f); // pumpkins
+    sprite.Draw2D(m_spriteIndices[CANDIES], XMFLOAT2(offsx*0.7f, -0.6f + offsy*1.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // candies
+    sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, -0.6f + offsy - t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // cannon
+    sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, -0.6f + offsy - t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // flashlight
+    sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f);
+}
+

@@ -175,24 +175,7 @@ void SceneRenderer::Render()
         }
     }
 
-    sprite.End3D();
-
-    // GUN RENDER
-    {
-        sprite.Begin2D(m_camera);
-        float rvel = (m_camera.m_moving && m_camera.m_running) ? 1.0f : 0.5f;
-        float t = std::max(0.0f, m_camera.m_timeShoot);
-        float offsx = sin(m_camera.m_runningTime*7.0f)*0.015f*rvel;
-        float offsy = sin(m_camera.m_runningTime*5.0f)*0.015f*rvel + m_camera.m_pitchYaw.x*0.1f;        
-        sprite.Draw2D(17, XMFLOAT2(offsx*0.8f, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f); // pumpkins
-        sprite.Draw2D(18, XMFLOAT2(offsx*0.7f, -0.6f + offsy*1.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // candies
-        sprite.Draw2D(2, XMFLOAT2(offsx, -0.6f + offsy-t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // cannon
-        sprite.Draw2D(16, XMFLOAT2(offsx, -0.6f + offsy - t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // flashlight
-        //sprite.Draw2D(3, XMFLOAT2(-0.9f,0), XMFLOAT2(0.08f, 0.1f), -m_camera.m_pitchYaw.y);        
-        sprite.Draw2DAnimation(0, XMFLOAT2(offsx, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f);
-
-        sprite.End2D();
-    }
+    sprite.End3D();    
     */
 }
 
@@ -201,40 +184,14 @@ void SceneRenderer::CreateDeviceDependentResources()
     auto mapCreateTask = concurrency::create_task([this] 
     {
         m_map.CreateDeviceDependentResources();        
+        auto gameRes = m_deviceResources->GetGameResources();
+        gameRes->m_sprite.CreateDeviceDependentResources();
+        gameRes->m_entityMgr.CreateDeviceDependentResources();
     });
 
-    auto gameRes = m_deviceResources->GetGameResources();
-    gameRes->m_sprite.CreateDeviceDependentResources();
-    gameRes->m_entityMgr.CreateDeviceDependentResources();
+    
 
-    //auto sprTask = concurrency::create_task([this] {
-    //    auto& sprite = m_deviceResources->GetGameResources()->m_sprite;
-    //    sprite.CreateDeviceDependentResources();
-    //    sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
-    //    sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
-    //    sprite.CreateSprite(L"assets\\sprites\\gun0.png"); // 2
-    //    sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
-    //    sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
-    //    sprite.CreateSprite(L"assets\\sprites\\dep1.png"); // 5
-    //    sprite.CreateSprite(L"assets\\sprites\\grave1.png"); // 6
-    //    sprite.CreateSprite(L"assets\\sprites\\crosshair.png"); // 7
-    //    sprite.CreateSprite(L"assets\\sprites\\tree1.png"); // 8
-    //    sprite.CreateSprite(L"assets\\sprites\\msgdie.png"); // 9
-    //    sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
-    //    sprite.CreateSprite(L"assets\\sprites\\bodpile1.png"); // 11
-    //    sprite.CreateSprite(L"assets\\sprites\\girl1.png"); // 12
-    //    sprite.CreateSprite(L"assets\\sprites\\gunshoot0.png"); // 13
-    //    sprite.CreateSprite(L"assets\\sprites\\gunshoot1.png"); // 14
-    //    sprite.CreateSprite(L"assets\\sprites\\gunshoot2.png"); // 15
-    //    sprite.CreateSprite(L"assets\\sprites\\gun1.png"); // 16
-    //    sprite.CreateSprite(L"assets\\sprites\\gun2.png"); // 17
-    //    sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
-
-    //    sprite.CreateAnimation(std::vector<int>{13, 14, 15}, 20.0f); // 0
-    //    sprite.CreateAnimationInstance(0); // 0
-    //});
-
-    (mapCreateTask /*&& sprTask*/).then([this] () 
+    (mapCreateTask).then([this] () 
     {
 		m_loadingComplete = true;
 	});
