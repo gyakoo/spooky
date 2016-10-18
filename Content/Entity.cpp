@@ -6,6 +6,44 @@
 
 using namespace SpookyAdulthood;
 
+
+inline XMFLOAT3 XM3Sub(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return XMFLOAT3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+inline void XM3Sub_inplace(XMFLOAT3& a, const XMFLOAT3& b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+}
+
+inline float XM3LenSq(const XMFLOAT3& a)
+{
+    return a.x*a.x + a.y*a.y + a.z*a.z;
+}
+
+inline float XM3Len(const XMFLOAT3& a)
+{
+    return sqrt(XM3LenSq(a));
+}
+
+inline void XM3Normalize_inplace(XMFLOAT3& a)
+{
+    const float il = 1.0f/XM3Len(a);
+    a.x *= il;
+    a.y *= il;
+    a.z *= il;
+}
+
+inline XMFLOAT3 XM3Normalize(const XMFLOAT3& a)
+{
+    XMFLOAT3 _a = a;
+    XM3Normalize_inplace(_a);
+    return _a;
+}
+
 Entity::Entity(int flags)
     : m_pos(0,0,0), m_size(1,1), m_rotation(0), m_spriteIndex(-1)
     , m_flags(flags), m_timeOut(FLT_MAX)//, m_distToCamSq(FLT_MAX)
@@ -13,7 +51,7 @@ Entity::Entity(int flags)
 {
 }
 
-void Entity::Update(float stepTime)
+void Entity::Update(float stepTime, const CameraFirstPerson& camera)
 {
 
 }
@@ -71,7 +109,7 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
     for (auto it = m_entities.begin(); it < m_entities.end(); )
     {
         auto& e = *it;
-        e->Update(dt);
+        e->Update(dt, camera);
         e->m_timeOut -= dt;
         if (e->m_timeOut <= 0.0f)
             e->m_flags |= Entity::INVALID;
@@ -118,9 +156,10 @@ void EntityManager::Render2D(const CameraFirstPerson& camera)
     sprite.End2D();
 }
 
-void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity)
+void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, float timeout)
 {
     m_entities.push_back(entity);
+    entity->m_timeOut = timeout;
 }
 
 void EntityManager::Clear()
@@ -181,11 +220,8 @@ void EntityManager::CreateDeviceDependentResources()
 
 
     // TEST
-    auto fluffy = std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f));
-    AddEntity(fluffy);
-    fluffy->m_timeOut = 10.0f;
-
-    AddEntity(std::make_shared<EntityGun>());
+    AddEntity(std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
+    AddEntity(std::make_shared<EntityGun>()); // GUN
 }
 
 void EntityManager::ReleaseDeviceDependentResources()
@@ -205,6 +241,7 @@ EntityFluffy::EntityFluffy( const XMFLOAT3& pos)
     m_spriteIndex = 0;
     m_pos = pos;
     m_size = XMFLOAT2(0.3f, 0.3f);
+
 }
 
 EntityFluffy::~EntityFluffy()
@@ -212,7 +249,7 @@ EntityFluffy::~EntityFluffy()
     m_pos.x = 0.0f;
 }
 
-void EntityFluffy::Update(float stepTime)
+void EntityFluffy::Update(float stepTime, const CameraFirstPerson& camera)
 {
     m_pos.y = m_origin.y + sin(m_totalTime)*stepTime;
 }
@@ -220,7 +257,7 @@ void EntityFluffy::Update(float stepTime)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EntityGun::EntityGun()
-    : Entity(SPRITE2D | ANIMATION2D)
+    : Entity(SPRITE2D | ANIMATION2D) // irrelevant actually as we reimplement Render
 {
     m_spriteIndices[PUMPKIN] = 17;
     m_spriteIndices[CANDIES] = 18;
@@ -244,3 +281,37 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityTreeBlack::EntityTreeBlack()
+    : Entity(SPRITE2D)
+{
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, const XMFLOAT3& dir)
+    : Entity(SPRITE3D | ANIMATION3D), m_firstTime(true)
+{
+    if (behavior == FOLLOWER && target == FREE)
+        throw std::exception("Follower behavior must have a target");
+    m_pos = pos;
+    m_dir = dir;
+}
+
+void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    if (m_target == PLAYER)
+    {
+        if ( m_behavior == FOLLOWER || (m_behavior == STRAIGHT && m_firstTime) )
+        {
+            const auto cp = camera.GetPosition();
+            m_dir = XM3Normalize(XM3Sub(cp, m_pos));
+        }
+    }
+    
+
+    m_firstTime = false;
+}

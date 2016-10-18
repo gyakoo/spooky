@@ -18,12 +18,13 @@ namespace SpookyAdulthood
             SPRITE2D=1<<0, 
             SPRITE3D=1<<1, 
             ANIMATION2D=1<<2,
+            ANIMATION3D=1<<3,
 
-            ACCEPT_RAYCAST=1<<3,
-            COLLIDE=1<<4,
+            ACCEPT_RAYCAST=1<<4,
+            COLLIDE=1<<5,
 
-            INVALID=1<<5,
-            INACTIVE=1<<6
+            INVALID=1<<6,
+            INACTIVE=1<<7
         };
 
         enum RenderPass { PASS_3D, PASS_2D };
@@ -31,7 +32,7 @@ namespace SpookyAdulthood
         Entity(int flags=NONE);        
 
     protected:
-        virtual void Update(float stepTime);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
 
         bool SupportPass(RenderPass pass) const;        
@@ -56,7 +57,7 @@ namespace SpookyAdulthood
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
 
-        void AddEntity(const std::shared_ptr<Entity>& entity);
+        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout=FLT_MAX);
         void Clear();
         void Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera);
         void Render3D(const CameraFirstPerson& camera);
@@ -79,7 +80,7 @@ namespace SpookyAdulthood
         ~EntityFluffy();
 
     protected:
-        virtual void Update(float stepTime);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
 
         XMFLOAT3 m_origin;
     };
@@ -94,6 +95,38 @@ namespace SpookyAdulthood
 
         int m_spriteIndices[SPRITES_MAX];
         int m_animIndex;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityTreeBlack : public Entity
+    {
+        EntityTreeBlack();
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityGirl : public Entity
+    {
+
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityProjectile : public Entity
+    {
+        enum Behavior{ STRAIGHT, FOLLOWER };
+        enum Target { PLAYER, FREE };
+        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, const XMFLOAT3& dir=XMFLOAT3(0,0,0));
+
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+
+        Behavior m_behavior;
+        Target m_target;
+        XMFLOAT3 m_dir;
+        bool m_firstTime;
     };
 
 };
