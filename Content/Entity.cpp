@@ -3,46 +3,9 @@
 #include "../Common/DeviceResources.h"
 #include "CameraFirstPerson.h"
 #include "Sprite.h"
+#include "GlobalFlags.h"
 
 using namespace SpookyAdulthood;
-
-
-inline XMFLOAT3 XM3Sub(const XMFLOAT3& a, const XMFLOAT3& b)
-{
-    return XMFLOAT3(a.x - b.x, a.y - b.y, a.z - b.z);
-}
-
-inline void XM3Sub_inplace(XMFLOAT3& a, const XMFLOAT3& b)
-{
-    a.x -= b.x;
-    a.y -= b.y;
-    a.z -= b.z;
-}
-
-inline float XM3LenSq(const XMFLOAT3& a)
-{
-    return a.x*a.x + a.y*a.y + a.z*a.z;
-}
-
-inline float XM3Len(const XMFLOAT3& a)
-{
-    return sqrt(XM3LenSq(a));
-}
-
-inline void XM3Normalize_inplace(XMFLOAT3& a)
-{
-    const float il = 1.0f/XM3Len(a);
-    a.x *= il;
-    a.y *= il;
-    a.z *= il;
-}
-
-inline XMFLOAT3 XM3Normalize(const XMFLOAT3& a)
-{
-    XMFLOAT3 _a = a;
-    XM3Normalize_inplace(_a);
-    return _a;
-}
 
 Entity::Entity(int flags)
     : m_pos(0,0,0), m_size(1,1), m_rotation(0), m_spriteIndex(-1)
@@ -89,6 +52,12 @@ bool Entity::IsActive() const
     return !isInactive;
 }
 
+void Entity::Invalidate()
+{
+    m_flags |= INVALID;
+}
+
+
 bool Entity::SupportRaycast() const
 {
     const bool acceptRaycast = (m_flags & Entity::ACCEPT_RAYCAST) != 0;
@@ -120,6 +89,14 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
             it = m_entities.erase(it);
         else
             ++it;
+    }
+
+    // test
+    if (GlobalFlags::SpawnProjectile)
+    {
+        auto proj = std::make_shared<EntityProjectile>(camera.GetPosition(), 19, EntityProjectile::STRAIGHT, EntityProjectile::FREE, 16.0f, camera.m_forward);
+        AddEntity(proj);
+        GlobalFlags::SpawnProjectile = false;
     }
 }
 
@@ -160,6 +137,11 @@ void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, float timeo
 {
     m_entities.push_back(entity);
     entity->m_timeOut = timeout;
+}
+
+void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity)
+{
+    m_entities.push_back(entity);
 }
 
 void EntityManager::Clear()
@@ -214,14 +196,15 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\gun1.png"); // 16
     sprite.CreateSprite(L"assets\\sprites\\gun2.png"); // 17
     sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
+    sprite.CreateSprite(L"assets\\sprites\\proj0.png"); // 19
 
     sprite.CreateAnimation(std::vector<int>{13, 14, 15}, 20.0f); // 0
     sprite.CreateAnimationInstance(0); // 0
 
-
     // TEST
     AddEntity(std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
     AddEntity(std::make_shared<EntityGun>()); // GUN
+    AddEntity(std::make_shared<EntityTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
 }
 
 void EntityManager::ReleaseDeviceDependentResources()
@@ -272,8 +255,8 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     // don't call super
     float rvel = (camera.m_moving && camera.m_running) ? 1.0f : 0.5f;
     float t = std::max(0.0f, camera.m_timeShoot);
-    float offsx = sin(camera.m_runningTime*7.0f)*0.015f*rvel;
-    float offsy = sin(camera.m_runningTime*5.0f)*0.015f*rvel + camera.m_pitchYaw.x*0.1f;
+    float offsx = sin(camera.m_runningTime*7.0f)*0.010f*rvel;
+    float offsy = sin(camera.m_runningTime*5.0f)*0.010f*rvel + camera.m_pitchYaw.x*0.1f;
     sprite.Draw2D(m_spriteIndices[PUMPKIN], XMFLOAT2(offsx*0.8f, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f); // pumpkins
     sprite.Draw2D(m_spriteIndices[CANDIES], XMFLOAT2(offsx*0.7f, -0.6f + offsy*1.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // candies
     sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, -0.6f + offsy - t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // cannon
@@ -283,22 +266,33 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityTreeBlack::EntityTreeBlack()
-    : Entity(SPRITE2D)
+EntityTreeBlack::EntityTreeBlack(const XMFLOAT3& pos)
+    : Entity(SPRITE3D)
 {
-
+    m_spriteIndex = 8;
+    m_size = XMFLOAT2(0.7f, 1.9f);
+    m_pos = pos;
+    m_pos.y = 0.95f;
 }
 
+void EntityTreeBlack::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
+{
+    Entity::Render(pass, camera, sprite);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, const XMFLOAT3& dir)
-    : Entity(SPRITE3D | ANIMATION3D), m_firstTime(true)
+EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, float speed, const XMFLOAT3& dir)
+    : Entity(SPRITE3D | ANIMATION3D), m_firstTime(true), m_speed(speed)
 {
     if (behavior == FOLLOWER && target == FREE)
         throw std::exception("Follower behavior must have a target");
     m_pos = pos;
     m_dir = dir;
+    m_timeOut = 10.0f; // max time out for projectiles (just in case)
+    m_spriteIndex = spriteNdx;
+    m_size = XMFLOAT2(0.5f, 0.5f);
+    //m_speed = 1.0f; // remove
 }
 
 void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
@@ -311,7 +305,22 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
             m_dir = XM3Normalize(XM3Sub(cp, m_pos));
         }
     }
-    
-
     m_firstTime = false;
+
+    XMFLOAT3 newPos = XM3Mad(m_pos, m_dir, m_speed*stepTime);
+    
+    // collides?
+    auto gameRes = DX::GameResources::instance;
+    auto& map = gameRes->m_map;
+    XMFLOAT3 hit;
+    if (map.RaycastSeg(m_pos, newPos, hit, 1.0f))
+    {
+        Invalidate();
+        m_pos = hit;
+        gameRes->SoundPlay(DX::GameResources::SFX_HIT0, false);
+    }
+    else
+    {
+        m_pos = newPos;
+    }
 }

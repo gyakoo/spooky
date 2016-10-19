@@ -38,6 +38,7 @@ namespace SpookyAdulthood
         bool SupportPass(RenderPass pass) const;        
         bool SupportRaycast() const;
         bool IsActive() const;
+        void Invalidate();
 
         friend class EntityManager;
         XMFLOAT3 m_pos;
@@ -57,7 +58,8 @@ namespace SpookyAdulthood
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
 
-        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout=FLT_MAX);
+        void AddEntity(const std::shared_ptr<Entity>& entity);
+        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout);
         void Clear();
         void Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera);
         void Render3D(const CameraFirstPerson& camera);
@@ -101,7 +103,8 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityTreeBlack : public Entity
     {
-        EntityTreeBlack();
+        EntityTreeBlack(const XMFLOAT3& pos);
+        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
     };
 
 
@@ -119,13 +122,14 @@ namespace SpookyAdulthood
     {
         enum Behavior{ STRAIGHT, FOLLOWER };
         enum Target { PLAYER, FREE };
-        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, const XMFLOAT3& dir=XMFLOAT3(0,0,0));
+        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, float speed, const XMFLOAT3& dir=XMFLOAT3(0,0,0));
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
 
         Behavior m_behavior;
         Target m_target;
         XMFLOAT3 m_dir;
+        float m_speed;
         bool m_firstTime;
     };
 

@@ -22,6 +22,7 @@ namespace SpookyAdulthood
         float m_distSqOrRot;
         bool m_isAnim;
         bool m_disableDepth;
+        bool m_fullBillboard;
     };
 
     struct SpriteAnimation
@@ -51,7 +52,7 @@ namespace SpookyAdulthood
 
         void Begin3D(const CameraFirstPerson& camera);
         void End3D();
-        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth=false);
+        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth=false, bool fullBillboard=false);
         
         void Begin2D(const CameraFirstPerson& camera);
         void End2D();
@@ -71,7 +72,7 @@ namespace SpookyAdulthood
         Microsoft::WRL::ComPtr<ID3D11Buffer>	m_vertexBuffer;
         Microsoft::WRL::ComPtr<ID3D11Buffer>	m_indexBuffer;
         std::vector<Sprite> m_sprites;
-        XMMATRIX m_camInvYaw;
+        XMMATRIX m_camInvYaw, m_camInvPitch;
         ModelViewProjectionConstantBuffer m_cbData;
         std::vector<SpriteRender> m_spritesToRender[2];
         std::vector<SpriteAnimation> m_animations;

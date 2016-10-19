@@ -57,6 +57,8 @@
 #include "DirectXTK/Inc/VertexTypes.h"
 #include "DirectXTK/Inc/WICTextureLoader.h"
 
+using namespace DirectX;
+
 template<typename T, typename R, typename K>
 inline T Clamp(const T& v, const R& _min, const K& _max)
 {
@@ -71,4 +73,48 @@ inline __int64 time_call(Function&& f)
     __int64 begin = GetTickCount64();
     f();
     return GetTickCount64() - begin;
+}
+
+
+inline XMFLOAT3 XM3Sub(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return XMFLOAT3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+inline void XM3Sub_inplace(XMFLOAT3& a, const XMFLOAT3& b)
+{
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
+}
+
+inline float XM3LenSq(const XMFLOAT3& a)
+{
+    return a.x*a.x + a.y*a.y + a.z*a.z;
+}
+
+inline float XM3Len(const XMFLOAT3& a)
+{
+    return sqrt(XM3LenSq(a));
+}
+
+inline void XM3Normalize_inplace(XMFLOAT3& a)
+{
+    const float il = 1.0f / XM3Len(a);
+    a.x *= il;
+    a.y *= il;
+    a.z *= il;
+}
+
+inline XMFLOAT3 XM3Normalize(const XMFLOAT3& a)
+{
+    XMFLOAT3 _a = a;
+    XM3Normalize_inplace(_a);
+    return _a;
+}
+
+// ret a + b*c
+inline XMFLOAT3 XM3Mad(const XMFLOAT3& a, const XMFLOAT3& b, float c)
+{
+    return XMFLOAT3(a.x + b.x*c, a.y + b.y*c, a.z + b.z*c);
 }

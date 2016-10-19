@@ -79,7 +79,7 @@ namespace SpookyAdulthood
         }
     }
     
-    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth)
+    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth, bool fullBillboard)
     {
         DX::ThrowIfFalse(m_rendering[R3D]); // Begin not called
 
@@ -91,7 +91,7 @@ namespace SpookyAdulthood
 
         const float x = m_camPosition.x - position.x;
         const float y = m_camPosition.z - position.z;
-        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false, disableDepth };
+        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false, disableDepth, fullBillboard };
         m_spritesToRender[R3D].push_back(sprR);
     }
 
@@ -152,6 +152,7 @@ namespace SpookyAdulthood
         context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
         context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
         m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
+        m_camInvPitch = XMMatrixRotationX(-camera.m_pitchYaw.x);
         m_cbData.view = camera.m_view;
         m_cbData.projection = camera.m_projection;
         m_camPosition = camera.GetPosition();
@@ -181,8 +182,10 @@ namespace SpookyAdulthood
             const auto& position = sprI.m_position;
             const auto& size = sprI.m_size;
 
-            // billboard constrained to up vector (cheap computation)
+            // billboard constrained to up vector or full billboard?
             XMMATRIX mr = m_camInvYaw;
+            if (sprI.m_fullBillboard)
+                mr = XMMatrixMultiply(m_camInvPitch, mr);
             mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
 
             XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);

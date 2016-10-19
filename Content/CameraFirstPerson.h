@@ -140,7 +140,7 @@ namespace SpookyAdulthood
 
         // walking pseudo effect
         const float offsX = cos(m_runningTime*hvel)*0.04f;
-        const float offsY = sin(m_runningTime*hvel)*0.05f;
+        const float offsY = sin(m_runningTime*hvel)*0.03f;
         
         // rotate camera and translate
         XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ)-offsX, -m_height-offsY, XMVectorGetZ(m_camXZ));
@@ -148,9 +148,7 @@ namespace SpookyAdulthood
         m_xyz.y = m_height;
         m_xyz.z = -m_xyz.z;
         XMMATRIX m = XMMatrixMultiply(ry, rx);
-        XMStoreFloat3(&m_forward, m.r[2]);
-        m_forward.y = -m_forward.y;
-        m_forward.z = -m_forward.z;
+        XMStoreFloat3(&m_forward, XMVectorNegate(XMMatrixTranspose(m).r[2]));        
         m = XMMatrixMultiply(t, m);
 
         // udpate view mat

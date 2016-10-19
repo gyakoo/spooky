@@ -206,6 +206,7 @@
     <Image Include="Assets\sprites\gunshoot1.png" />
     <Image Include="Assets\sprites\gunshoot2.png" />
     <Image Include="Assets\sprites\msgdie.png" />
+    <Image Include="Assets\sprites\proj0.png" />
     <Image Include="Assets\sprites\tree1.png" />
     <Image Include="Assets\textures\atlaslevel.png" />
     <Image Include="Assets\sprites\hand.png" />
@@ -331,6 +332,7 @@
   <ItemGroup>
     <Media Include="Assets\sounds\breathing.wav" />
     <Media Include="Assets\sounds\heartbeat.wav" />
+    <Media Include="Assets\sounds\hit0.wav" />
     <Media Include="Assets\sounds\piano.wav" />
     <Media Include="Assets\sounds\shotgun.wav" />
     <Media Include="Assets\sounds\walk.wav" />

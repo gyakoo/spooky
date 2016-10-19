@@ -746,6 +746,7 @@ bool LevelMap::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3&
     // check against all collision segments for that room,
     // if portal hit move origin to portal origin and check again for the room that portal connects with
     const auto& leaf = GetLeafAt(origin);
+    if (!leaf) return false;
     if (!leaf->m_collisionSegments) 
         return false;
 
@@ -786,22 +787,22 @@ bool LevelMap::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3&
     return false;
 }
 
-bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit)
+bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad)
 {
-    XMFLOAT3 dir(end.x - origin.x, end.y - origin.y, end.z - origin.z);
-    const float distSq = dir.x*dir.x + dir.y*dir.y + dir.z*dir.z;
-#ifdef _DEBUG
-    if (distSq == 0) return false;
-#endif
+    XMFLOAT3 dir2D = XM3Sub(end, origin);
+    dir2D.y = 0.0f;
+    const float distSq = XM3LenSq(dir2D);
     const float invSq = 1.0f / sqrtf(distSq);
-    dir.x *= invSq; dir.y *= invSq; dir.z *= invSq;
+    dir2D.x *= invSq; dir2D.z *= invSq;
+    XMFLOAT3 origin2D(origin.x, 0, origin.z);
 
     bool wasHit = false;
-    if (RaycastDir(origin, dir, outHit))
+    if (RaycastDir(origin2D, dir2D, outHit))
     {
-        XMFLOAT3 toHit(outHit.x - origin.x, outHit.y - origin.y, outHit.z - origin.z);
-        const float lenToHitSq = toHit.x*toHit.x + toHit.y*toHit.y + toHit.z*toHit.z;
-        wasHit = lenToHitSq <= distSq;
+        XMFLOAT3 toHit = XM3Sub(outHit, origin2D);
+        const float lenToHitSq = XM3LenSq(toHit);
+        const float compRad = optRad > 0.0f ? (optRad) : distSq;
+        wasHit = lenToHitSq <= compRad;
     }
     return wasHit;
 }

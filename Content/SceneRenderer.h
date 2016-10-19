@@ -28,7 +28,6 @@ namespace SpookyAdulthood
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
         CameraFirstPerson  m_camera;
-        LevelMap m_map;
         LevelMapGenerationSettings m_mapSettings;
         float	m_degreesPerSecond;
         bool	m_loadingComplete;        

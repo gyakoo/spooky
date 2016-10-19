@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Common">
-      <UniqueIdentifier>e65806ac-4905-4e44-855a-198d2d2eae35</UniqueIdentifier>
-    </Filter>
     <Filter Include="Assets">
       <UniqueIdentifier>02f878cc-6585-46af-95bb-f1187457cf31</UniqueIdentifier>
       <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
@@ -32,6 +29,9 @@
     <Filter Include="Assets\snd">
       <UniqueIdentifier>{55d8ebd4-852c-47c4-a1a0-6c46673090ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>e65806ac-4905-4e44-855a-198d2d2eae35</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
@@ -49,9 +49,6 @@
     <ClCompile Include="Content\CameraFirstPerson.cpp">
       <Filter>Content</Filter>
     </ClCompile>
-    <ClCompile Include="Content\CollisionAndSolving2D.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
     <ClCompile Include="Content\GlobalFlags.cpp">
       <Filter>Content</Filter>
     </ClCompile>
@@ -62,6 +59,9 @@
       <Filter>Content</Filter>
     </ClCompile>
     <ClCompile Include="Content\Entity.cpp">
+      <Filter>Content</Filter>
+    </ClCompile>
+    <ClCompile Include="Content\CollisionAndSolving2D.cpp">
       <Filter>Content</Filter>
     </ClCompile>
   </ItemGroup>
@@ -81,9 +81,6 @@
     <ClInclude Include="Content\CameraFirstPerson.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <ClInclude Include="Content\CollisionAndSolving2D.h">
-      <Filter>Common</Filter>
-    </ClInclude>
     <ClInclude Include="Content\GlobalFlags.h">
       <Filter>Content</Filter>
     </ClInclude>
@@ -91,6 +88,9 @@
       <Filter>Content</Filter>
     </ClInclude>
     <ClInclude Include="Content\Entity.h">
+      <Filter>Content</Filter>
+    </ClInclude>
+    <ClInclude Include="Content\CollisionAndSolving2D.h">
       <Filter>Content</Filter>
     </ClInclude>
   </ItemGroup>
@@ -179,6 +179,9 @@
     <Image Include="Assets\sprites\gun2.png">
       <Filter>Assets\img</Filter>
     </Image>
+    <Image Include="Assets\sprites\proj0.png">
+      <Filter>Assets\img</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -220,6 +223,9 @@
       <Filter>Assets\snd</Filter>
     </Media>
     <Media Include="Assets\sounds\walk.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\hit0.wav">
       <Filter>Assets\snd</Filter>
     </Media>
   </ItemGroup>

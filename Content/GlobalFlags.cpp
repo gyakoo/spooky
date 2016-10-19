@@ -15,6 +15,7 @@ namespace SpookyAdulthood
     bool GlobalFlags::SpawnPlayer = false;
     bool GlobalFlags::TestRaycast = false;
     bool GlobalFlags::AllLit = false;
+    bool GlobalFlags::SpawnProjectile = false;
     
     bool GlobalFlags::DrawFlags = true;
     XMFLOAT2 GlobalFlags::DrawGlobalsPos(10, 10);
@@ -64,6 +65,10 @@ namespace SpookyAdulthood
                 swprintf(buff, 256, L"All Lit(7)=%d", (int)AllLit);
                 f->DrawString(s, buff, p, CEnbl(AllLit));
                 p.y += padY;                
+
+                swprintf(buff, 256, L"Projectile(8)=%d", (int)SpawnProjectile);
+                f->DrawString(s, buff, p, CEnbl(SpawnProjectile));
+                p.y += padY;
             }
             s->End();
         }
@@ -105,6 +110,9 @@ namespace SpookyAdulthood
             break;
             case VirtualKey::Number7:
                 AllLit = !AllLit;
+            break;
+            case VirtualKey::Number8:
+                SpawnProjectile = true;;
             break;
         }
     }

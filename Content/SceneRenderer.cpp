@@ -14,29 +14,30 @@ using namespace Windows::Foundation;
 // Loads vertex and pixel shaders from files and instantiates the cube geometry.
 SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
 	m_loadingComplete(false),
-	m_deviceResources(deviceResources),
-    m_map(deviceResources)
+	m_deviceResources(deviceResources)
 {
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 
+    auto& map = m_deviceResources->GetGameResources()->m_map;
     m_mapSettings.m_tileCount = XMUINT2(35, 35);
     m_mapSettings.m_minTileCount = XMUINT2(4, 4);
     m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
-    m_map.Generate(m_mapSettings);
+    map.Generate(m_mapSettings);
     SpawnPlayer();    
 }
 
 void SceneRenderer::SpawnPlayer()
 {
-    XMUINT2 mapPos = m_map.GetRandomPosition();
+    auto& map = m_deviceResources->GetGameResources()->m_map;
+    XMUINT2 mapPos = map.GetRandomPosition();
     XMFLOAT3 p(mapPos.x + 0.5f, 0, mapPos.y + 0.5f);
     m_camera.SetPosition(p);
     auto gameRes = m_deviceResources->GetGameResources();
     if (gameRes && gameRes->m_audioEngine)
     {
         gameRes->SoundPlay(DX::GameResources::SFX_BREATH);
-        gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
+        //gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
         gameRes->SoundPlay(DX::GameResources::SFX_HEART);
     }
 }
@@ -59,16 +60,18 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     if (!m_loadingComplete)
         return;
 
+    auto& map = m_deviceResources->GetGameResources()->m_map;
+
     // Update map and camera (input, collisions and visibility)
-    m_map.Update(timer, m_camera);
+    map.Update(timer, m_camera);
     m_camera.Update(timer, 
-    [this](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR  // CALLED FOR COLLISION HANDLING
+    [&](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR  // CALLED FOR COLLISION HANDLING
     { 
         if (GlobalFlags::CollisionsEnabled)
         {
             XMFLOAT2 curPos2D(XMVectorGetX(curPos), XMVectorGetZ(curPos));
             XMFLOAT2 nextPos2D(XMVectorGetX(nextPos), XMVectorGetZ(nextPos));
-            XMFLOAT2 solved2D = CollisionAndSolving2D(m_map.GetCurrentCollisionSegments(), curPos2D, nextPos2D, radius);
+            XMFLOAT2 solved2D = CollisionAndSolving2D(map.GetCurrentCollisionSegments(), curPos2D, nextPos2D, radius);
             XMVECTOR solved3D = XMVectorSet(solved2D.x, XMVectorGetY(nextPos), solved2D.y, 0.0f);
             return solved3D;
         }
@@ -92,8 +95,8 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     if (GlobalFlags::GenerateNewLevel)
     {
         GlobalFlags::GenerateNewLevel = false;
-        m_map.Generate(m_mapSettings);
-        m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
+        map.Generate(m_mapSettings);
+        map.GenerateThumbTex(m_mapSettings.m_tileCount);
     }
 
     if (GlobalFlags::SpawnPlayer)
@@ -105,8 +108,8 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     // thumbnail map update (every N frames)
     if (timer.GetFrameCount() % 30 == 0)
     {
-        XMUINT2 ppos = m_map.ConvertToMapPosition(m_camera.GetPosition());
-        m_map.GenerateThumbTex(m_mapSettings.m_tileCount,&ppos);
+        XMUINT2 ppos = map.ConvertToMapPosition(m_camera.GetPosition());
+        map.GenerateThumbTex(m_mapSettings.m_tileCount,&ppos);
     }
     
 }
@@ -136,7 +139,8 @@ void SceneRenderer::Render()
 		return;
 
     // LEVEL rendering
-    m_map.Render(m_camera);
+    auto& map = m_deviceResources->GetGameResources()->m_map;
+    map.Render(m_camera);
     
     /*
     auto& sprite = m_deviceResources->GetGameResources()->m_sprite;
@@ -163,12 +167,12 @@ void SceneRenderer::Render()
     if (GlobalFlags::TestRaycast)
     {
         XMFLOAT3 hit;
-        //if (m_map.RaycastDir(m_camera.GetPosition(), m_camera.m_forward, hit))
+        //if (map.RaycastDir(m_camera.GetPosition(), m_camera.m_forward, hit))
         XMFLOAT3 end(m_camera.GetPosition());
         end.x += m_camera.m_forward.x*5.0f;
         end.y += m_camera.m_forward.y*5.0f;
         end.z += m_camera.m_forward.z*5.0f;
-        if ( m_map.RaycastSeg(m_camera.GetPosition(), end, hit) )
+        if ( map.RaycastSeg(m_camera.GetPosition(), end, hit) )
         {
             hit.y = m_camera.ComputeHeightAtHit(hit);            
             sprite.Draw3D(0,hit, XMFLOAT2(0.3, 0.3), true);
@@ -181,10 +185,10 @@ void SceneRenderer::Render()
 
 void SceneRenderer::CreateDeviceDependentResources()
 {
-    auto mapCreateTask = concurrency::create_task([this] 
+    auto mapCreateTask = concurrency::create_task([&]
     {
-        m_map.CreateDeviceDependentResources();        
         auto gameRes = m_deviceResources->GetGameResources();
+        gameRes->m_map.CreateDeviceDependentResources();
         gameRes->m_sprite.CreateDeviceDependentResources();
         gameRes->m_entityMgr.CreateDeviceDependentResources();
     });

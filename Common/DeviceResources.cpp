@@ -754,13 +754,16 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav",
     L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
-    L"assets\\sounds\\heartbeat.wav" };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f };
+    L"assets\\sounds\\heartbeat.wav", L"assets\\sounds\\hit0.wav" };
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f, 1.0f };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f };
 
+DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
+    , m_map(device)
 {   
+    GameResources::instance = this;
     // vertex shader and input layout
     auto loadVSTask = DX::ReadDataAsync(L"BaseVertexShader.cso");
     auto loadPSTask = DX::ReadDataAsync(L"BasePixelShader.cso");

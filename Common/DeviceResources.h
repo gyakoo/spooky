@@ -2,6 +2,7 @@
 #include <random>
 #include "Content/Sprite.h"
 #include "Content/Entity.h"
+#include "Content/LevelMap.h"
 
 namespace DX
 {
@@ -37,7 +38,7 @@ namespace DX
     //* ***************************************************************** *//
     struct GameResources // common
     {
-        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_HEART, SFX_MAX};
+        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_HEART, SFX_HIT0, SFX_MAX};
         GameResources(const std::shared_ptr<DX::DeviceResources>& device);
         ~GameResources();
 
@@ -62,6 +63,7 @@ namespace DX
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
 
         std::unique_ptr<DirectX::AudioEngine>       m_audioEngine;
+        SpookyAdulthood::LevelMap                   m_map;
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffect>> m_soundEffects;
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
@@ -75,6 +77,8 @@ namespace DX
         void SoundPitch(uint32_t index, float p);
         void SoundVolume(uint32_t index, float v);
         DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
+
+        static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
     };
 
 	// Controls all the DirectX device resources.
