@@ -68,12 +68,13 @@ bool Entity::SupportRaycast() const
 
 
 EntityManager::EntityManager(const std::shared_ptr<DX::DeviceResources>& device)
-    : m_device(device)
+    : m_device(device), m_duringUpdate(false)
 {
 }
 
 void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera)
 {
+    m_duringUpdate = true;
     const float dt = (float)stepTimer.GetElapsedSeconds();
     for (auto it = m_entities.begin(); it < m_entities.end(); )
     {
@@ -89,6 +90,14 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
             it = m_entities.erase(it);
         else
             ++it;
+    }
+    m_duringUpdate = false;
+
+    // add buffered
+    if ( !m_entitiesToAdd.empty() )
+    {
+        m_entities.insert(m_entities.end(), m_entitiesToAdd.begin(), m_entitiesToAdd.end());
+        m_entitiesToAdd.clear();
     }
 
     // test
@@ -135,18 +144,21 @@ void EntityManager::Render2D(const CameraFirstPerson& camera)
 
 void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, float timeout)
 {
-    m_entities.push_back(entity);
+    auto& coll = m_duringUpdate ? m_entitiesToAdd : m_entities;
+    coll.push_back(entity);
     entity->m_timeOut = timeout;
 }
 
 void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity)
 {
-    m_entities.push_back(entity);
+    auto& coll = m_duringUpdate ? m_entitiesToAdd : m_entities;
+    coll.push_back(entity);
 }
 
 void EntityManager::Clear()
 {
     m_entities.clear();
+    m_entitiesToAdd.clear();
 }
 
 bool EntityManager::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit)
@@ -266,19 +278,46 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityTreeBlack::EntityTreeBlack(const XMFLOAT3& pos)
-    : Entity(SPRITE3D)
+EntityTreeBlack::EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs)
+    : Entity(SPRITE3D), m_shootEvery(shootEverySecs)
 {
     m_spriteIndex = 8;
     m_size = XMFLOAT2(0.7f, 1.9f);
     m_pos = pos;
     m_pos.y = 0.95f;
+    m_timeToNextShoot = shootEverySecs;
 }
 
 void EntityTreeBlack::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
 {
-    Entity::Render(pass, camera, sprite);
+    Entity::Render(pass, camera, sprite);    
 }
+
+void EntityTreeBlack::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    m_timeToNextShoot -= stepTime;
+    if (m_timeToNextShoot <= 0.0f)
+    {
+        Shoot(camera);        
+        m_timeToNextShoot = m_shootEvery - m_timeToNextShoot;
+    }
+}
+
+void EntityTreeBlack::Shoot(const CameraFirstPerson& camera)
+{
+    auto gameRes = DX::GameResources::instance;
+    auto& rnd = gameRes->m_random;
+    const XMFLOAT3 offsets[2] = { XMFLOAT3(0,-.5f,0), XMFLOAT3(0,.45f,0) };
+    
+    XMFLOAT3 origin = XM3Add(m_pos, offsets[rnd.Get(0, 9) % 2]);
+    XMFLOAT3 toPl = XM3Sub(camera.GetPosition(), origin);
+    XM3Normalize_inplace(toPl);
+
+    auto proj = std::make_shared<EntityProjectile>(
+        origin, 19, EntityProjectile::STRAIGHT, EntityProjectile::FREE, 4.0f, toPl);
+    gameRes->m_entityMgr.AddEntity(proj);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -287,6 +326,7 @@ EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior 
 {
     if (behavior == FOLLOWER && target == FREE)
         throw std::exception("Follower behavior must have a target");
+    m_collidePlayer = true;
     m_pos = pos;
     m_dir = dir;
     m_timeOut = 10.0f; // max time out for projectiles (just in case)
@@ -313,7 +353,20 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     auto gameRes = DX::GameResources::instance;
     auto& map = gameRes->m_map;
     XMFLOAT3 hit;
-    if (map.RaycastSeg(m_pos, newPos, hit, 1.0f))
+    bool wasHit = false;
+    wasHit = map.RaycastSeg(m_pos, newPos, hit, 0.5f); // against level?
+
+    if (!wasHit) // against player?
+    {
+        XMFLOAT3 toPl = XM3Sub(camera.GetPosition(), newPos);
+        float distToPl = XM3LenSq(toPl);
+        const float plRad = camera.m_radius;
+        wasHit = distToPl < (plRad*plRad);
+        if ( wasHit )
+            const_cast<CameraFirstPerson&>(camera).m_timeShoot = 0.5f;
+    }
+
+    if (wasHit)
     {
         Invalidate();
         m_pos = hit;

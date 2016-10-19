@@ -93,6 +93,11 @@ inline float XM3LenSq(const XMFLOAT3& a)
     return a.x*a.x + a.y*a.y + a.z*a.z;
 }
 
+inline XMFLOAT3 XM3Add(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return XMFLOAT3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
 inline float XM3Len(const XMFLOAT3& a)
 {
     return sqrt(XM3LenSq(a));

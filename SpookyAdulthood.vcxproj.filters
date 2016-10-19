@@ -32,6 +32,9 @@
     <Filter Include="Common">
       <UniqueIdentifier>e65806ac-4905-4e44-855a-198d2d2eae35</UniqueIdentifier>
     </Filter>
+    <Filter Include="Content\shaders">
+      <UniqueIdentifier>{3b2d24ca-bd05-464a-8d87-c58ede60cd01}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.cpp" />
@@ -194,19 +197,19 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Content\shaders\BasePixelShader.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Content\shaders</Filter>
     </FxCompile>
     <FxCompile Include="Content\shaders\BaseVertexShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Content\shaders</Filter>
     </FxCompile>
     <FxCompile Include="Content\shaders\ScreenSpriteVS.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Content\shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\shaders\ScreenSpritePS.hlsl">
+      <Filter>Content\shaders</Filter>
     </FxCompile>
     <FxCompile Include="Content\shaders\PostPS.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Content\shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

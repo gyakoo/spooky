@@ -72,6 +72,8 @@ namespace SpookyAdulthood
         friend class Entity;
         std::shared_ptr<DX::DeviceResources> m_device;
         EntitiesCollection m_entities;
+        EntitiesCollection m_entitiesToAdd;
+        bool m_duringUpdate;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,8 +105,13 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityTreeBlack : public Entity
     {
-        EntityTreeBlack(const XMFLOAT3& pos);
+        EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs=2.5f);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
+        void Shoot(const CameraFirstPerson& camera);
+
+        float m_shootEvery;
+        float m_timeToNextShoot;
     };
 
 
@@ -131,6 +138,7 @@ namespace SpookyAdulthood
         XMFLOAT3 m_dir;
         float m_speed;
         bool m_firstTime;
+        bool m_collidePlayer;
     };
 
 };
