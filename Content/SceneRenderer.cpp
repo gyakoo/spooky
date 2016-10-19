@@ -86,6 +86,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         if (!audio) return;
         gameRes->SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
         gameRes->m_sprite.CreateAnimationInstance(0, 0);
+        gameRes->FlashScreen(0.5f, XMFLOAT4(1, 1, 1, 1));
     });
 
     // Audio

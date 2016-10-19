@@ -3,6 +3,7 @@
 #include "DirectXHelper.h"
 #include "Content/ShaderStructures.h"
 #include "Content/GlobalFlags.h"
+#include "Content/CameraFirstPerson.h"
 
 using namespace D2D1;
 using namespace DirectX;
@@ -220,7 +221,8 @@ void DX::DeviceResources::CreateDeviceResources()
 			&m_d2dContext
 			)
 		);    
-    m_gameResources = std::make_unique<GameResources>(std::shared_ptr<DeviceResources>(this));
+    auto dev = std::shared_ptr<DeviceResources>(this);
+    m_gameResources = std::make_unique<GameResources>(dev);
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -761,7 +763,7 @@ static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f };
 DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
-    , m_map(device)
+    , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -883,6 +885,32 @@ DX::GameResources::~GameResources()
     m_batch.reset();
     m_audioEngine.reset();
     m_sprite.ReleaseDeviceDependentResources();
+}
+
+void DX::GameResources::Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera)
+{
+    if (!m_readyToRender)
+        return;
+
+    m_flashScreenTime -= (float)timer.GetElapsedSeconds();
+    
+    // Update SPRITE MANAGER
+    m_sprite.Update(timer);
+    m_entityMgr.Update(timer, camera);
+
+    // Update AUDIO
+    auto audio = m_audioEngine.get();
+    if (audio)
+    {
+        if (!audio->IsCriticalError())
+            audio->Update();
+    }
+}
+
+void DX::GameResources::FlashScreen(float time, const XMFLOAT4& color)
+{
+    m_flashScreenTime = time;
+    m_flashColor = color;
 }
 
 void DX::GameResources::SoundPlay(uint32_t index, bool loop) const

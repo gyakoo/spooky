@@ -143,7 +143,7 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
-        float t = std::max(std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(camera.m_timeShoot*0.35f, 0.0f));
+        float t = std::max(std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(dxCommon->m_flashScreenTime*0.35f, 0.0f));
         if (GlobalFlags::AllLit) t = 1.0f;
         PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,1.0f-int(GlobalFlags::AllLit),0,0} };
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);

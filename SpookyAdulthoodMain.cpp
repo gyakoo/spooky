@@ -14,6 +14,7 @@ using namespace Concurrency;
 SpookyAdulthoodMain::SpookyAdulthoodMain(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
 	m_deviceResources(deviceResources)
 {
+#pragma warning(disable:4316)
 	m_deviceResources->RegisterDeviceNotify(this);
 	m_sceneRenderer = std::unique_ptr<SceneRenderer>(new SceneRenderer(m_deviceResources));
 	m_fpsTextRenderer = std::unique_ptr<UIRenderer>(new UIRenderer(m_deviceResources));    
@@ -22,6 +23,7 @@ SpookyAdulthoodMain::SpookyAdulthoodMain(const std::shared_ptr<DX::DeviceResourc
 	// e.g. for 60 FPS fixed timestep update logic, call:
 	m_timer.SetFixedTimeStep(true);
 	m_timer.SetTargetElapsedSeconds(1.0 / 60);
+#pragma default(disable:4316)
 }
 
 SpookyAdulthoodMain::~SpookyAdulthoodMain()
@@ -33,7 +35,6 @@ SpookyAdulthoodMain::~SpookyAdulthoodMain()
 // Updates application state when the window size changes (e.g. device orientation change)
 void SpookyAdulthoodMain::CreateWindowSizeDependentResources() 
 {
-	// TODO: Replace this with the size-dependent initialization of your app's content.
     if ( m_sceneRenderer )
 	    m_sceneRenderer->CreateWindowSizeDependentResources();
 }
@@ -44,25 +45,12 @@ void SpookyAdulthoodMain::Update()
 	// Update scene objects.
 	m_timer.Tick([&]()
 	{
-		// TODO: Replace this with your app's content update functions.
 		m_sceneRenderer->Update(m_timer);
 		m_fpsTextRenderer->Update(m_timer);
         GlobalFlags::Update(m_timer);
         auto gameRes = m_deviceResources->GetGameResources();
-        if (gameRes && gameRes->m_readyToRender)
-        {
-            // Update SPRITE MANAGER
-            gameRes->m_sprite.Update(m_timer);
-            gameRes->m_entityMgr.Update(m_timer, m_sceneRenderer->GetCamera());
-            
-            // Update AUDIO
-            auto audio = gameRes->m_audioEngine.get();
-            if (audio)
-            {
-                if (!audio->IsCriticalError())
-                    audio->Update();
-            }
-        }
+        if (gameRes)
+            gameRes->Update(m_timer, m_sceneRenderer->GetCamera());
 	});
 }
 
@@ -95,21 +83,22 @@ bool SpookyAdulthoodMain::Draw3D()
     // Render the scene objects to RT
 	m_sceneRenderer->Render();
     gameRes->m_entityMgr.Render3D(cam);
-    
+    gameRes->m_entityMgr.Render2D(cam); // should it be two passes for 2d? (before and after screen quad?)
+
     // Render quad on screen
     {
         targets[0] = { m_deviceResources->GetBackBufferRenderTargetView() };
         context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
         context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
         // params (flash)
-        float t = std::max(0.0f, 1.0f - 16.0f*(0.5f - cam.m_timeShoot));
-        XMFLOAT4 params0(t*0.2f, t*0.2f, t*0.2f, 0);
+        float t = std::max(0.0f, 1.0f - 16.0f*(0.5f - gameRes->m_flashScreenTime));
+        auto fc = gameRes->m_flashColor;
+        XMFLOAT4 params0(fc.x*t*0.2f, fc.y*t*0.2f, fc.z*t*0.2f, 0);
         gameRes->m_sprite.DrawScreenQuad(m_deviceResources->GetTempRenderTargetSRV(), params0);
 
         // HUD on the final RT
         m_fpsTextRenderer->Render();
         GlobalFlags::Draw3D(m_deviceResources);
-        gameRes->m_entityMgr.Render2D(cam);
 
     }
 

@@ -362,15 +362,17 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
         float distToPl = XM3LenSq(toPl);
         const float plRad = camera.m_radius;
         wasHit = distToPl < (plRad*plRad);
-        if ( wasHit )
-            const_cast<CameraFirstPerson&>(camera).m_timeShoot = 0.5f;
+        if (wasHit)
+        {
+            gameRes->FlashScreen(1.0f, XMFLOAT4(1,0,0,1));
+            gameRes->SoundPlay(DX::GameResources::SFX_HIT0, false);
+        }
     }
 
     if (wasHit)
     {
         Invalidate();
         m_pos = hit;
-        gameRes->SoundPlay(DX::GameResources::SFX_HIT0, false);
     }
     else
     {

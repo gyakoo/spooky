@@ -4,6 +4,11 @@
 #include "Content/Entity.h"
 #include "Content/LevelMap.h"
 
+namespace SpookyAdulthood
+{
+    struct CameraFirstPerson;
+};
+
 namespace DX
 {
 	// Provides an interface for an application that owns DeviceResources to be notified of the device being lost or created.
@@ -68,6 +73,8 @@ namespace DX
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
         float m_levelTime;
+        float m_flashScreenTime;
+        XMFLOAT4 m_flashColor;
         bool m_readyToRender;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
@@ -77,8 +84,11 @@ namespace DX
         void SoundPitch(uint32_t index, float p);
         void SoundVolume(uint32_t index, float v);
         DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
+        void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
+        void FlashScreen(float time, const XMFLOAT4& color);
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
+
     };
 
 	// Controls all the DirectX device resources.

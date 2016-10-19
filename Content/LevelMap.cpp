@@ -145,7 +145,8 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
 
     m_root = std::make_shared<LevelMapBSPNode>();
     LevelMapBSPTileArea area(0, settings.m_tileCount.x - 1, 0, settings.m_tileCount.y - 1);
-    m_device->GetGameResources()->m_random.SetSeed(settings.m_randomSeed);
+    auto gameRes = m_device->GetGameResources();
+    gameRes->m_random.SetSeed(settings.m_randomSeed);
     LevelMapBSPNodePtr lastRoom;
     RecursiveGenerate(m_root, area, settings, 0);        
     GenerateVisibility(settings);
@@ -153,8 +154,8 @@ void LevelMap::Generate(const LevelMapGenerationSettings& settings)
     if (settings.m_generateThumbTex)
         GenerateThumbTex(settings.m_tileCount);
     CreateDeviceDependentResources();
-    if (m_device && m_device->GetGameResources())
-        m_device->GetGameResources()->m_levelTime = .0f;
+    if (m_device && gameRes)
+        gameRes->m_levelTime = .0f;
 }
 
 void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth)
@@ -544,7 +545,6 @@ void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
         const size_t roomANdx = RandomRoomInSet(a, random);
         const size_t roomBNdx = RandomRoomInSet(b, random);
 
-        // todo: don't allow to put two teleports in the same room!
         this->VisGenerateTeleport(m_leaves[roomANdx], m_leaves[roomBNdx]);
     }
 }
@@ -671,29 +671,29 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
 
     // common render state for all rooms
     ModelViewProjectionConstantBuffer cbData ={m_levelTransform, camera.m_view, camera.m_projection};
-    auto dxCommon = m_device->GetGameResources();
-    if (!dxCommon->m_readyToRender) return false;
+    auto gameRes = m_device->GetGameResources();
+    if (!gameRes->m_readyToRender) return false;
     auto context = m_device->GetD3DDeviceContext();
-    context->UpdateSubresource1(dxCommon->m_baseVSCB.Get(),0,NULL,&cbData,0,0,0);
+    context->UpdateSubresource1(gameRes->m_baseVSCB.Get(),0,NULL,&cbData,0,0,0);
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    context->IASetInputLayout(dxCommon->m_baseIL.Get());
-    context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
-    context->VSSetConstantBuffers1(0, 1, dxCommon->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
-    ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointWrap();
+    context->IASetInputLayout(gameRes->m_baseIL.Get());
+    context->VSSetShader(gameRes->m_baseVS.Get(), nullptr, 0);
+    context->VSSetConstantBuffers1(0, 1, gameRes->m_baseVSCB.GetAddressOf(), nullptr, nullptr);
+    ID3D11SamplerState* sampler = gameRes->m_commonStates->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
-    float t = std::max( std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(camera.m_timeShoot*0.7f,0.0f));
+    float t = std::max( std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(gameRes->m_flashScreenTime*0.7f,0.0f));
     if (GlobalFlags::AllLit) t = 1.0f;
-    PixelShaderConstantBuffer pscb = { { 16,16, dxCommon->m_levelTime,camera.m_aspectRatio }, {t,1.0f-int(GlobalFlags::AllLit),0,0} };
-    context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
-    context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
-    context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);
-    context->OMSetDepthStencilState(dxCommon->m_commonStates->DepthDefault(), 0);
-    context->OMSetBlendState(dxCommon->m_commonStates->Opaque(), nullptr, 0xffffffff);
+    PixelShaderConstantBuffer pscb = { { 16,16, gameRes->m_levelTime,camera.m_aspectRatio }, {t,1.0f-int(GlobalFlags::AllLit),0,0} };
+    context->UpdateSubresource1(gameRes->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
+    context->PSSetConstantBuffers(0, 1, gameRes->m_basePSCB.GetAddressOf());
+    context->PSSetShader(gameRes->m_basePS.Get(), nullptr, 0);
+    context->OMSetDepthStencilState(gameRes->m_commonStates->DepthDefault(), 0);
+    context->OMSetBlendState(gameRes->m_commonStates->Opaque(), nullptr, 0xffffffff);
     if ( GlobalFlags::DrawWireframe )
-        context->RSSetState(dxCommon->m_commonStates->Wireframe());
+        context->RSSetState(gameRes->m_commonStates->Wireframe());
     else
-        context->RSSetState(dxCommon->m_commonStates->CullCounterClockwise());
+        context->RSSetState(gameRes->m_commonStates->CullCounterClockwise());
     return true;
 }
 
@@ -1111,8 +1111,7 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 #pragma region LevelMapThumbTexture
-// so bad! it destroys/creates the texture and texture view rather than update
-// todo: change that!
+// TODO: so bad! it destroys/creates the texture and texture view rather than update, change that!
 void LevelMapThumbTexture::CreateDeviceDependentResources(const std::shared_ptr<DX::DeviceResources>& device)
 {
     D3D11_TEXTURE2D_DESC desc = { 0 };
