@@ -195,7 +195,7 @@ namespace SpookyAdulthood
         const float a = XM3Dot(e_1, q);
 
         // Backfacing or nearly parallel?
-        if (( XM3Dot(n,w) >= 0.0f) || (abs(a) <= 0.0f)) 
+        if (/* XM3Dot(n,w) >= 0.0f || */abs(a) <= 0.0001f) 
             return false;
 
         const float inva = 1.0f / a;

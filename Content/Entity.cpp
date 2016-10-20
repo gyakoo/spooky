@@ -281,6 +281,23 @@ inline XMFLOAT3 BarycentricToPosition(const XMFLOAT3& bar, const XMFLOAT3 v[3])
     return XMFLOAT3(a.x + b.x + c.x, a.y + b.y + c.y, a.z + b.z + c.z);
 }
 
+inline void TransformQuad(XMFLOAT3* fourVertices, float yaw, const XMFLOAT3& pos, const XMFLOAT2& size)
+{
+    using namespace DirectX::SimpleMath;
+
+    XMMATRIX mr = XMMatrixRotationY(yaw);
+    mr.r[3] = XMVectorSet(pos.x, pos.y, pos.z, 1.0f);
+    XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
+    XMMATRIX model = XMMatrixMultiply(ms, mr);
+    Matrix modelMatrix(model);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        fourVertices[i] = Vector3::Transform(fourVertices[i], modelMatrix);
+    }
+}
+
+
 bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac)
 {
     // first check ray against bounding sphere
@@ -306,17 +323,8 @@ bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const
     v3 vbLocal[4]; 
     memcpy_s(vbLocal, sizeof(v3) * 4, vb, sizeof(v3) * 4);
     auto& cam = DX::GameResources::instance->m_camera;
-    const float yaw = cam.m_pitchYaw.y;
-    for (int i = 0; i < 4; ++i)
-    {
-        vbLocal[i].x *= sin(yaw)*e.m_size.x;
-        vbLocal[i].x += e.m_pos.x;
-        vbLocal[i].y *= e.m_size.y;
-        vbLocal[i].y += e.m_pos.y;
-        vbLocal[i].z *= cos(yaw);
-        vbLocal[i].z += e.m_pos.z;
-    }
-    XMFLOAT3 tri[3] = { vbLocal[0], vbLocal[3], vbLocal[2] };
+    TransformQuad(vbLocal, cam.m_pitchYaw.y, e.m_pos, e.m_size);
+    XMFLOAT3 tri[3] = { vbLocal[0], vbLocal[2], vbLocal[3] };
     XMFLOAT3 bar;
     if (IntersectRayTriangle(raypos, dir, tri, bar, frac))
     {
@@ -325,7 +333,9 @@ bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const
     }
     else
     {
-        tri[0] = vbLocal[0]; tri[1] = vbLocal[2]; tri[2] = vbLocal[1];
+        tri[0] = vbLocal[0]; 
+        tri[1] = vbLocal[1]; 
+        tri[2] = vbLocal[2];
         if (IntersectRayTriangle(raypos, dir, tri, bar, frac))
         {
             outhit = XM3Mad(raypos, dir, frac);

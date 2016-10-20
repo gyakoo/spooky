@@ -36,6 +36,7 @@ namespace SpookyAdulthood
             auto s = dxCommon->m_sprites.get();
             auto f = dxCommon->m_fontConsole.get();
             const float padY = XMVectorGetY(f->MeasureString(L"Test"));
+            const XMFLOAT3 cp = dxCommon->m_camera.GetPosition();
             s->Begin();
             {
                 swprintf(buff, 256, L"Draw this(0)=%d", (int)DrawFlags);
@@ -68,6 +69,10 @@ namespace SpookyAdulthood
 
                 swprintf(buff, 256, L"Projectile(8)=%d", (int)SpawnProjectile);
                 f->DrawString(s, buff, p, CEnbl(SpawnProjectile));
+                p.y += padY;
+
+                swprintf(buff, 256, L"CamPos=%.2f, %.2f, %.2f", cp.x, cp.y, cp.z);
+                f->DrawString(s, buff, p, Colors::White);
                 p.y += padY;
             }
             s->End();
