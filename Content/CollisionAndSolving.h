@@ -23,5 +23,6 @@ namespace SpookyAdulthood
     bool IntersectRayPlane(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& normal, const XMFLOAT3& p, XMFLOAT3& outHit, float& outFrac);
     bool IntersectRaySphere(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& center, float radius, XMFLOAT3& outHit, float& outFrac);
     bool IntersectRayTriangle(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3 V[3], XMFLOAT3& barycentric, float& outFrac);
+    bool IntersectRayBillboardQuad(const XMFLOAT3& raypos, const XMFLOAT3& dir, const XMFLOAT3& quadCenter, const XMFLOAT2& quadSize, XMFLOAT3& outHit, float& outFrac);
 
 }

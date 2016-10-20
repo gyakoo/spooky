@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "SceneRenderer.h"
 #include "..\Common\DirectXHelper.h"
-#include "CollisionAndSolving2D.h"
+#include "CollisionAndSolving.h"
 #include "Sprite.h"
 #include "GlobalFlags.h"
 #include "CameraFirstPerson.h"

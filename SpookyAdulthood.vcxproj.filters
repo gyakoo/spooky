@@ -64,7 +64,7 @@
     <ClCompile Include="Content\Entity.cpp">
       <Filter>Content</Filter>
     </ClCompile>
-    <ClCompile Include="Content\CollisionAndSolving2D.cpp">
+    <ClCompile Include="Content\CollisionAndSolving.cpp">
       <Filter>Content</Filter>
     </ClCompile>
   </ItemGroup>
@@ -93,7 +93,7 @@
     <ClInclude Include="Content\Entity.h">
       <Filter>Content</Filter>
     </ClInclude>
-    <ClInclude Include="Content\CollisionAndSolving2D.h">
+    <ClInclude Include="Content\CollisionAndSolving.h">
       <Filter>Content</Filter>
     </ClInclude>
   </ItemGroup>

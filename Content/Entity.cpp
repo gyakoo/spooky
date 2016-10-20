@@ -273,78 +273,18 @@ void EntityManager::ReleaseDeviceDependentResources()
     sprite.ReleaseDeviceDependentResources();
 }
 
-inline XMFLOAT3 BarycentricToPosition(const XMFLOAT3& bar, const XMFLOAT3 v[3])
-{
-    const XMFLOAT3 a = XM3Mul(v[0], bar.x);
-    const XMFLOAT3 b = XM3Mul(v[1], bar.y);
-    const XMFLOAT3 c = XM3Mul(v[2], bar.z);
-    return XMFLOAT3(a.x + b.x + c.x, a.y + b.y + c.y, a.z + b.z + c.z);
-}
 
-inline void TransformQuad(XMFLOAT3* fourVertices, float yaw, const XMFLOAT3& pos, const XMFLOAT2& size)
-{
-    using namespace DirectX::SimpleMath;
 
-    XMMATRIX mr = XMMatrixRotationY(yaw);
-    mr.r[3] = XMVectorSet(pos.x, pos.y, pos.z, 1.0f);
-    XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
-    XMMATRIX model = XMMatrixMultiply(ms, mr);
-    Matrix modelMatrix(model);
-
-    for (int i = 0; i < 4; ++i)
-    {
-        fourVertices[i] = Vector3::Transform(fourVertices[i], modelMatrix);
-    }
-}
 
 
 bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac)
 {
-    // first check ray against bounding sphere
-        // if no hit, early exit
-    // then check against plane, -NO-
-        // if no hit, early exit
-    // then compute two triangles in world space
-    // check against two triangles (possibly getting UV?)
-    // return hit or not with outHit position
-
+    // first agains the bounding sphere, then against two triangles of quad
     const float rad = e.GetBoundingRadius();
     if (!IntersectRaySphere(raypos, dir, e.m_pos, rad, outhit, frac))
         return false;
 
-    // two triangles
-    typedef XMFLOAT3 v3;
-    static v3 vb[4] = {
-        v3(-0.5f,-0.5f,0),
-        v3(0.5f,-0.5f,0),
-        v3(0.5f, 0.5f,0),
-        v3(-0.5f, 0.5f, 0)
-    };
-    v3 vbLocal[4]; 
-    memcpy_s(vbLocal, sizeof(v3) * 4, vb, sizeof(v3) * 4);
-    auto& cam = DX::GameResources::instance->m_camera;
-    TransformQuad(vbLocal, cam.m_pitchYaw.y, e.m_pos, e.m_size);
-    XMFLOAT3 tri[3] = { vbLocal[0], vbLocal[2], vbLocal[3] };
-    XMFLOAT3 bar;
-    if (IntersectRayTriangle(raypos, dir, tri, bar, frac))
-    {
-        outhit = XM3Mad(raypos, dir, frac);
-        return true;
-    }
-    else
-    {
-        tri[0] = vbLocal[0]; 
-        tri[1] = vbLocal[1]; 
-        tri[2] = vbLocal[2];
-        if (IntersectRayTriangle(raypos, dir, tri, bar, frac))
-        {
-            outhit = XM3Mad(raypos, dir, frac);
-            return true;
-        }
-    }
-
-    return false;
-
+    return IntersectRayBillboardQuad(raypos, dir, e.m_pos, e.m_size, outhit, frac);
 }
 
 

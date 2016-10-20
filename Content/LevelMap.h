@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include <DirectXMath.h>
-#include "CollisionAndSolving2D.h"
+#include "CollisionAndSolving.h"
 
 using namespace DirectX;
 

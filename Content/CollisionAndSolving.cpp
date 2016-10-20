@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
-#include "CollisionAndSolving2D.h"
+#include "CollisionAndSolving.h"
+#include "../Common/DeviceResources.h"
 
 using namespace DirectX;
 
@@ -212,4 +213,59 @@ namespace SpookyAdulthood
         return t >= 0.0f;
     }
 
+    inline void TransformQuad(XMFLOAT3* fourVertices, float yaw, const XMFLOAT3& pos, const XMFLOAT2& size)
+    {
+        using namespace DirectX::SimpleMath;
+
+        XMMATRIX mr = XMMatrixRotationY(yaw);
+        mr.r[3] = XMVectorSet(pos.x, pos.y, pos.z, 1.0f);
+        XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
+        XMMATRIX model = XMMatrixMultiply(ms, mr);
+        Matrix modelMatrix(model);
+
+        for (int i = 0; i < 4; ++i)
+        {
+            fourVertices[i] = Vector3::Transform(fourVertices[i], modelMatrix);
+        }
+    }
+
+    bool IntersectRayBillboardQuad(const XMFLOAT3& raypos, const XMFLOAT3& dir, const XMFLOAT3& quadCenter, const XMFLOAT2& quadSize, XMFLOAT3& outHit, float& outFrac )
+    {
+        // two triangles (these values correspond to sprite.cpp)
+        // todo: store these values already transformed in the sprite rather than transforming here.
+        typedef XMFLOAT3 v3;
+        static v3 vb[4] = {
+            v3(-0.5f,-0.5f,0),
+            v3(0.5f,-0.5f,0),
+            v3(0.5f, 0.5f,0),
+            v3(-0.5f, 0.5f, 0)
+        };
+        v3 vbLocal[4];
+        memcpy_s(vbLocal, sizeof(v3) * 4, vb, sizeof(v3) * 4);
+        auto& cam = DX::GameResources::instance->m_camera;
+        TransformQuad(vbLocal, cam.m_pitchYaw.y, quadCenter, quadSize);
+        XMFLOAT3 tri[3] = { vbLocal[0], vbLocal[2], vbLocal[3] };
+        XMFLOAT3 bar;
+        if (IntersectRayTriangle(raypos, dir, tri, bar, outFrac))
+        {
+            outHit = XM3Mad(raypos, dir, outFrac);
+            return true;
+        }
+        else
+        {
+            tri[0] = vbLocal[0];
+            tri[1] = vbLocal[1];
+            tri[2] = vbLocal[2];
+            if (IntersectRayTriangle(raypos, dir, tri, bar, outFrac))
+            {
+                outHit = XM3Mad(raypos, dir, outFrac);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
 };
+
