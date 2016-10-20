@@ -682,7 +682,8 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     ID3D11SamplerState* sampler = gameRes->m_commonStates->PointWrap();
     context->PSSetSamplers(0, 1, &sampler);    
     context->PSSetShaderResources(0, 1, m_atlasTextureSRV.GetAddressOf());
-    float t = std::max( std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(gameRes->m_flashScreenTime*0.7f,0.0f));
+    //float t = std::max(std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(gameRes->m_flashScreenTime*0.7f, 0.0f));
+    float t = std::max( 0.5f, std::max(gameRes->m_flashScreenTime*0.7f,0.0f));
     if (GlobalFlags::AllLit) t = 1.0f;
     PixelShaderConstantBuffer pscb = { { 16,16, gameRes->m_levelTime,camera.m_aspectRatio }, {t,1.0f-int(GlobalFlags::AllLit),0,0} };
     context->UpdateSubresource1(gameRes->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);

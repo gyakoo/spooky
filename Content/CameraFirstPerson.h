@@ -29,6 +29,7 @@ namespace SpookyAdulthood
         bool m_moving;
         float m_height;
         float m_radius;
+        float m_radiusCollide;
         float m_aspectRatio;
         float m_fovAngleYRad;
         float m_near, m_far;

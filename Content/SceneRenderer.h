@@ -4,7 +4,6 @@
 #include "ShaderStructures.h"
 #include "..\Common\StepTimer.h"
 #include "Content\LevelMap.h"
-#include "Content\CameraFirstPerson.h"
 #include "Content\Sprite.h"
 
 namespace SpookyAdulthood
@@ -19,7 +18,6 @@ namespace SpookyAdulthood
 		void ReleaseDeviceDependentResources();
 		void Update(DX::StepTimer const& timer);
 		void Render();
-        const CameraFirstPerson& GetCamera() { return m_camera; }
 
     private:
         void SpawnPlayer();
@@ -27,7 +25,6 @@ namespace SpookyAdulthood
 
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
-        CameraFirstPerson  m_camera;
         LevelMapGenerationSettings m_mapSettings;
         float	m_degreesPerSecond;
         bool	m_loadingComplete;        

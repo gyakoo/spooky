@@ -23,7 +23,7 @@ SpookyAdulthoodMain::SpookyAdulthoodMain(const std::shared_ptr<DX::DeviceResourc
 	// e.g. for 60 FPS fixed timestep update logic, call:
 	m_timer.SetFixedTimeStep(true);
 	m_timer.SetTargetElapsedSeconds(1.0 / 60);
-#pragma default(disable:4316)
+#pragma warning(default:4316)
 }
 
 SpookyAdulthoodMain::~SpookyAdulthoodMain()
@@ -50,7 +50,7 @@ void SpookyAdulthoodMain::Update()
         GlobalFlags::Update(m_timer);
         auto gameRes = m_deviceResources->GetGameResources();
         if (gameRes)
-            gameRes->Update(m_timer, m_sceneRenderer->GetCamera());
+            gameRes->Update(m_timer, gameRes->m_camera);
 	});
 }
 
@@ -71,7 +71,7 @@ bool SpookyAdulthoodMain::Draw3D()
 	context->RSSetViewports(1, &viewport);
 
     auto gameRes = m_deviceResources->GetGameResources();
-    auto& cam = m_sceneRenderer->GetCamera();
+    auto& cam = gameRes->m_camera;
 
 	// Reset render targets to the screen.
     //ID3D11RenderTargetView *const targets[1] = { m_deviceResources->GetBackBufferRenderTargetView() };
@@ -82,8 +82,30 @@ bool SpookyAdulthoodMain::Draw3D()
 
     // Render the scene objects to RT
 	m_sceneRenderer->Render();
-    gameRes->m_entityMgr.Render3D(cam);
-    gameRes->m_entityMgr.Render2D(cam); // should it be two passes for 2d? (before and after screen quad?)
+    gameRes->m_entityMgr.RenderModel3D(cam);
+    gameRes->m_entityMgr.RenderSprites3D(cam);
+    gameRes->m_entityMgr.RenderSprites2D(cam); // should it be two passes for 2d? (before and after screen quad?)
+
+
+    gameRes->m_sprite.Begin3D(cam);
+    if (GlobalFlags::TestRaycast)
+    {
+        XMFLOAT3 hit;
+        XMFLOAT3 end = XM3Mad(cam.GetPosition(), cam.m_forward, 5.0f);
+
+        // first entities
+        if (gameRes->m_entityMgr.RaycastSeg(cam.GetPosition(), end, hit))
+        {
+            gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
+        }
+        // else map
+        //else if (map.RaycastSeg(cam.GetPosition(), end, hit))
+        //{
+        //    hit.y = cam.ComputeHeightAtHit(hit);
+        //    gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
+        //}
+    }
+    gameRes->m_sprite.End3D();
 
     // Render quad on screen
     {

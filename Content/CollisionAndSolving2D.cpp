@@ -125,11 +125,11 @@ namespace SpookyAdulthood
     {
         const float discr = b * b - 4 * a * c;
         if (discr < 0) return false;
-        else if (discr == 0) x0 = x1 = -0.5 * b / a;
+        else if (discr == 0) x0 = x1 = -0.5f * b / a;
         else {
             float q = (b > 0) ?
-                -0.5 * (b + sqrt(discr)) :
-                -0.5 * (b - sqrt(discr));
+                -0.5f * (b + sqrt(discr)) :
+                -0.5f * (b - sqrt(discr));
             x0 = q / a;
             x1 = c / q;
         }
@@ -183,5 +183,33 @@ namespace SpookyAdulthood
         return false;
     }
 
+    bool IntersectRayTriangle(const XMFLOAT3& P, const XMFLOAT3& w, const XMFLOAT3 V[3], XMFLOAT3& barycentric, float& t)
+    {
+        // Edge vectors
+        const XMFLOAT3 e_1 = XM3Sub(V[1], V[0]);
+        const XMFLOAT3 e_2 = XM3Sub(V[2], V[0]);
+
+        // Face normal
+        const XMFLOAT3 n = XM3Normalize(XM3Cross(e_1, e_2));
+        const XMFLOAT3 q = XM3Cross(w, e_2);
+        const float a = XM3Dot(e_1, q);
+
+        // Backfacing or nearly parallel?
+        if (( XM3Dot(n,w) >= 0.0f) || (abs(a) <= 0.0f)) 
+            return false;
+
+        const float inva = 1.0f / a;
+        const XMFLOAT3 s = XM3Mul(XM3Sub(P, V[0]), inva);
+        const XMFLOAT3 r = XM3Cross(s, e_1);
+        barycentric.x = XM3Dot(s, q);
+        barycentric.y = XM3Dot(r, w);
+        barycentric.z = 1.0f - barycentric.x - barycentric.y;
+
+        // Intersected outside triangle?
+        if ((barycentric.x < 0.0f) || (barycentric.y < 0.0f) || (barycentric.z <0.0f)) 
+            return false;
+        t = XM3Dot(e_2, r);
+        return t >= 0.0f;
+    }
 
 };

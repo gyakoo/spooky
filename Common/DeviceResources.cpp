@@ -757,7 +757,7 @@ static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav",
     L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
     L"assets\\sounds\\heartbeat.wav", L"assets\\sounds\\hit0.wav" };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.5f, 0.25f, 1.0f };
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.3f, 0.25f, 1.0f };
 static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f };
 
 DX::GameResources* DX::GameResources::instance = nullptr;

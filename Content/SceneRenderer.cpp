@@ -1,10 +1,10 @@
 ﻿#include "pch.h"
 #include "SceneRenderer.h"
 #include "..\Common\DirectXHelper.h"
-
 #include "CollisionAndSolving2D.h"
 #include "Sprite.h"
 #include "GlobalFlags.h"
+#include "CameraFirstPerson.h"
 
 using namespace SpookyAdulthood;
 
@@ -29,11 +29,12 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 
 void SceneRenderer::SpawnPlayer()
 {
-    auto& map = m_deviceResources->GetGameResources()->m_map;
+    auto gameRes = m_deviceResources->GetGameResources();
+    auto& map = gameRes->m_map;
     XMUINT2 mapPos = map.GetRandomPosition();
     XMFLOAT3 p(mapPos.x + 0.5f, 0, mapPos.y + 0.5f);
-    m_camera.SetPosition(p);
-    auto gameRes = m_deviceResources->GetGameResources();
+
+    gameRes->m_camera.SetPosition(p);
     if (gameRes && gameRes->m_audioEngine)
     {
         gameRes->SoundPlay(DX::GameResources::SFX_BREATH);
@@ -51,7 +52,9 @@ void SceneRenderer::CreateWindowSizeDependentResources()
     float fovAngleY = CAM_DEFAULT_FOVY * XM_PI / 180.0f;
 	if (aspectRatio < 1.0f)
 		fovAngleY *= 2.0f;
-    m_camera.ComputeProjection(fovAngleY, aspectRatio, 0.01f, 100.0f, m_deviceResources->GetOrientationTransform3D());
+    
+    auto gameRes = m_deviceResources->GetGameResources();
+    gameRes->m_camera.ComputeProjection(fovAngleY, aspectRatio, 0.01f, 100.0f, m_deviceResources->GetOrientationTransform3D());
 }
 
 // Called once per frame, rotates the cube and calculates the model and view matrices.
@@ -60,11 +63,12 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     if (!m_loadingComplete)
         return;
 
-    auto& map = m_deviceResources->GetGameResources()->m_map;
+    auto gameRes = m_deviceResources->GetGameResources();
+    auto& map = gameRes->m_map;
 
     // Update map and camera (input, collisions and visibility)
-    map.Update(timer, m_camera);
-    m_camera.Update(timer, 
+    map.Update(timer, gameRes->m_camera);
+    gameRes->m_camera.Update(timer, 
     [&](XMVECTOR curPos, XMVECTOR nextPos, float radius)->XMVECTOR  // CALLED FOR COLLISION HANDLING
     { 
         if (GlobalFlags::CollisionsEnabled)
@@ -109,7 +113,7 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     // thumbnail map update (every N frames)
     if (timer.GetFrameCount() % 30 == 0)
     {
-        XMUINT2 ppos = map.ConvertToMapPosition(m_camera.GetPosition());
+        XMUINT2 ppos = map.ConvertToMapPosition(gameRes->m_camera.GetPosition());
         map.GenerateThumbTex(m_mapSettings.m_tileCount,&ppos);
     }
     
@@ -121,10 +125,10 @@ void SceneRenderer::UpdateAudio(DX::StepTimer const& timer)
     auto audio = gameRes->m_audioEngine.get();
     if (!audio) return;
 
-    if (m_camera.m_moving)
+    if (gameRes->m_camera.m_moving)
     {
         gameRes->SoundResume(DX::GameResources::SFX_WALK);
-        gameRes->SoundPitch(DX::GameResources::SFX_WALK, m_camera.m_running ? 0.5f : 0.0f);
+        gameRes->SoundPitch(DX::GameResources::SFX_WALK, gameRes->m_camera.m_running ? 0.5f : 0.0f);
     }
     else
     {
@@ -140,8 +144,10 @@ void SceneRenderer::Render()
 		return;
 
     // LEVEL rendering
-    auto& map = m_deviceResources->GetGameResources()->m_map;
-    map.Render(m_camera);
+    auto gameRes = m_deviceResources->GetGameResources();
+    auto& map = gameRes->m_map;
+    auto& cam = gameRes->m_camera;
+    map.Render(cam);
     
     /*
     auto& sprite = m_deviceResources->GetGameResources()->m_sprite;
@@ -163,25 +169,10 @@ void SceneRenderer::Render()
     sprite.Draw3D(11, XMFLOAT3(2.35f, 0.3f, 7.34f), XMFLOAT2(1.5f, 0.6f));
     sprite.Draw3D(12, XMFLOAT3(3.35f, 0.7f, 7.34f), XMFLOAT2(0.6f, 1.0f));
 
-
-    // some other input
-    if (GlobalFlags::TestRaycast)
-    {
-        XMFLOAT3 hit;
-        //if (map.RaycastDir(m_camera.GetPosition(), m_camera.m_forward, hit))
-        XMFLOAT3 end(m_camera.GetPosition());
-        end.x += m_camera.m_forward.x*5.0f;
-        end.y += m_camera.m_forward.y*5.0f;
-        end.z += m_camera.m_forward.z*5.0f;
-        if ( map.RaycastSeg(m_camera.GetPosition(), end, hit) )
-        {
-            hit.y = m_camera.ComputeHeightAtHit(hit);            
-            sprite.Draw3D(0,hit, XMFLOAT2(0.3, 0.3), true);
-        }
-    }
-
-    sprite.End3D();    
+    sprite.End3D();
     */
+    // some other input
+
 }
 
 void SceneRenderer::CreateDeviceDependentResources()

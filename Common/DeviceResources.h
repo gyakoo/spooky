@@ -3,11 +3,7 @@
 #include "Content/Sprite.h"
 #include "Content/Entity.h"
 #include "Content/LevelMap.h"
-
-namespace SpookyAdulthood
-{
-    struct CameraFirstPerson;
-};
+#include "Content/CameraFirstPerson.h"
 
 namespace DX
 {
@@ -64,7 +60,6 @@ namespace DX
         std::unique_ptr<DirectX::SpriteFont>        m_fontConsole;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>		m_textureWhite;
         std::unique_ptr<DirectX::PrimitiveBatch<DirectX::VertexPositionColor>> m_batch;// DEBUG LINES
-
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
 
         std::unique_ptr<DirectX::AudioEngine>       m_audioEngine;
@@ -72,6 +67,8 @@ namespace DX
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffect>> m_soundEffects;
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
+        SpookyAdulthood::CameraFirstPerson m_camera;
+
         float m_levelTime;
         float m_flashScreenTime;
         XMFLOAT4 m_flashColor;

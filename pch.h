@@ -88,6 +88,16 @@ inline void XM3Sub_inplace(XMFLOAT3& a, const XMFLOAT3& b)
     a.z -= b.z;
 }
 
+inline XMFLOAT3 XM3Mul(const XMFLOAT3& a, float s)
+{
+    return XMFLOAT3(a.x*s, a.y*s, a.z*s);
+}
+
+inline void XM3Mul_inplace(XMFLOAT3& a, float s)
+{
+    a.x *= s; a.y *= s; a.z *= s;
+}
+
 inline float XM3LenSq(const XMFLOAT3& a)
 {
     return a.x*a.x + a.y*a.y + a.z*a.z;
@@ -122,4 +132,18 @@ inline XMFLOAT3 XM3Normalize(const XMFLOAT3& a)
 inline XMFLOAT3 XM3Mad(const XMFLOAT3& a, const XMFLOAT3& b, float c)
 {
     return XMFLOAT3(a.x + b.x*c, a.y + b.y*c, a.z + b.z*c);
+}
+
+inline XMFLOAT3 XM3Cross(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    XMVECTOR v1 = XMLoadFloat3(&a);
+    XMVECTOR v2 = XMLoadFloat3(&b);
+    XMFLOAT3 r;
+    XMStoreFloat3(&r, XMVector3Cross(v1, v2));
+    return r;
+}
+
+inline float XM3Dot(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    return a.x*b.x + a.y*b.y + a.z*b.z;
 }

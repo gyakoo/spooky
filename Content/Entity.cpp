@@ -25,7 +25,13 @@ void Entity::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteMana
         return;
     if ((m_flags & SPRITE3D) != 0)
     {
-        sprite.Draw3D(m_spriteIndex, m_pos, m_size);
+        if (pass == PASS_SPRITE3D)
+            sprite.Draw3D(m_spriteIndex, m_pos, m_size);
+        else if (m_boundingSphere) // model3d
+        {
+            XMMATRIX local = DirectX::SimpleMath::Matrix::CreateTranslation(m_pos);
+            m_boundingSphere->Draw(local, XMLoadFloat4x4(&camera.m_view), XMLoadFloat4x4(&camera.m_projection), Colors::White, nullptr, true);
+        }
     }
     else if ((m_flags & SPRITE2D) != 0)
     {
@@ -43,7 +49,9 @@ bool Entity::SupportPass(RenderPass pass) const
 {
     const bool is2d = (m_flags & (SPRITE2D | ANIMATION2D)) != 0;
     const bool is3d = (m_flags & SPRITE3D) != 0;
-    return (pass == PASS_2D && is2d) || (pass == PASS_3D && is3d);
+    const bool ismodel3d = (m_flags & MODEL3D) != 0;
+    return (pass == PASS_SPRITE2D && is2d) || (pass == PASS_SPRITE3D && is3d) 
+        || (pass == PASS_3D && ismodel3d);
 }
 
 bool Entity::IsActive() const
@@ -57,6 +65,11 @@ void Entity::Invalidate()
     m_flags |= INVALID;
 }
 
+float Entity::GetBoundingRadius() const
+{
+    const XMFLOAT3 xy(m_size.x*0.5f, m_size.y*0.5f, 0);
+    return XM3Len(xy);
+}
 
 bool Entity::SupportRaycast() const
 {
@@ -65,11 +78,14 @@ bool Entity::SupportRaycast() const
     const bool isInvalid = (m_flags & (Entity::INACTIVE | Entity::INACTIVE)) != 0;
     return acceptRaycast && is3D && !isInvalid;
 }
-
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityManager* EntityManager::s_instance = nullptr;
 
 EntityManager::EntityManager(const std::shared_ptr<DX::DeviceResources>& device)
     : m_device(device), m_duringUpdate(false)
 {
+    EntityManager::s_instance = this;
 }
 
 void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera)
@@ -109,7 +125,7 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
     }
 }
 
-void EntityManager::Render3D(const CameraFirstPerson& camera)
+void EntityManager::RenderSprites3D(const CameraFirstPerson& camera)
 {
     auto gameRes = m_device->GetGameResources();
     if (!gameRes || !gameRes->m_readyToRender)
@@ -119,13 +135,13 @@ void EntityManager::Render3D(const CameraFirstPerson& camera)
     sprite.Begin3D(camera);
     std::for_each(m_entities.begin(), m_entities.end(), [&](auto& e)
     {
-        if ( e->SupportPass(Entity::PASS_3D) && e->IsActive() )
-            e->Render(Entity::PASS_3D, camera, sprite);
+        if ( e->SupportPass(Entity::PASS_SPRITE3D) && e->IsActive() )
+            e->Render(Entity::PASS_SPRITE3D, camera, sprite);
     });
     sprite.End3D();
 }
 
-void EntityManager::Render2D(const CameraFirstPerson& camera)
+void EntityManager::RenderSprites2D(const CameraFirstPerson& camera)
 {
     auto gameRes = m_device->GetGameResources();
     if (!gameRes || !gameRes->m_readyToRender)
@@ -136,10 +152,24 @@ void EntityManager::Render2D(const CameraFirstPerson& camera)
     sprite.Begin2D(camera);
     std::for_each(m_entities.begin(), m_entities.end(), [&](auto& e)
     {
-        if (e->SupportPass(Entity::PASS_2D) && e->IsActive())
-            e->Render(Entity::PASS_2D, camera, sprite);
+        if (e->SupportPass(Entity::PASS_SPRITE2D) && e->IsActive())
+            e->Render(Entity::PASS_SPRITE2D, camera, sprite);
     });
     sprite.End2D();
+}
+
+void EntityManager::RenderModel3D(const CameraFirstPerson& camera)
+{
+    auto gameRes = m_device->GetGameResources();
+    if (!gameRes || !gameRes->m_readyToRender)
+        return;
+
+    auto& sprite = gameRes->m_sprite;
+    std::for_each(m_entities.begin(), m_entities.end(), [&](auto& e)
+    {
+        if (e->SupportPass(Entity::PASS_3D) && e->IsActive())
+            e->Render(Entity::PASS_3D, camera, sprite);
+    });
 }
 
 void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, float timeout)
@@ -166,20 +196,36 @@ bool EntityManager::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFL
     // find the closest hit
     int closestNdx = -1;
     float closestFrac = FLT_MAX;
+    float frac;
+    XMFLOAT3 closestHit(0,0,0), hit;
     const int count = (int)m_entities.size();
     for (int i = 0; i < count; ++i)
     {
         auto& e = m_entities[i];
         if (!e->SupportRaycast()) continue;
-        throw std::exception("Not implemented");
+        if (RaycastEntity(*e.get(), origin, dir, hit, frac) && frac < closestFrac )
+        {
+            closestFrac = frac;
+            closestNdx = i;
+            closestHit = hit;
+        }
     }
-
-    return false;
+    outHit = closestHit;
+    return closestNdx != -1;
 }
 
 bool EntityManager::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit)
 {
-    throw std::exception("Not implemented");
+    XMFLOAT3 dir = XM3Sub(end, origin);
+    const float lenSq = XM3LenSq(dir);
+    XM3Mul_inplace(dir, 1.0f/sqrtf(lenSq));
+    
+    if (RaycastDir(origin, dir, outHit))
+    {
+        const float distToHitSq = XM3LenSq(XM3Sub(outHit, origin));
+        return (distToHitSq <= lenSq);
+    }
+
     return false;
 }
 
@@ -210,7 +256,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
     sprite.CreateSprite(L"assets\\sprites\\proj0.png"); // 19
 
-    sprite.CreateAnimation(std::vector<int>{13, 14, 15}, 20.0f); // 0
+    sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
     sprite.CreateAnimationInstance(0); // 0
 
     // TEST
@@ -226,6 +272,71 @@ void EntityManager::ReleaseDeviceDependentResources()
     auto& sprite = gameRes->m_sprite;
     sprite.ReleaseDeviceDependentResources();
 }
+
+inline XMFLOAT3 BarycentricToPosition(const XMFLOAT3& bar, const XMFLOAT3 v[3])
+{
+    const XMFLOAT3 a = XM3Mul(v[0], bar.x);
+    const XMFLOAT3 b = XM3Mul(v[1], bar.y);
+    const XMFLOAT3 c = XM3Mul(v[2], bar.z);
+    return XMFLOAT3(a.x + b.x + c.x, a.y + b.y + c.y, a.z + b.z + c.z);
+}
+
+bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac)
+{
+    // first check ray against bounding sphere
+        // if no hit, early exit
+    // then check against plane, -NO-
+        // if no hit, early exit
+    // then compute two triangles in world space
+    // check against two triangles (possibly getting UV?)
+    // return hit or not with outHit position
+
+    const float rad = e.GetBoundingRadius();
+    if (!IntersectRaySphere(raypos, dir, e.m_pos, rad, outhit, frac))
+        return false;
+
+    // two triangles
+    typedef XMFLOAT3 v3;
+    static v3 vb[4] = {
+        v3(-0.5f,-0.5f,0),
+        v3(0.5f,-0.5f,0),
+        v3(0.5f, 0.5f,0),
+        v3(-0.5f, 0.5f, 0)
+    };
+    v3 vbLocal[4]; 
+    memcpy_s(vbLocal, sizeof(v3) * 4, vb, sizeof(v3) * 4);
+    auto& cam = DX::GameResources::instance->m_camera;
+    const float yaw = cam.m_pitchYaw.y;
+    for (int i = 0; i < 4; ++i)
+    {
+        vbLocal[i].x *= sin(yaw)*e.m_size.x;
+        vbLocal[i].x += e.m_pos.x;
+        vbLocal[i].y *= e.m_size.y;
+        vbLocal[i].y += e.m_pos.y;
+        vbLocal[i].z *= cos(yaw);
+        vbLocal[i].z += e.m_pos.z;
+    }
+    XMFLOAT3 tri[3] = { vbLocal[0], vbLocal[3], vbLocal[2] };
+    XMFLOAT3 bar;
+    if (IntersectRayTriangle(raypos, dir, tri, bar, frac))
+    {
+        outhit = XM3Mad(raypos, dir, frac);
+        return true;
+    }
+    else
+    {
+        tri[0] = vbLocal[0]; tri[1] = vbLocal[2]; tri[2] = vbLocal[1];
+        if (IntersectRayTriangle(raypos, dir, tri, bar, frac))
+        {
+            outhit = XM3Mad(raypos, dir, frac);
+            return true;
+        }
+    }
+
+    return false;
+
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -279,13 +390,17 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EntityTreeBlack::EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs)
-    : Entity(SPRITE3D), m_shootEvery(shootEverySecs)
+    : Entity(SPRITE3D | MODEL3D | ACCEPT_RAYCAST), m_shootEvery(shootEverySecs)
 {
     m_spriteIndex = 8;
     m_size = XMFLOAT2(0.7f, 1.9f);
     m_pos = pos;
     m_pos.y = 0.95f;
     m_timeToNextShoot = shootEverySecs;
+
+    auto context = EntityManager::s_instance->m_device->GetD3DDeviceContext();
+    float rad = GetBoundingRadius();
+    m_boundingSphere = DirectX::GeometricPrimitive::CreateSphere(context, rad*2.0f);
 }
 
 void EntityTreeBlack::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
@@ -360,7 +475,7 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     {
         XMFLOAT3 toPl = XM3Sub(camera.GetPosition(), newPos);
         float distToPl = XM3LenSq(toPl);
-        const float plRad = camera.m_radius;
+        const float plRad = camera.m_radiusCollide;
         wasHit = distToPl < (plRad*plRad);
         if (wasHit)
         {

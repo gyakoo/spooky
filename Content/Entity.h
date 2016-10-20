@@ -9,6 +9,8 @@ namespace SpookyAdulthood
     struct CameraFirstPerson;
     class SpriteManager;
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     class Entity
     {
     public:
@@ -19,22 +21,24 @@ namespace SpookyAdulthood
             SPRITE3D=1<<1, 
             ANIMATION2D=1<<2,
             ANIMATION3D=1<<3,
+            MODEL3D= 1<<4,
 
-            ACCEPT_RAYCAST=1<<4,
-            COLLIDE=1<<5,
+            ACCEPT_RAYCAST=1<<5,
+            COLLIDE=1<<6,
 
-            INVALID=1<<6,
-            INACTIVE=1<<7
+            INVALID=1<<7,
+            INACTIVE=1<<8
         };
 
-        enum RenderPass { PASS_3D, PASS_2D };
+        enum RenderPass { PASS_SPRITE3D, PASS_SPRITE2D, PASS_3D };
     public:
         Entity(int flags=NONE);        
 
     protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
-
+        
+        float GetBoundingRadius() const;
         bool SupportPass(RenderPass pass) const;        
         bool SupportRaycast() const;
         bool IsActive() const;
@@ -48,9 +52,12 @@ namespace SpookyAdulthood
         int m_flags;
         float m_timeOut;
         float m_totalTime;
+        std::unique_ptr<DirectX::GeometricPrimitive> m_boundingSphere;
     };
 
-    class EntityManager 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    class EntityManager
     {
     public:
         EntityManager(const std::shared_ptr<DX::DeviceResources>& device);
@@ -62,15 +69,19 @@ namespace SpookyAdulthood
         void AddEntity(const std::shared_ptr<Entity>& entity, float timeout);
         void Clear();
         void Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera);
-        void Render3D(const CameraFirstPerson& camera);
-        void Render2D(const CameraFirstPerson& camera);
+        void RenderSprites3D(const CameraFirstPerson& camera);
+        void RenderSprites2D(const CameraFirstPerson& camera);
+        void RenderModel3D(const CameraFirstPerson& camera);
         bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit);
         bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit);
 
-    private:
-        typedef std::vector<std::shared_ptr<Entity>> EntitiesCollection;
-        friend class Entity;
+        static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
+    protected:
+        bool RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac);
+
+        friend class Entity;
+        typedef std::vector<std::shared_ptr<Entity>> EntitiesCollection;
         EntitiesCollection m_entities;
         EntitiesCollection m_entitiesToAdd;
         bool m_duringUpdate;
@@ -105,7 +116,7 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityTreeBlack : public Entity
     {
-        EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs=2.5f);
+        EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs=20.5f);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
         void Shoot(const CameraFirstPerson& camera);
