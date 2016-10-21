@@ -19,6 +19,7 @@ namespace SpookyAdulthood
         template<typename T, typename A>
         void Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun);
         XMFLOAT3 GetPosition() const { return m_xyz; }
+        XMFLOAT3 GetPositionWithMovement() const { return m_movxyz; }
         void SetPosition(const XMFLOAT3& p);
         float ComputeHeightAtHit(const XMFLOAT3& hit);
 
@@ -35,7 +36,7 @@ namespace SpookyAdulthood
         float m_near, m_far;
         XMFLOAT4X4 m_orientMatrix;
         XMVECTOR m_camXZ;
-        XMFLOAT3 m_xyz;
+        XMFLOAT3 m_xyz, m_movxyz;
         XMFLOAT3 m_forward;
         float m_runningTime;
         float m_timeShoot;
@@ -146,6 +147,9 @@ namespace SpookyAdulthood
         // rotate camera and translate
         XMMATRIX t = XMMatrixTranslation(-XMVectorGetX(m_camXZ)-offsX, -m_height-offsY, XMVectorGetZ(m_camXZ));
         XMStoreFloat3(&m_xyz, m_camXZ);
+        m_movxyz = m_xyz;
+        m_movxyz.z = -m_movxyz.z;
+        m_movxyz.x += offsX;
         m_xyz.y = m_height;
         m_xyz.z = -m_xyz.z;
         XMMATRIX m = XMMatrixMultiply(ry, rx);

@@ -214,7 +214,7 @@ bool EntityManager::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFL
     return closestNdx != -1;
 }
 
-bool EntityManager::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit)
+bool EntityManager::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad)
 {
     XMFLOAT3 dir = XM3Sub(end, origin);
     const float lenSq = XM3LenSq(dir);
@@ -223,7 +223,8 @@ bool EntityManager::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFL
     if (RaycastDir(origin, dir, outHit))
     {
         const float distToHitSq = XM3LenSq(XM3Sub(outHit, origin));
-        return (distToHitSq <= lenSq);
+        const float compRad = optRad > 0.0f ? (optRad) : lenSq;
+        return (distToHitSq <= compRad);
     }
 
     return false;
@@ -255,6 +256,10 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\gun2.png"); // 17
     sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
     sprite.CreateSprite(L"assets\\sprites\\proj0.png"); // 19
+    sprite.CreateSprite(L"assets\\sprites\\hit00.png"); // 20
+    sprite.CreateSprite(L"assets\\sprites\\hit01.png"); // 21
+    sprite.CreateSprite(L"assets\\sprites\\hit10.png"); // 22 
+    sprite.CreateSprite(L"assets\\sprites\\hit11.png"); // 23
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
     sprite.CreateAnimationInstance(0); // 0
@@ -442,5 +447,34 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     else
     {
         m_pos = newPos;
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityShootHit::EntityShootHit(const XMFLOAT3& pos)
+    : Entity(SPRITE3D), m_lastFrame(false)
+{
+    m_timeOut = 0.5f;
+    m_spriteIndex = DX::GameResources::instance->m_random.Get(0, 1);
+    m_spriteIndex = 20 + m_spriteIndex * 2;
+    m_size = XMFLOAT2(0.1f, 0.1f);
+    m_pos = pos;
+}
+
+void EntityShootHit::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    if (m_totalTime >= 0.05f)
+    {
+        if (m_lastFrame)
+        {
+            Invalidate();
+        }
+        else
+        {
+            m_spriteIndex++;
+            m_totalTime = 0.0f;
+        }
     }
 }

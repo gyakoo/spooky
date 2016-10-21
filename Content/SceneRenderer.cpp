@@ -86,11 +86,12 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
     {
         auto gameRes = m_deviceResources->GetGameResources();
         if (!gameRes) return;
-        auto audio = gameRes->m_audioEngine.get();
-        if (!audio) return;
-        gameRes->SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
-        gameRes->m_sprite.CreateAnimationInstance(0, 0);
-        gameRes->FlashScreen(0.5f, XMFLOAT4(1, 1, 1, 1));
+        switch (ac)
+        {
+            case CameraFirstPerson::AC_SHOOT:
+                gameRes->PlayerShoot();
+            break;
+        }
     });
 
     // Audio

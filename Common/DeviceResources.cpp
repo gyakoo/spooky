@@ -974,3 +974,54 @@ void DX::GameResources::SoundVolume(uint32_t index, float v)
         v = g_sndVolumes[index];
     s->SetVolume(v);
 }
+
+void DX::GameResources::PlayerShoot()
+{
+    using namespace SpookyAdulthood;
+    // sound play, animation, flash screen
+    SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
+    m_sprite.CreateAnimationInstance(0, 0);
+    FlashScreen(0.5f, XMFLOAT4(0.5f, 0.5f, 0.4f, 1));
+
+    // raycast bullets
+    auto startpos = m_camera.GetPosition();
+    // compute all rays for shotgun (this is so ugly and expensive)
+    const float A = 0.0f; // aperture angle shoot
+#define Rr (m_random.GetF(0.0f,0.3f))
+    const XMMATRIX rotations[7] = { // buh, we have memory enough!
+        XMMatrixMultiply(XMMatrixRotationX(-A-Rr), XMMatrixRotationY(A+Rr)),
+        XMMatrixMultiply(XMMatrixRotationX(-A-Rr),XMMatrixRotationY(-A-Rr)),
+        XMMatrixRotationY(A+Rr), XMMatrixIdentity(), XMMatrixRotationY(-A-Rr),
+        XMMatrixMultiply(XMMatrixRotationX(A+Rr), XMMatrixRotationY(A+Rr)),
+        XMMatrixMultiply(XMMatrixRotationX(A+Rr), XMMatrixRotationY(-A-Rr))
+    };
+#undef Rr
+    const float SHOOT_RANGE = 5.0f;
+    const XMVECTOR fw = XMLoadFloat3(&m_camera.m_forward);
+    XMFLOAT3 newfw, endpos, hit;
+    GlobalFlags::ShootHits = 0;
+    for (int i = 0; i < 7; ++i)
+    {
+        XMStoreFloat3(&newfw, XMVector3TransformNormal(fw, rotations[i]));
+        endpos = XM3Mad(startpos, newfw, SHOOT_RANGE);
+
+        // we cast this ray against entities then map
+        if (m_entityMgr.RaycastSeg(startpos, endpos, hit))
+        {
+            m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hit));
+            GlobalFlags::ShootHits++;
+        }
+        else
+        {
+            if (m_map.RaycastSeg(startpos, endpos, hit, -1.0f, -0.05f))
+            {
+                hit.y = m_camera.m_height-m_camera.m_pitchYaw.x+m_random.GetF(-0.15f,0.15f);
+                m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hit));
+            }
+        }
+        
+            
+    }
+
+
+}

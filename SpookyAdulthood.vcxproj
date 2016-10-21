@@ -205,6 +205,10 @@
     <Image Include="Assets\sprites\gunshoot0.png" />
     <Image Include="Assets\sprites\gunshoot1.png" />
     <Image Include="Assets\sprites\gunshoot2.png" />
+    <Image Include="Assets\sprites\hit00.png" />
+    <Image Include="Assets\sprites\hit01.png" />
+    <Image Include="Assets\sprites\hit10.png" />
+    <Image Include="Assets\sprites\hit11.png" />
     <Image Include="Assets\sprites\msgdie.png" />
     <Image Include="Assets\sprites\proj0.png" />
     <Image Include="Assets\sprites\tree1.png" />

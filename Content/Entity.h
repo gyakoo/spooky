@@ -73,7 +73,7 @@ namespace SpookyAdulthood
         void RenderSprites2D(const CameraFirstPerson& camera);
         void RenderModel3D(const CameraFirstPerson& camera);
         bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit);
-        bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit);
+        bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f);
 
         static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
@@ -150,6 +150,15 @@ namespace SpookyAdulthood
         float m_speed;
         bool m_firstTime;
         bool m_collidePlayer;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityShootHit : public Entity
+    {
+        EntityShootHit(const XMFLOAT3& pos);
+
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        bool m_lastFrame;
     };
 
 };

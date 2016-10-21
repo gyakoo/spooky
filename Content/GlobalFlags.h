@@ -11,7 +11,7 @@ namespace SpookyAdulthood
 
     struct GlobalFlags
     {
-        static bool CollisionsEnabled; // def 0
+        static bool CollisionsEnabled; // def 1
         
         static int DrawThumbMap; // def 0 {0,1,2}
         static bool DrawDebugLines; // def 0
@@ -26,6 +26,7 @@ namespace SpookyAdulthood
         static bool SpawnProjectile; // def 0 (auto)
 
         static DirectX::XMFLOAT2 DrawGlobalsPos; // def 10,10
+        static int ShootHits; // def 0
 
         static bool TestRaycast; // def 0
 

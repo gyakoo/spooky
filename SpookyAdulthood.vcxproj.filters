@@ -185,6 +185,18 @@
     <Image Include="Assets\sprites\proj0.png">
       <Filter>Assets\img</Filter>
     </Image>
+    <Image Include="Assets\sprites\hit00.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\hit01.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\hit10.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\hit11.png">
+      <Filter>Assets\img</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

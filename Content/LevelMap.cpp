@@ -98,6 +98,12 @@ uint32_t RandomProvider::Get(uint32_t minN, uint32_t maxN)
         SetSeed(RANDOM_DEFAULT_SEED);
     return std::uniform_int_distribution<uint32_t>(minN, maxN)(*m_gen);
 }
+
+float RandomProvider::GetF(float minN, float maxN)
+{
+    return std::uniform_real_distribution<float>(minN, maxN)(*m_gen);
+}
+
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////
@@ -623,7 +629,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         for (const auto& room : m_leaves)
         {
             if (!room->m_collisionSegments ) continue;
-            m_device->GetGameResources()->m_batch->Begin();
+            auto gameRes = m_device->GetGameResources();
+            gameRes->m_batch->Begin();
             XMFLOAT3 s, e;
             XMFLOAT4 c(DirectX::Colors::Yellow.f); std::swap(c.x, c.w);
             for (const auto& seg : *room->m_collisionSegments)
@@ -633,11 +640,57 @@ void LevelMap::Render(const CameraFirstPerson& camera)
                 if (seg.IsDisabled())
                     s.y = e.y = 0.4f;
                 VertexPositionColor v1(s, c), v2(e, c);
-                m_device->GetGameResources()->m_batch->DrawLine(v1, v2);
+                gameRes->m_batch->DrawLine(v1, v2);
             }
-            m_device->GetGameResources()->m_batch->End();
+            gameRes->m_batch->End();
         }
     }
+
+    //gameRes->m_sprite.Begin3D(cam);
+    if (GlobalFlags::TestRaycast)
+    {
+        auto gameRes = m_device->GetGameResources();
+        gameRes->m_batch->Begin();
+        auto cp = XMFLOAT3(6, 0.5f, 3);// gameRes->m_camera.GetPositionWithMovement();
+        
+        
+        XMFLOAT4 anyc(1, 1, 1, 1);
+        VertexPositionColor v1(cp, anyc);
+        VertexPositionColor v2(cp, anyc);
+        
+        const float ang = 0.1f;
+        static const XMMATRIX rotations[7] = {
+            XMMatrixMultiply(XMMatrixRotationX(-ang), XMMatrixRotationY(ang)), XMMatrixMultiply(XMMatrixRotationX(-ang),XMMatrixRotationY(-ang)),
+            XMMatrixRotationY(ang), XMMatrixIdentity(), XMMatrixRotationY(-ang),
+            XMMatrixMultiply(XMMatrixRotationX(ang), XMMatrixRotationY(ang)), XMMatrixMultiply(XMMatrixRotationX(ang), XMMatrixRotationY(-ang))
+        };
+
+        XMVECTOR fw = XMLoadFloat3(&XMFLOAT3(0,0,1));
+        XMFLOAT3 newfw;
+        for (int i = 0; i <= 6; ++i)
+        {
+            XMStoreFloat3(&newfw, XMVector3TransformNormal(fw, rotations[i]));
+            v2.position = XM3Mad(cp, newfw, 5.0f);
+            gameRes->m_batch->DrawLine(v1, v2);
+        }
+        gameRes->m_batch->End();
+
+        //XMFLOAT3 hit;
+        //XMFLOAT3 end = XM3Mad(cam.GetPosition(), cam.m_forward, 5.0f);
+
+        //// first entities
+        //if (gameRes->m_entityMgr.RaycastSeg(cam.GetPosition(), end, hit))
+        //{
+        //    gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
+        //}
+        //else if (map.RaycastSeg(cam.GetPosition(), end, hit))
+        //{
+        //    hit.y = cam.ComputeHeightAtHit(hit);
+        //    gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
+        //}
+    }
+    //gameRes->m_sprite.End3D();
+
 
     // UI rendering
     if (GlobalFlags::DrawThumbMap)
@@ -788,7 +841,7 @@ bool LevelMap::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3&
     return false;
 }
 
-bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad)
+bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad, float offsHit)
 {
     XMFLOAT3 dir2D = XM3Sub(end, origin);
     dir2D.y = 0.0f;
@@ -804,6 +857,10 @@ bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3&
         const float lenToHitSq = XM3LenSq(toHit);
         const float compRad = optRad > 0.0f ? (optRad) : distSq;
         wasHit = lenToHitSq <= compRad;
+        if (wasHit && offsHit!=0)
+        {
+            outHit = XM3Mad(outHit, dir2D, offsHit);
+        }
     }
     return wasHit;
 }

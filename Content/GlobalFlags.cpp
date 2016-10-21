@@ -16,7 +16,7 @@ namespace SpookyAdulthood
     bool GlobalFlags::TestRaycast = false;
     bool GlobalFlags::AllLit = false;
     bool GlobalFlags::SpawnProjectile = false;
-    
+    int GlobalFlags::ShootHits = 0;
     bool GlobalFlags::DrawFlags = true;
     XMFLOAT2 GlobalFlags::DrawGlobalsPos(10, 10);
 
@@ -69,6 +69,10 @@ namespace SpookyAdulthood
 
                 swprintf(buff, 256, L"Projectile(8)=%d", (int)SpawnProjectile);
                 f->DrawString(s, buff, p, CEnbl(SpawnProjectile));
+                p.y += padY;
+
+                swprintf(buff, 256, L"Hits=%d", ShootHits);
+                f->DrawString(s, buff, p, Colors::White);
                 p.y += padY;
 
                 swprintf(buff, 256, L"CamPos=%.2f, %.2f, %.2f", cp.x, cp.y, cp.z);

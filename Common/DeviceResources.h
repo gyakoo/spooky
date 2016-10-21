@@ -27,6 +27,7 @@ namespace DX
 
         void SetSeed(uint32_t seed);
         uint32_t Get(uint32_t minN, uint32_t maxN);
+        float GetF(float minN, float maxN);
 
     protected:
         std::unique_ptr<std::mt19937> m_gen;
@@ -83,6 +84,7 @@ namespace DX
         DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);
+        void PlayerShoot();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

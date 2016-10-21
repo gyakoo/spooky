@@ -86,27 +86,6 @@ bool SpookyAdulthoodMain::Draw3D()
     gameRes->m_entityMgr.RenderSprites3D(cam);
     gameRes->m_entityMgr.RenderSprites2D(cam); // should it be two passes for 2d? (before and after screen quad?)
 
-
-    gameRes->m_sprite.Begin3D(cam);
-    if (GlobalFlags::TestRaycast)
-    {
-        XMFLOAT3 hit;
-        XMFLOAT3 end = XM3Mad(cam.GetPosition(), cam.m_forward, 5.0f);
-
-        // first entities
-        if (gameRes->m_entityMgr.RaycastSeg(cam.GetPosition(), end, hit))
-        {
-            gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
-        }
-        // else map
-        //else if (map.RaycastSeg(cam.GetPosition(), end, hit))
-        //{
-        //    hit.y = cam.ComputeHeightAtHit(hit);
-        //    gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
-        //}
-    }
-    gameRes->m_sprite.End3D();
-
     // Render quad on screen
     {
         targets[0] = { m_deviceResources->GetBackBufferRenderTargetView() };
