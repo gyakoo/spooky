@@ -6,7 +6,7 @@ using namespace DirectX;
 
 namespace SpookyAdulthood
 {
-    bool GlobalFlags::CollisionsEnabled = false;
+    bool GlobalFlags::CollisionsEnabled = true;
     int GlobalFlags::DrawThumbMap = 1;
     bool GlobalFlags::DrawDebugLines = false;
     bool GlobalFlags::DrawLevelGeometry = true;

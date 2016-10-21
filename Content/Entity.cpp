@@ -27,11 +27,6 @@ void Entity::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteMana
     {
         if (pass == PASS_SPRITE3D)
             sprite.Draw3D(m_spriteIndex, m_pos, m_size);
-        else if (m_boundingSphere) // model3d
-        {
-            XMMATRIX local = DirectX::SimpleMath::Matrix::CreateTranslation(m_pos);
-            m_boundingSphere->Draw(local, XMLoadFloat4x4(&camera.m_view), XMLoadFloat4x4(&camera.m_projection), Colors::White, nullptr, true);
-        }
     }
     else if ((m_flags & SPRITE2D) != 0)
     {
@@ -262,7 +257,6 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\hit11.png"); // 23
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
-    sprite.CreateAnimationInstance(0); // 0
 
     // TEST
     AddEntity(std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
@@ -355,7 +349,6 @@ EntityTreeBlack::EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs)
 
     auto context = EntityManager::s_instance->m_device->GetD3DDeviceContext();
     float rad = GetBoundingRadius();
-    m_boundingSphere = DirectX::GeometricPrimitive::CreateSphere(context, rad*2.0f);
 }
 
 void EntityTreeBlack::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
@@ -435,8 +428,14 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
         if (wasHit)
         {
             gameRes->FlashScreen(1.0f, XMFLOAT4(1,0,0,1));
+            gameRes->SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
             gameRes->SoundPlay(DX::GameResources::SFX_HIT0, false);
         }
+    }
+    else
+    {
+        gameRes->SoundVolume(DX::GameResources::SFX_HIT0, 0.2f);
+        gameRes->SoundPlay(DX::GameResources::SFX_HIT0, false);
     }
 
     if (wasHit)
@@ -459,7 +458,7 @@ EntityShootHit::EntityShootHit(const XMFLOAT3& pos)
     m_timeOut = 0.5f;
     m_spriteIndex = DX::GameResources::instance->m_random.Get(0, 1);
     m_spriteIndex = 20 + m_spriteIndex * 2;
-    m_size = XMFLOAT2(0.1f, 0.1f);
+    m_size = XMFLOAT2(0.15f, 0.15f);
     m_pos = pos;
 }
 

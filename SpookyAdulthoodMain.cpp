@@ -82,7 +82,6 @@ bool SpookyAdulthoodMain::Draw3D()
 
     // Render the scene objects to RT
 	m_sceneRenderer->Render();
-    gameRes->m_entityMgr.RenderModel3D(cam);
     gameRes->m_entityMgr.RenderSprites3D(cam);
     gameRes->m_entityMgr.RenderSprites2D(cam); // should it be two passes for 2d? (before and after screen quad?)
 

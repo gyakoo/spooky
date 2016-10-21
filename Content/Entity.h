@@ -52,7 +52,6 @@ namespace SpookyAdulthood
         int m_flags;
         float m_timeOut;
         float m_totalTime;
-        std::unique_ptr<DirectX::GeometricPrimitive> m_boundingSphere;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

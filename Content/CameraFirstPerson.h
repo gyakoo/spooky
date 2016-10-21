@@ -52,7 +52,7 @@ namespace SpookyAdulthood
         const float dt = (float)timer.GetElapsedSeconds();
         auto ms = DirectX::Mouse::Get().GetState();
         auto kb = DirectX::Keyboard::Get().GetState();
-        m_running = kb.LeftShift;
+        m_running = false;// kb.LeftShift;
 
         if (m_timeToNextShoot <= 0.0f)
         {
@@ -86,7 +86,7 @@ namespace SpookyAdulthood
 
         // update cam
         const float rotDelta = dt*XM_PIDIV4;
-        const float movDelta = dt * (m_running ? 3.0f : 1.0f);
+        const float movDelta = dt * (m_running ? 2.0f : 2.0f);
         float hvel = 5.0f;
 
         // rotation input
@@ -159,11 +159,11 @@ namespace SpookyAdulthood
         // udpate view mat
         XMStoreFloat4x4(&m_view, XMMatrixTranspose(m));
 
-        if (m_near >= 0.0f)
-        {
-            const float varA = 8.0f + sinf(m_runningTime)*8.0f;
-            const float finA = CAM_DEFAULT_FOVY + varA;
-            ComputeProjection(finA*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
-        }
+        //if (m_near >= 0.0f)
+        //{
+        //    const float varA = 8.0f + sinf(m_runningTime)*8.0f;
+        //    const float finA = CAM_DEFAULT_FOVY + varA;
+        //    ComputeProjection(finA*XM_PI / 180.0f, m_aspectRatio, m_near, m_far, m_orientMatrix);
+        //}
     }
 }

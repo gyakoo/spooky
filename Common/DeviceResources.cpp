@@ -980,7 +980,7 @@ void DX::GameResources::PlayerShoot()
     using namespace SpookyAdulthood;
     // sound play, animation, flash screen
     SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
-    m_sprite.CreateAnimationInstance(0, 0);
+    m_sprite.CreateAnimationInstance(0,0);
     FlashScreen(0.5f, XMFLOAT4(0.5f, 0.5f, 0.4f, 1));
 
     // raycast bullets
