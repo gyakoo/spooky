@@ -156,6 +156,7 @@ namespace SpookyAdulthood
         XMUINT2 ConvertToMapPosition(const XMFLOAT3& xyz) const;
         LevelMapBSPNodePtr GetLeafAt(const XMFLOAT3& pos);
         const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
+        const std::vector<LevelMapBSPPortal>& GetPortals()const { return m_portals; }
 
         bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit);
         bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, float offsHit=0.0f);
@@ -168,6 +169,7 @@ namespace SpookyAdulthood
         void GenerateCollisionInfo();
         bool VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
         void VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
+        void GenerateDoorEntityForPortal(const LevelMapBSPPortal& portal);
         void VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);
         int VisComputeRandomPortalIndex(const LevelMapBSPTileArea& area1, const LevelMapBSPTileArea& area2, LevelMapBSPNode::NodeType wallDir);
         bool HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr& lookFor);
@@ -182,7 +184,7 @@ namespace SpookyAdulthood
         std::vector<LevelMapBSPNodePtr> m_leaves;
         std::vector<LevelMapBSPTeleport> m_teleports;
         std::vector<LevelMapBSPPortal> m_portals;
-        std::multimap<LevelMapBSPNode*, uint32_t> m_leafPortals;
+        std::multimap<LevelMapBSPNode*, uint32_t> m_leafPortals; // for a leaf it keeps a list of portal indices
         LevelMapThumbTexture m_thumbTex;        
         XMFLOAT4X4 m_levelTransform;
         LevelMapBSPNodePtr m_cameraCurLeaf;

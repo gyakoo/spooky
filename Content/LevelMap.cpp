@@ -407,10 +407,18 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
             m_leafPortals.insert(std::make_pair(roomA.get(), portalNdx));
             m_leafPortals.insert(std::make_pair(roomB.get(), portalNdx));
             m_portals.push_back(portal);
+
+            // generate Door entity
+            GenerateDoorEntityForPortal(portal);
+
             break;
         }
         parent = parent->m_parent;
     }
+}
+
+void LevelMap::GenerateDoorEntityForPortal(const LevelMapBSPPortal& portal)
+{
 }
 
 // we assume area1 and area2 are contiguous and wallDir in {WALL_X, WALL_Y}
