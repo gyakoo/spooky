@@ -195,6 +195,7 @@
     <Image Include="Assets\sprites\bodpile1.png" />
     <Image Include="Assets\sprites\dep1.png" />
     <Image Include="Assets\sprites\crosshair.png" />
+    <Image Include="Assets\sprites\door0.png" />
     <Image Include="Assets\sprites\garg1.png" />
     <Image Include="Assets\sprites\girl1.png" />
     <Image Include="Assets\sprites\grave1.png" />

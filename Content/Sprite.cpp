@@ -79,7 +79,7 @@ namespace SpookyAdulthood
         }
     }
     
-    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth, bool fullBillboard)
+    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth, bool constraintY, bool fullBillboard)
     {
         DX::ThrowIfFalse(m_rendering[R3D]); // Begin not called
 
@@ -91,7 +91,7 @@ namespace SpookyAdulthood
 
         const float x = m_camPosition.x - position.x;
         const float y = m_camPosition.z - position.z;
-        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false, disableDepth, fullBillboard };
+        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false, disableDepth, constraintY, fullBillboard };
         m_spritesToRender[R3D].push_back(sprR);
     }
 
@@ -148,7 +148,7 @@ namespace SpookyAdulthood
         if (GlobalFlags::AllLit) t = 1.0f;
         PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,1.0f-int(GlobalFlags::AllLit),0,0} };
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
-        auto rsState = GlobalFlags::DrawWireframe ? dxCommon->m_commonStates->Wireframe() : dxCommon->m_commonStates->CullCounterClockwise();
+        auto rsState = GlobalFlags::DrawWireframe ? dxCommon->m_commonStates->Wireframe() : dxCommon->m_commonStates->CullNone();
         context->RSSetState(rsState);
         context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
         context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
@@ -187,8 +187,8 @@ namespace SpookyAdulthood
             const auto& size = sprI.m_size;
 
             // billboard constrained to up vector or full billboard?
-            XMMATRIX mr = m_camInvYaw;
-            if (sprI.m_fullBillboard)
+            XMMATRIX mr = sprI.m_constraintY ? m_camInvYaw : XMMatrixIdentity();
+            if (sprI.m_constraintY && sprI.m_fullBillboard)
                 mr = XMMatrixMultiply(m_camInvPitch, mr);
             mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
 

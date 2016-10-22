@@ -255,6 +255,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\hit01.png"); // 21
     sprite.CreateSprite(L"assets\\sprites\\hit10.png"); // 22 
     sprite.CreateSprite(L"assets\\sprites\\hit11.png"); // 23
+    sprite.CreateSprite(L"assets\\sprites\\door0.png"); // 24
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 

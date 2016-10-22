@@ -408,17 +408,10 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
             m_leafPortals.insert(std::make_pair(roomB.get(), portalNdx));
             m_portals.push_back(portal);
 
-            // generate Door entity
-            GenerateDoorEntityForPortal(portal);
-
             break;
         }
         parent = parent->m_parent;
     }
-}
-
-void LevelMap::GenerateDoorEntityForPortal(const LevelMapBSPPortal& portal)
-{
 }
 
 // we assume area1 and area2 are contiguous and wallDir in {WALL_X, WALL_Y}
@@ -614,7 +607,8 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     if (!RenderSetCommonState(camera))
         return;
 
-    // render all rooms (improve this with visibity !)
+    // render all rooms 
+    // TODO: (c'mon, improve this with visibity bit*h, that's why you did BSP, duh!)
     auto context = m_device->GetD3DDeviceContext();
     if (GlobalFlags::DrawLevelGeometry)
     {
@@ -630,6 +624,20 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             context->DrawIndexed((UINT)room->m_dx->m_indexCount, 0, 0);
         }
     }
+
+    // drawing doors
+    auto& spr = m_device->GetGameResources()->m_sprite;
+    spr.Begin3D(camera);
+    XMUINT2 p, o; XMFLOAT3 dp;
+    for (auto& d : m_portals)
+    {
+        p = d.GetPortalPosition(&o);
+        dp.x = (float)p.x + 0.5f;
+        dp.z = (float)p.y;
+        dp.y = 0.5f;
+        spr.Draw3D(24, dp, XMFLOAT2(1, 1), false, false, false);
+    }
+    spr.End3D();
     
     /* DEBUG LINES */
     if (GlobalFlags::DrawDebugLines)

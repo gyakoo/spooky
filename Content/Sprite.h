@@ -22,6 +22,7 @@ namespace SpookyAdulthood
         float m_distSqOrRot;
         bool m_isAnim;
         bool m_disableDepth;
+        bool m_constraintY;
         bool m_fullBillboard;
     };
 
@@ -52,7 +53,7 @@ namespace SpookyAdulthood
 
         void Begin3D(const CameraFirstPerson& camera);
         void End3D();
-        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth=false, bool fullBillboard=false);
+        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth=false, bool constraintY = true, bool fullBillboard=false);
         
         void Begin2D(const CameraFirstPerson& camera);
         void End2D();
