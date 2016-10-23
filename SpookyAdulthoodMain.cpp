@@ -97,8 +97,8 @@ bool SpookyAdulthoodMain::Draw3D()
         gameRes->m_sprite.DrawScreenQuad(m_deviceResources->GetTempRenderTargetSRV(), params0);
 
         // HUD on the final RT
-        m_fpsTextRenderer->Render();
         m_sceneRenderer->RenderUI();
+        m_fpsTextRenderer->Render();
         GlobalFlags::Draw3D(m_deviceResources);
 
     }

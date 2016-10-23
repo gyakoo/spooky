@@ -42,11 +42,6 @@ struct SpookyAdulthood::VisMatrix
     }
 };
 
-bool operator ==(const XMUINT2& a, const XMUINT2& b)
-{
-    return a.x == b.x && a.y == b.y;
-}
-
 // random element in a set
 template<typename T>
 static size_t RandomRoomInSet(const T& roomset, RandomProvider& rnd)
@@ -66,7 +61,8 @@ LevelMapGenerationSettings::LevelMapGenerationSettings()
     , m_charRadius(0.25f), m_minRecursiveDepth(3)
     , m_maxRecursiveDepth(5)
     , m_probRoom(0.05f), m_generateThumbTex(true)
-    , m_maxTileCount(8,8)
+    , m_maxTileCount(8,8), m_minForPillars(3,3)
+    , m_pillarsProbRange(0.01f, 0.2f) // between 1%-20% of pillars for a room
 {
 }
 
@@ -77,6 +73,7 @@ void LevelMapGenerationSettings::Validate() const
     DX::ThrowIfFalse(m_tileSize.x > charDiam && m_tileSize.y > charDiam);
     DX::ThrowIfFalse(m_tileCount.x >= m_minTileCount.x && m_tileCount.y >= m_minTileCount.y);
     DX::ThrowIfFalse(m_minTileCount.x >= 2 && m_minTileCount.y >= 2);
+    // left stuff to check for :(
 }
 //////////////////////////////////////////////////////////////////////////
 #pragma endregion
@@ -212,6 +209,7 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
         node->m_type = LevelMapBSPNode::NODE_ROOM;
         node->m_leafNdx = (int)m_leaves.size();
         m_leaves.push_back(node);
+        GenerateDetailsForRoom(node, settings);
         // leaf, no children
     }
     else
@@ -238,6 +236,42 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
             node->m_children[i] = std::make_shared<LevelMapBSPNode>();
             node->m_children[i]->m_parent = node;
             RecursiveGenerate(node->m_children[i], newAreas[i], settings, depth + 1);            
+        }
+    }
+}
+
+void LevelMap::GenerateDetailsForRoom(LevelMapBSPNodePtr& node, const LevelMapGenerationSettings& settings)
+{
+    // pillars
+    const auto& area = node->m_area;
+    if (area.SizeX() > 2 && area.SizeY() > 2)
+    {
+        // we don't want pillars next to a door (can block a door)
+        uint32_t sx = area.SizeX() - 2;
+        uint32_t sy = area.SizeY() - 2;
+        if (sx >= settings.m_minForPillars.x && sy >= settings.m_minForPillars.y)
+        {
+            // compute no of pillars to generate and allocate vector
+            auto& random = m_device->GetGameResources()->m_random;
+            int areaSize = sx*sy;
+            float p = random.GetF(settings.m_pillarsProbRange.x, settings.m_pillarsProbRange.y);
+            int nPillars = (int)(areaSize*p);
+            if (nPillars && !node->m_pillars)
+            {
+                node->m_pillars = std::make_unique<std::vector<XMUINT2>>();
+                node->m_pillars->reserve(nPillars);
+            }
+
+            // generate a pillar randomly and check if it exists already before adding
+            for (int i = 0; i < nPillars; ++i)
+            {
+                XMUINT2 newPillar;
+                newPillar.x = random.Get(area.m_x0 + 1, area.m_x1 - 1);
+                newPillar.y = random.Get(area.m_y0 + 1, area.m_y1 - 1);
+                auto it = std::find_if(node->m_pillars->begin(), node->m_pillars->end(), [&](const auto& rhs)->bool {return rhs.x == newPillar.x && rhs.y == newPillar.y; });
+                if (it == node->m_pillars->end())
+                    node->m_pillars->push_back(newPillar);
+            }
         }
     }
 }
@@ -308,6 +342,14 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
         for (uint32_t y = room->m_area.m_y0; y <= room->m_area.m_y1; ++y)
             for (uint32_t x = room->m_area.m_x0; x <= room->m_area.m_x1; ++x)
                 m_thumbTex.SetAt(x, y, room->m_tag);
+
+        if (room->m_pillars)
+        {
+            for (auto& p : *room->m_pillars)
+            {
+                m_thumbTex.SetAt(p.x, p.y, 0xff000000);
+            }
+        }
     }
 
     // teleports
@@ -337,7 +379,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 
     // character
     if ( playerPos)
-        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0xffff0000);
+        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0xff00ffff);
 
     // create DX resources for rendering
     m_thumbTex.CreateDeviceDependentResources(m_device);
@@ -665,24 +707,13 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         }
     }
 
-    // drawing doors
-    auto& spr = m_device->GetGameResources()->m_sprite;
-    spr.Begin3D(camera);
-    XMFLOAT3 dp; 
-    float rotY;
-    for (const auto& d : m_portals)
-    {
-        d.GetTransform(dp, rotY);
-        spr.Draw3D(24, dp, XMFLOAT2(1, 1.5f), false, false, false, rotY);
-    }
-    spr.End3D();
-    
+
     /* DEBUG LINES */
     if (GlobalFlags::DrawDebugLines)
     {
         for (const auto& room : m_leaves)
         {
-            if (!room->m_collisionSegments ) continue;
+            if (!room->m_collisionSegments) continue;
             auto gameRes = m_device->GetGameResources();
             gameRes->m_batch->Begin();
             XMFLOAT3 s, e;
@@ -700,54 +731,22 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         }
     }
 
-    //gameRes->m_sprite.Begin3D(cam);
-    if (GlobalFlags::TestRaycast)
+    // drawing doors
+    auto& spr = m_device->GetGameResources()->m_sprite;
+    spr.Begin3D(camera);
+    XMFLOAT3 dp; 
+    float rotY;
+    for (const auto& d : m_portals)
     {
-        auto gameRes = m_device->GetGameResources();
-        gameRes->m_batch->Begin();
-        auto cp = XMFLOAT3(6, 0.5f, 3);// gameRes->m_camera.GetPositionWithMovement();
-        
-        
-        XMFLOAT4 anyc(1, 1, 1, 1);
-        VertexPositionColor v1(cp, anyc);
-        VertexPositionColor v2(cp, anyc);
-        
-        const float ang = 0.1f;
-        static const XMMATRIX rotations[7] = {
-            XMMatrixMultiply(XMMatrixRotationX(-ang), XMMatrixRotationY(ang)), XMMatrixMultiply(XMMatrixRotationX(-ang),XMMatrixRotationY(-ang)),
-            XMMatrixRotationY(ang), XMMatrixIdentity(), XMMatrixRotationY(-ang),
-            XMMatrixMultiply(XMMatrixRotationX(ang), XMMatrixRotationY(ang)), XMMatrixMultiply(XMMatrixRotationX(ang), XMMatrixRotationY(-ang))
-        };
-
-        XMVECTOR fw = XMLoadFloat3(&XMFLOAT3(0,0,1));
-        XMFLOAT3 newfw;
-        for (int i = 0; i <= 6; ++i)
-        {
-            XMStoreFloat3(&newfw, XMVector3TransformNormal(fw, rotations[i]));
-            v2.position = XM3Mad(cp, newfw, 5.0f);
-            gameRes->m_batch->DrawLine(v1, v2);
-        }
-        gameRes->m_batch->End();
-
-        //XMFLOAT3 hit;
-        //XMFLOAT3 end = XM3Mad(cam.GetPosition(), cam.m_forward, 5.0f);
-
-        //// first entities
-        //if (gameRes->m_entityMgr.RaycastSeg(cam.GetPosition(), end, hit))
-        //{
-        //    gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
-        //}
-        //else if (map.RaycastSeg(cam.GetPosition(), end, hit))
-        //{
-        //    hit.y = cam.ComputeHeightAtHit(hit);
-        //    gameRes->m_sprite.Draw3D(19, hit, XMFLOAT2(0.15f, 0.15f), true);
-        //}
+        d.GetTransform(dp, rotY);
+        spr.Draw3D(24, dp, XMFLOAT2(1, 1.5f), false, false, false, rotY);
     }
-    //gameRes->m_sprite.End3D();
+    spr.End3D();
 }
 
 void LevelMap::RenderMinimap(const CameraFirstPerson& camera)
 {
+
     // UI rendering
     if (GlobalFlags::DrawThumbMap)
     {
@@ -1229,6 +1228,33 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
         }
         if (lastSeg.IsValid())
             m_collisionSegments->push_back(lastSeg);
+    }
+
+
+    // pillars
+    if (m_pillars)
+    {
+        CollSegment pillarSeg;
+        pillarSeg.flags = CollSegment::PILLAR;
+        XMFLOAT2 corners[4];
+        float x, y;
+        for (auto& pillar : *m_pillars)
+        {
+            x = (float)pillar.x; y = (float)pillar.y;
+            corners[0] = XMFLOAT2(x, y);
+            corners[1] = XMFLOAT2(x + 1, y);
+            corners[2] = XMFLOAT2(x + 1, y+1);
+            corners[3] = XMFLOAT2(x, y+1);
+
+            pillarSeg.start = corners[0]; pillarSeg.end = corners[1]; pillarSeg.normal = XMFLOAT2(0,-1);
+            m_collisionSegments->push_back(pillarSeg);
+            pillarSeg.start = corners[1]; pillarSeg.end = corners[2]; pillarSeg.normal = XMFLOAT2(1,0);
+            m_collisionSegments->push_back(pillarSeg);
+            pillarSeg.start = corners[2]; pillarSeg.end = corners[3]; pillarSeg.normal = XMFLOAT2(0,1);
+            m_collisionSegments->push_back(pillarSeg);
+            pillarSeg.start = corners[3]; pillarSeg.end = corners[0]; pillarSeg.normal = XMFLOAT2(-1,0);
+            m_collisionSegments->push_back(pillarSeg);
+        }
     }
 }
 #pragma endregion

@@ -152,3 +152,8 @@ inline float XM3Dot(const XMFLOAT3& a, const XMFLOAT3& b)
 {
     return a.x*b.x + a.y*b.y + a.z*b.z;
 }
+
+inline bool operator ==(const DirectX::XMUINT2& a, const DirectX::XMUINT2& b)
+{
+    return a.x == b.x && a.y == b.y;
+}

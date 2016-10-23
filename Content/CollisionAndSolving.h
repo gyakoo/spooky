@@ -5,7 +5,14 @@ namespace SpookyAdulthood
 {
     struct CollSegment
     {
-        enum{ NONE=0, WALL=1, PORTAL=2, DISABLED=4};
+        enum
+        { 
+            NONE        = 0, 
+            WALL        = 1<<0, 
+            PORTAL      = 1<<1, 
+            PILLAR      = 1<<2, 
+            DISABLED    = 1<<3
+        };
         XMFLOAT2 start, end;
         XMFLOAT2 normal;
         int flags;

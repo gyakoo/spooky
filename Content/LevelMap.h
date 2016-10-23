@@ -112,6 +112,8 @@ namespace SpookyAdulthood
         XMUINT2 m_tileCount;        // no of tiles in map
         XMUINT2 m_minTileCount;     // minimum no in tiles for rooms
         XMUINT2 m_maxTileCount;     // max no in tiles for rooms
+        XMUINT2 m_minForPillars;    // min dim to consider put pillars
+        XMFLOAT2 m_pillarsProbRange; // probabily range for ratio of pillars
         uint32_t m_randomSeed;
         uint32_t m_minRecursiveDepth;
         uint32_t m_maxRecursiveDepth;
@@ -167,6 +169,7 @@ namespace SpookyAdulthood
         friend struct LevelMapBSPNode;
         void Destroy();
         void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
+        void GenerateDetailsForRoom(LevelMapBSPNodePtr& node, const LevelMapGenerationSettings& settings);
         void GenerateVisibility(const LevelMapGenerationSettings& settings);
         void GenerateCollisionInfo();
         bool VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);

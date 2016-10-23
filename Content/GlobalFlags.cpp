@@ -116,6 +116,11 @@ namespace SpookyAdulthood
             break;
             case VirtualKey::Number6:
                 DrawDebugLines = !DrawDebugLines;
+                if (DrawDebugLines)
+                {
+                    AllLit = true;
+                    DrawWireframe = true;
+                }
             break;
             case VirtualKey::Number7:
                 AllLit = !AllLit;
