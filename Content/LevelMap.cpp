@@ -972,8 +972,11 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     m_dx = std::make_shared<NodeDXResources>();
 
     const auto& area = m_area;
-    std::vector<VertexPositionNormalColorTextureNdx> vertices; vertices.reserve(area.CountTiles() * 4);
-    std::vector<unsigned short> indices; indices.reserve(area.CountTiles() * 6);
+    const int pvc = m_pillars ? m_pillars->size() : 0;
+    std::vector<VertexPositionNormalColorTextureNdx> vertices;
+    vertices.reserve(area.CountTiles() * 4 + pvc*16);
+    std::vector<unsigned short> indices; 
+    indices.reserve(area.CountTiles() * 6 + pvc*24);
     {
         static const float EP = 1.0f;
         static const float FH = 2.0f;
@@ -1111,6 +1114,65 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                         cvi += 4; // 
                         std::copy(inds, inds + 6, std::back_inserter(indices));
                     }
+                }
+            } // for area x
+        } // for area y
+
+        // Pillars
+        if (m_pillars)
+        {
+            for (int i = 0; i < 4; ++i)
+                quadVerts[i].textureIndex = XMUINT2(1, 0);
+            float x, z;
+            for (const auto& pillar : *m_pillars)
+            {
+                x = (float)pillar.x; z = (float)pillar.y;
+                // north face
+                {
+                    quadVerts[0].position = XMFLOAT3(x+1, 0.0f, z);
+                    quadVerts[1].position = XMFLOAT3(x+1, FH, z);
+                    quadVerts[2].position = XMFLOAT3(x, FH, z);
+                    quadVerts[3].position = XMFLOAT3(x, 0, z);
+                    for (int i = 0; i < 4; ++i) quadVerts[i].normal = XMFLOAT3(0, 0, -1);
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { cvi, cvi + 1, cvi + 2, cvi, cvi + 2, cvi + 3 }; cvi += 4;
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // east face
+                {
+                    quadVerts[0].position = quadVerts[3].position;
+                    quadVerts[1].position = quadVerts[2].position;
+                    quadVerts[2].position = XMFLOAT3(x, FH, z + 1);
+                    quadVerts[3].position = XMFLOAT3(x, 0, z + 1);
+                    for (int i = 0; i < 4; ++i) quadVerts[i].normal = XMFLOAT3(-1, 0, 0);
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { cvi, cvi + 1, cvi + 2, cvi, cvi + 2, cvi + 3 }; cvi += 4;
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // south face
+                {
+                    quadVerts[0].position = quadVerts[3].position;
+                    quadVerts[1].position = quadVerts[2].position;
+                    quadVerts[2].position = XMFLOAT3(x + 1, FH, z + 1);
+                    quadVerts[3].position = XMFLOAT3(x + 1, 0, z + 1);
+                    for (int i = 0; i < 4; ++i) quadVerts[i].normal = XMFLOAT3(0, 0, 1);
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { cvi, cvi + 1, cvi + 2, cvi, cvi + 2, cvi + 3 }; cvi += 4;
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
+                }
+
+                // west face
+                {
+                    quadVerts[0].position = quadVerts[3].position;
+                    quadVerts[1].position = quadVerts[2].position;
+                    quadVerts[2].position = XMFLOAT3(x + 1, FH, z );
+                    quadVerts[3].position = XMFLOAT3(x + 1, 0, z );
+                    for (int i = 0; i < 4; ++i) quadVerts[i].normal = XMFLOAT3(1, 0, 0);
+                    std::copy(quadVerts, quadVerts + 4, std::back_inserter(vertices));
+                    const unsigned short inds[6] = { cvi, cvi + 1, cvi + 2, cvi, cvi + 2, cvi + 3 }; cvi += 4;
+                    std::copy(inds, inds + 6, std::back_inserter(indices));
                 }
             }
         }

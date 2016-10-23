@@ -1016,7 +1016,8 @@ void DX::GameResources::PlayerShoot()
 #undef Rr
     const float SHOOT_RANGE = 5.0f;
     const XMVECTOR fw = XMLoadFloat3(&m_camera.m_forward);
-    XMFLOAT3 newfw, endpos, hit;
+    XMFLOAT3 newfw, endpos, hitE, hitM;
+    bool wasHitE, wasHitM;
     GlobalFlags::ShootHits = 0;
     for (int i = 0; i < 7; ++i)
     {
@@ -1024,19 +1025,30 @@ void DX::GameResources::PlayerShoot()
         endpos = XM3Mad(startpos, newfw, SHOOT_RANGE);
 
         // we cast this ray against entities then map
-        if (m_entityMgr.RaycastSeg(startpos, endpos, hit))
+        wasHitE = m_entityMgr.RaycastSeg(startpos, endpos, hitE);
+        wasHitM = m_map.RaycastSeg(startpos, endpos, hitM, -1.0f, -0.05f);
+        
+        if (wasHitE && wasHitM)
         {
-            m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hit));
+            // hit both, get the closest one
+            const float distToE = XM3LenSq(XM3Sub(hitE, startpos));
+            const float distToM = XM3LenSq(XM3Sub(hitM, startpos));
+            if (distToE <= distToM) wasHitM = false;
+            else wasHitE = false;
+        }
+
+        if (wasHitE)
+        {
+            // hit only agains entity
+            m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hitE));
             GlobalFlags::ShootHits++;
         }
-        else
+        else if (wasHitM)
         {
-            if (m_map.RaycastSeg(startpos, endpos, hit, -1.0f, -0.05f))
-            {
-                hit.y = m_camera.m_height-m_camera.m_pitchYaw.x+m_random.GetF(-0.15f,0.15f);
-                m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hit));
-            }
-        }   
+            // hit only against map
+            hitM.y = m_camera.m_height - m_camera.m_pitchYaw.x + m_random.GetF(-0.15f, 0.15f);
+            m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hitM));
+        }
     }
 }
 
