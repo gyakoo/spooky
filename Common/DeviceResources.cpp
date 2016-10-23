@@ -13,6 +13,7 @@ using namespace Windows::Graphics::Display;
 using namespace Windows::UI::Core;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Platform;
+using namespace SpookyAdulthood;
 
 namespace DisplayMetrics
 {
@@ -804,7 +805,7 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
 
     // BASE VS constant buffer
     {
-        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateBuffer(
                 &constantBufferDesc,
@@ -815,7 +816,7 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     }
     // BASE PS Constant buffer
     {
-        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(SpookyAdulthood::PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
+        CD3D11_BUFFER_DESC constantBufferDesc(sizeof(PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateBuffer(
                 &constantBufferDesc,
@@ -831,8 +832,8 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
         DX::ThrowIfFailed(hr);
         DX::ThrowIfFailed(
             device->GetD3DDevice()->CreateInputLayout(
-                SpookyAdulthood::VertexPositionNormalColorTextureNdx::InputElements,
-                SpookyAdulthood::VertexPositionNormalColorTextureNdx::InputElementCount,
+                VertexPositionNormalColorTextureNdx::InputElements,
+                VertexPositionNormalColorTextureNdx::InputElementCount,
                 &fileData[0],
                 fileData.size(),
                 m_baseIL.GetAddressOf()
@@ -887,7 +888,7 @@ DX::GameResources::~GameResources()
     m_sprite.ReleaseDeviceDependentResources();
 }
 
-void DX::GameResources::Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera)
+void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPerson& camera)
 {
     if (!m_readyToRender)
         return;
@@ -904,6 +905,24 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const SpookyAdulthood
     {
         if (!audio->IsCriticalError())
             audio->Update();
+
+        // Update player audio
+        if (m_camera.m_moving)
+        {
+            SoundResume(DX::GameResources::SFX_WALK);
+            SoundPitch(DX::GameResources::SFX_WALK, m_camera.m_running ? 0.5f : 0.0f);
+        }
+        else
+        {
+            SoundPause(DX::GameResources::SFX_WALK);
+        }
+    }
+
+    // thumbnail map update (every N frames)
+    if (timer.GetFrameCount() % 30 == 0)
+    {
+        XMUINT2 ppos = m_map.ConvertToMapPosition(m_camera.GetPosition());
+        m_map.GenerateThumbTex(m_mapSettings.m_tileCount, &ppos);
     }
 }
 
@@ -977,7 +996,6 @@ void DX::GameResources::SoundVolume(uint32_t index, float v)
 
 void DX::GameResources::PlayerShoot()
 {
-    using namespace SpookyAdulthood;
     // sound play, animation, flash screen
     SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
     m_sprite.CreateAnimationInstance(0,0);
@@ -1032,4 +1050,32 @@ void DX::GameResources::OpenDoor(uint32_t index)
 void DX::GameResources::OpenRoomDoors()
 {
     
+}
+
+void DX::GameResources::GenerateNewLevel()
+{
+    m_entityMgr.Clear();
+    m_mapSettings.m_tileCount = XMUINT2(35, 35);
+    m_mapSettings.m_minTileCount = XMUINT2(4, 4);
+    m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
+    m_map.Generate(m_mapSettings);
+    m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
+    SpawnPlayer();
+
+    m_entityMgr.AddEntity(std::make_shared<EntityGun>()); // GUN
+
+}
+
+void DX::GameResources::SpawnPlayer()
+{
+    XMUINT2 mapPos = m_map.GetRandomPosition();
+    XMFLOAT3 p(mapPos.x + 0.5f, 0, mapPos.y + 0.5f);
+
+    m_camera.SetPosition(p);
+    if (m_audioEngine)
+    {
+        SoundPlay(DX::GameResources::SFX_BREATH);
+        //gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
+        SoundPlay(DX::GameResources::SFX_HEART);
+    }
 }

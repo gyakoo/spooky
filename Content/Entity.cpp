@@ -256,13 +256,15 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\hit10.png"); // 22 
     sprite.CreateSprite(L"assets\\sprites\\hit11.png"); // 23
     sprite.CreateSprite(L"assets\\sprites\\door0.png"); // 24
+    sprite.CreateSprite(L"assets\\sprites\\teleport0.png"); // 25
+    sprite.CreateSprite(L"assets\\sprites\\teleport1.png"); // 26
+    sprite.CreateSprite(L"assets\\sprites\\teleport2.png"); // 27
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 
     // TEST
-    AddEntity(std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
-    AddEntity(std::make_shared<EntityGun>()); // GUN
-    AddEntity(std::make_shared<EntityTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
+    //AddEntity(std::make_shared<EntityFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
+    //AddEntity(std::make_shared<EntityTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
 }
 
 void EntityManager::ReleaseDeviceDependentResources()
@@ -451,7 +453,7 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityShootHit::EntityShootHit(const XMFLOAT3& pos)
+EntityShootHit::EntityShootHit(const XMFLOAT3& pos) // 20 21 | 22 23
     : Entity(SPRITE3D), m_lastFrame(false)
 {
     m_timeOut = 0.5f;
@@ -475,5 +477,34 @@ void EntityShootHit::Update(float stepTime, const CameraFirstPerson& camera)
             m_totalTime = 0.0f;
             m_lastFrame = true;
         }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityTeleport::EntityTeleport(const XMFLOAT3& pos) // 25 26 27
+    : Entity(SPRITE3D), m_dir(1)
+{
+    m_spriteIndex = 25;
+    m_size = XMFLOAT2(0.5f, 0.75f);
+    m_pos = pos;    
+}
+
+void EntityTeleport::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    if (m_totalTime >= 0.4f)
+    {
+        m_spriteIndex += m_dir;
+        if (m_spriteIndex > 27)
+        {
+            m_spriteIndex = 26;
+            m_dir = -1;
+        }
+        else if (m_spriteIndex < 25)
+        {
+            m_spriteIndex = 26;
+            m_dir = +1;
+        }
+        m_totalTime = 0.0f;
     }
 }

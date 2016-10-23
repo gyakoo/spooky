@@ -98,6 +98,7 @@ bool SpookyAdulthoodMain::Draw3D()
 
         // HUD on the final RT
         m_fpsTextRenderer->Render();
+        m_sceneRenderer->RenderUI();
         GlobalFlags::Draw3D(m_deviceResources);
 
     }

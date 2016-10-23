@@ -46,7 +46,7 @@ namespace SpookyAdulthood
     //* ***************************************************************** *//
     struct LevelMapBSPNode
     {
-        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(-1){}
+        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(0x55555533){}
 
         enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_VERT, WALL_HORIZ };
         enum PortalDir { NONE, NORTH, SOUTH, WEST, EAST };
@@ -152,6 +152,7 @@ namespace SpookyAdulthood
         void ReleaseDeviceDependentResources();
         void Update(const DX::StepTimer& timer, const CameraFirstPerson& camera);
         void Render(const CameraFirstPerson& camera);
+        void RenderMinimap(const CameraFirstPerson& camera);
         void GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos=nullptr);
         XMUINT2 GetRandomPosition();
         XMUINT2 ConvertToMapPosition(const XMFLOAT3& xyz) const;

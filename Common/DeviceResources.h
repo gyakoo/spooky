@@ -66,6 +66,7 @@ namespace DX
         Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureWhiteSRV;
 
         std::unique_ptr<DirectX::AudioEngine>       m_audioEngine;
+        SpookyAdulthood::LevelMapGenerationSettings m_mapSettings;
         SpookyAdulthood::LevelMap                   m_map;
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffect>> m_soundEffects;
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
@@ -89,6 +90,8 @@ namespace DX
         void PlayerShoot();
         void OpenRoomDoors();
         void OpenDoor(uint32_t index);
+        void GenerateNewLevel();
+        void SpawnPlayer();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

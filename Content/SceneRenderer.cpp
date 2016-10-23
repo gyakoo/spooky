@@ -18,29 +18,8 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
 {
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
-
-    auto& map = m_deviceResources->GetGameResources()->m_map;
-    m_mapSettings.m_tileCount = XMUINT2(35, 35);
-    m_mapSettings.m_minTileCount = XMUINT2(4, 4);
-    m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
-    map.Generate(m_mapSettings);
-    SpawnPlayer();    
-}
-
-void SceneRenderer::SpawnPlayer()
-{
-    auto gameRes = m_deviceResources->GetGameResources();
-    auto& map = gameRes->m_map;
-    XMUINT2 mapPos = map.GetRandomPosition();
-    XMFLOAT3 p(mapPos.x + 0.5f, 0, mapPos.y + 0.5f);
-
-    gameRes->m_camera.SetPosition(p);
-    if (gameRes && gameRes->m_audioEngine)
-    {
-        gameRes->SoundPlay(DX::GameResources::SFX_BREATH);
-        //gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
-        gameRes->SoundPlay(DX::GameResources::SFX_HEART);
-    }
+    
+    deviceResources->GetGameResources()->GenerateNewLevel();
 }
 
 // Initializes view parameters when the window size changes.
@@ -94,46 +73,16 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         }
     });
 
-    // Audio
-    UpdateAudio(timer);
-    
-
     if (GlobalFlags::GenerateNewLevel)
     {
         GlobalFlags::GenerateNewLevel = false;
-        map.Generate(m_mapSettings);
-        map.GenerateThumbTex(m_mapSettings.m_tileCount);
+        gameRes->GenerateNewLevel();
     }
 
     if (GlobalFlags::SpawnPlayer)
     {
         GlobalFlags::SpawnPlayer = false;
-        SpawnPlayer();
-    }
-
-    // thumbnail map update (every N frames)
-    if (timer.GetFrameCount() % 30 == 0)
-    {
-        XMUINT2 ppos = map.ConvertToMapPosition(gameRes->m_camera.GetPosition());
-        map.GenerateThumbTex(m_mapSettings.m_tileCount,&ppos);
-    }
-    
-}
-void SceneRenderer::UpdateAudio(DX::StepTimer const& timer)
-{
-    auto gameRes = m_deviceResources->GetGameResources();
-    if (!gameRes) return;
-    auto audio = gameRes->m_audioEngine.get();
-    if (!audio) return;
-
-    if (gameRes->m_camera.m_moving)
-    {
-        gameRes->SoundResume(DX::GameResources::SFX_WALK);
-        gameRes->SoundPitch(DX::GameResources::SFX_WALK, gameRes->m_camera.m_running ? 0.5f : 0.0f);
-    }
-    else
-    {
-        gameRes->SoundPause(DX::GameResources::SFX_WALK);
+        gameRes->SpawnPlayer();
     }
 }
 
@@ -173,7 +122,14 @@ void SceneRenderer::Render()
     sprite.End3D();
     */
     // some other input
+}
 
+void SceneRenderer::RenderUI()
+{
+    auto gameRes = m_deviceResources->GetGameResources();
+    auto& map = gameRes->m_map;
+    auto& cam = gameRes->m_camera;
+    map.RenderMinimap(cam);
 }
 
 void SceneRenderer::CreateDeviceDependentResources()

@@ -212,6 +212,9 @@
     <Image Include="Assets\sprites\hit11.png" />
     <Image Include="Assets\sprites\msgdie.png" />
     <Image Include="Assets\sprites\proj0.png" />
+    <Image Include="Assets\sprites\teleport0.png" />
+    <Image Include="Assets\sprites\teleport1.png" />
+    <Image Include="Assets\sprites\teleport2.png" />
     <Image Include="Assets\sprites\tree1.png" />
     <Image Include="Assets\textures\atlaslevel.png" />
     <Image Include="Assets\sprites\hand.png" />

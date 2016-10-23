@@ -313,7 +313,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     // teleports
     for (const auto& tp : m_teleports)
     {
-        const uint32_t argb = 0x00ff00ff;
+        const uint32_t argb = 0xff0000ff;
         for (int i = 0; i < 2; ++i)
         {
             m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
@@ -326,7 +326,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
         XMUINT2 pos = p.GetPortalPosition();
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex.SetAt(pos.x, pos.y, 0xffff00ff);
+            m_thumbTex.SetAt(pos.x, pos.y, 0xff00ff00);
             switch (p.m_wallNode->m_type)
             {
             case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
@@ -337,7 +337,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 
     // character
     if ( playerPos)
-        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0x0000ffff);
+        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0xffff0000);
 
     // create DX resources for rendering
     m_thumbTex.CreateDeviceDependentResources(m_device);
@@ -622,7 +622,7 @@ void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camer
     auto pos = camera.GetPosition();
     m_cameraCurLeaf = GetLeafAt(pos);
     if (m_cameraCurLeaf)
-        m_cameraCurLeaf->m_tag = 0x00ff00ff;
+        m_cameraCurLeaf->m_tag = 0xffffffaa;
 
     if (m_device && m_device->GetGameResources())
         m_device->GetGameResources()->m_levelTime += (float)timer.GetElapsedSeconds();
@@ -668,7 +668,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     // drawing doors
     auto& spr = m_device->GetGameResources()->m_sprite;
     spr.Begin3D(camera);
-    XMUINT2 p; XMFLOAT3 dp; 
+    XMFLOAT3 dp; 
     float rotY;
     for (const auto& d : m_portals)
     {
@@ -744,8 +744,10 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         //}
     }
     //gameRes->m_sprite.End3D();
+}
 
-
+void LevelMap::RenderMinimap(const CameraFirstPerson& camera)
+{
     // UI rendering
     if (GlobalFlags::DrawThumbMap)
     {
@@ -761,7 +763,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
             float dx = (float)m_thumbTex.m_dim.x;
             float dy = (float)m_thumbTex.m_dim.y;
             auto cp = camera.GetPosition();
-            XMFLOAT2 texPos(100,100);
+            XMFLOAT2 texPos(100, 100);
             XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
             sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(2, 2));
         }
@@ -770,6 +772,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         sprites->End();
     }
 }
+
 
 bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
 {

@@ -200,6 +200,15 @@
     <Image Include="Assets\sprites\door0.png">
       <Filter>Assets\img</Filter>
     </Image>
+    <Image Include="Assets\sprites\teleport0.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\teleport1.png">
+      <Filter>Assets\img</Filter>
+    </Image>
+    <Image Include="Assets\sprites\teleport2.png">
+      <Filter>Assets\img</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

@@ -18,14 +18,10 @@ namespace SpookyAdulthood
 		void ReleaseDeviceDependentResources();
 		void Update(DX::StepTimer const& timer);
 		void Render();
-
-    private:
-        void SpawnPlayer();
-        void UpdateAudio(DX::StepTimer const& timer);
+        void RenderUI();
 
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
-        LevelMapGenerationSettings m_mapSettings;
         float	m_degreesPerSecond;
         bool	m_loadingComplete;        
 	};
