@@ -101,7 +101,16 @@ uint32_t RandomProvider::Get(uint32_t minN, uint32_t maxN)
 
 float RandomProvider::GetF(float minN, float maxN)
 {
+    if (!m_gen)
+        SetSeed(RANDOM_DEFAULT_SEED);
     return std::uniform_real_distribution<float>(minN, maxN)(*m_gen);
+}
+
+uint32_t RandomProvider::Get01()
+{
+    if (!m_gen)
+        SetSeed(RANDOM_DEFAULT_SEED);
+    return std::bernoulli_distribution(0.5)(*m_gen);
 }
 
 #pragma endregion
@@ -131,6 +140,26 @@ XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
     }
     return pos;
 }
+
+void LevelMapBSPPortal::GetTransform(XMFLOAT3& pos, float& rotY) const
+{
+    const XMUINT2 p = GetPortalPosition();
+    pos.x = (float)p.x;
+    pos.z = (float)p.y;
+    pos.y = 0.75f;
+
+    if (m_wallNode->m_type == LevelMapBSPNode::WALL_VERT)
+    {
+        pos.z += 0.5f;
+        rotY = XM_PIDIV2;
+    }
+    else
+    {
+        pos.x += 0.5f;
+        rotY = 0.0f;
+    }
+}
+
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////
@@ -284,7 +313,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     // teleports
     for (const auto& tp : m_teleports)
     {
-        const uint32_t argb = 0xff00ff00;
+        const uint32_t argb = 0x00ff00ff;
         for (int i = 0; i < 2; ++i)
         {
             m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
@@ -297,7 +326,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
         XMUINT2 pos = p.GetPortalPosition();
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex.SetAt(pos.x, pos.y, 0xff000000);
+            m_thumbTex.SetAt(pos.x, pos.y, 0xffff00ff);
             switch (p.m_wallNode->m_type)
             {
             case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
@@ -607,11 +636,22 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     if (!RenderSetCommonState(camera))
         return;
 
-    // render all rooms 
-    // TODO: (c'mon, improve this with visibity bit*h, that's why you did BSP, duh!)
     auto context = m_device->GetD3DDeviceContext();
     if (GlobalFlags::DrawLevelGeometry)
     {
+        // single room and connected ones
+        //if (m_cameraCurLeaf && m_cameraCurLeaf->m_dx && m_cameraCurLeaf->m_dx->m_indexBuffer)
+        //{
+        //    auto dx = m_cameraCurLeaf->m_dx;
+        //    UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
+        //    UINT offset = 0;
+        //    context->IASetVertexBuffers(0, 1, dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
+        //    context->IASetIndexBuffer(dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+        //    context->DrawIndexed((UINT)dx->m_indexCount, 0, 0);
+        //}
+
+        // render all rooms 
+        // TODO: (c'mon, improve this with visibity bit*h, that's why you did BSP, duh!)
         for (const auto& room : m_leaves)
         {
             if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
@@ -628,14 +668,12 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     // drawing doors
     auto& spr = m_device->GetGameResources()->m_sprite;
     spr.Begin3D(camera);
-    XMUINT2 p, o; XMFLOAT3 dp;
-    for (auto& d : m_portals)
+    XMUINT2 p; XMFLOAT3 dp; 
+    float rotY;
+    for (const auto& d : m_portals)
     {
-        p = d.GetPortalPosition(&o);
-        dp.x = (float)p.x + 0.5f;
-        dp.z = (float)p.y;
-        dp.y = 0.5f;
-        spr.Draw3D(24, dp, XMFLOAT2(1, 1), false, false, false);
+        d.GetTransform(dp, rotY);
+        spr.Draw3D(24, dp, XMFLOAT2(1, 1.5f), false, false, false, rotY);
     }
     spr.End3D();
     
@@ -881,6 +919,16 @@ bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3&
     return wasHit;
 }
 
+void LevelMap::GetCurrentDoors(std::vector<uint32_t>& doorIndices) const
+{
+    if (!m_cameraCurLeaf) return;
+    auto it = m_leafPortals.find(m_cameraCurLeaf.get());
+    while (it != m_leafPortals.end() && it->first != m_cameraCurLeaf.get())
+    {
+        doorIndices.push_back(it->second);
+        ++it;
+    }
+}
 
 
 
@@ -937,7 +985,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
             quadVerts[i].color = argb;
         }
         auto& random = device->GetGameResources()->m_random;
-        const UINT FLOORTEX = random.Get(0, 1);
+        const UINT FLOORTEX = random.Get01();
         const UINT CEILINGTEX = random.Get(0, 4);
         const UINT WALLTEX = 0;// random.Get(0, 4);
         unsigned short cvi = 0; // current vertex index
@@ -1120,7 +1168,7 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
     lastSeg.flags = CollSegment::WALL;
     
     CollSegment portalSeg;     
-    portalSeg.flags = CollSegment::PORTAL | CollSegment::DISABLED;
+    portalSeg.flags = CollSegment::PORTAL;// | CollSegment::DISABLED;
 
     // north/south
     for (int i = 0; i < 2; ++i)

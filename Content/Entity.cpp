@@ -273,10 +273,6 @@ void EntityManager::ReleaseDeviceDependentResources()
     sprite.ReleaseDeviceDependentResources();
 }
 
-
-
-
-
 bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac)
 {
     // first agains the bounding sphere, then against two triangles of quad
@@ -330,11 +326,13 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     float t = std::max(0.0f, camera.m_timeShoot);
     float offsx = sin(camera.m_runningTime*7.0f)*0.010f*rvel;
     float offsy = sin(camera.m_runningTime*5.0f)*0.010f*rvel + camera.m_pitchYaw.x*0.1f;
-    sprite.Draw2D(m_spriteIndices[PUMPKIN], XMFLOAT2(offsx*0.8f, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f); // pumpkins
-    sprite.Draw2D(m_spriteIndices[CANDIES], XMFLOAT2(offsx*0.7f, -0.6f + offsy*1.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // candies
-    sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, -0.6f + offsy - t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // cannon
-    sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, -0.6f + offsy - t*0.1f), XMFLOAT2(0.9f, 0.9f), 0.0f); // flashlight
-    sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, -0.6f + offsy), XMFLOAT2(0.9f, 0.9f), 0.0f);
+    const XMFLOAT2 size(0.8f, 0.8f);
+    const float ypos = -0.7f;
+    sprite.Draw2D(m_spriteIndices[PUMPKIN], XMFLOAT2(offsx*0.8f, ypos + offsy), size, 0.0f); // pumpkins
+    sprite.Draw2D(m_spriteIndices[CANDIES], XMFLOAT2(offsx*0.7f, ypos + offsy*1.1f), size, 0.0f); // candies
+    sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, ypos + offsy - t*0.1f), size, 0.0f); // cannon
+    sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, ypos + offsy - t*0.1f), size, 0.0f); // flashlight
+    sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, ypos + offsy), size, 0.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -457,7 +455,7 @@ EntityShootHit::EntityShootHit(const XMFLOAT3& pos)
     : Entity(SPRITE3D), m_lastFrame(false)
 {
     m_timeOut = 0.5f;
-    m_spriteIndex = DX::GameResources::instance->m_random.Get(0, 1);
+    m_spriteIndex = DX::GameResources::instance->m_random.Get01();
     m_spriteIndex = 20 + m_spriteIndex * 2;
     m_size = XMFLOAT2(0.15f, 0.15f);
     m_pos = pos;
@@ -475,6 +473,7 @@ void EntityShootHit::Update(float stepTime, const CameraFirstPerson& camera)
         {
             m_spriteIndex++;
             m_totalTime = 0.0f;
+            m_lastFrame = true;
         }
     }
 }

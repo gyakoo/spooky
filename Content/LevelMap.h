@@ -86,6 +86,7 @@ namespace SpookyAdulthood
         LevelMapBSPNodePtr  m_wallNode; // must be WALL_X or WALL_Y
 
         XMUINT2 GetPortalPosition(XMUINT2* opposite=nullptr) const;
+        void GetTransform(XMFLOAT3& pos, float& rotY) const;
 
         int m_index;
     };
@@ -177,6 +178,7 @@ namespace SpookyAdulthood
         void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
         bool RenderSetCommonState(const CameraFirstPerson& camera);
+        void GetCurrentDoors(std::vector<uint32_t>& doorIndices) const;
 
     private:
         LevelMapBSPNodePtr m_root;

@@ -1018,10 +1018,18 @@ void DX::GameResources::PlayerShoot()
                 hit.y = m_camera.m_height-m_camera.m_pitchYaw.x+m_random.GetF(-0.15f,0.15f);
                 m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hit));
             }
-        }
-        
-            
+        }   
     }
+}
 
 
+void DX::GameResources::OpenDoor(uint32_t index)
+{
+
+}
+
+
+void DX::GameResources::OpenRoomDoors()
+{
+    
 }

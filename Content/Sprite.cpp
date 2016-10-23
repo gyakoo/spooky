@@ -79,7 +79,7 @@ namespace SpookyAdulthood
         }
     }
     
-    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth, bool constraintY, bool fullBillboard)
+    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth, bool constraintY, bool fullBillboard, float rotY)
     {
         DX::ThrowIfFalse(m_rendering[R3D]); // Begin not called
 
@@ -91,7 +91,16 @@ namespace SpookyAdulthood
 
         const float x = m_camPosition.x - position.x;
         const float y = m_camPosition.z - position.z;
-        SpriteRender sprR = { (size_t)spriteIndex, position, size, x*x + y*y, false, disableDepth, constraintY, fullBillboard };
+        SpriteRender sprR;
+        sprR.m_index = (size_t)spriteIndex;
+        sprR.m_position = position;
+        sprR.m_size = size;
+        sprR.m_distSqOrRot = x*x + y*y;
+        sprR.m_rotY = rotY;
+        sprR.m_isAnim = false;
+        sprR.m_disableDepth = disableDepth;
+        sprR.m_constraintY = constraintY;
+        sprR.m_fullBillboard = fullBillboard;
         m_spritesToRender[R3D].push_back(sprR);
     }
 
@@ -186,12 +195,22 @@ namespace SpookyAdulthood
             const auto& position = sprI.m_position;
             const auto& size = sprI.m_size;
 
-            // billboard constrained to up vector or full billboard?
-            XMMATRIX mr = sprI.m_constraintY ? m_camInvYaw : XMMatrixIdentity();
-            if (sprI.m_constraintY && sprI.m_fullBillboard)
-                mr = XMMatrixMultiply(m_camInvPitch, mr);
+            // rotation for the quad
+            XMMATRIX mr;
+            if (sprI.m_constraintY)
+            {
+                if ( sprI.m_fullBillboard )
+                    mr = XMMatrixMultiply(m_camInvPitch, mr); // billboard
+                else
+                    mr = m_camInvYaw; // Y-constrained billboard
+            }
+            else
+                mr = XMMatrixRotationY(sprI.m_rotY); // Normal + specific rotation Y
+
+            // translation
             mr.r[3] = XMVectorSet(position.x, position.y, position.z, 1.0f);
 
+            // scaling
             XMMATRIX ms = XMMatrixScaling(size.x, size.y, 1.0f);
 
             // prepare buffer for VS
@@ -300,7 +319,16 @@ namespace SpookyAdulthood
             return;
 
         XMFLOAT3 pos(position.x, position.y, 0.0f);
-        SpriteRender sprR = { (size_t)spriteIndex, pos, size, rot, false };
+        SpriteRender sprR;
+        sprR.m_index = (size_t)spriteIndex;
+        sprR.m_position = pos;
+        sprR.m_size = size;
+        sprR.m_distSqOrRot = rot;
+        sprR.m_rotY = 0.0f;
+        sprR.m_isAnim = false;
+        sprR.m_disableDepth = false;
+        sprR.m_constraintY = false;
+        sprR.m_fullBillboard = false;
         m_spritesToRender[R2D].push_back(sprR);
     }
 
@@ -312,7 +340,16 @@ namespace SpookyAdulthood
         if (ai.m_animIndex < 0 || ai.m_animIndex >= (int)m_animations.size()) return;
 
         XMFLOAT3 pos(position.x, position.y, 0.0f);
-        SpriteRender sprR = { (size_t)instIndex, pos, size, rot, true };
+        SpriteRender sprR;
+        sprR.m_index = (size_t)instIndex;
+        sprR.m_position = pos;
+        sprR.m_size = size;
+        sprR.m_distSqOrRot = rot;
+        sprR.m_rotY = 0.0f;
+        sprR.m_isAnim = true;
+        sprR.m_disableDepth = false;
+        sprR.m_constraintY = false;
+        sprR.m_fullBillboard = false;
         m_spritesToRender[R2D].push_back(sprR);
     }
 
