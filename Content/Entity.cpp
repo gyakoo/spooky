@@ -332,9 +332,9 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     const float ypos = -0.7f;
     sprite.Draw2D(m_spriteIndices[PUMPKIN], XMFLOAT2(offsx*0.8f, ypos + offsy), size, 0.0f); // pumpkins
     sprite.Draw2D(m_spriteIndices[CANDIES], XMFLOAT2(offsx*0.7f, ypos + offsy*1.1f), size, 0.0f); // candies
-    sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, ypos + offsy - t*0.1f), size, 0.0f); // cannon
-    sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, ypos + offsy - t*0.1f), size, 0.0f); // flashlight
-    sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, ypos + offsy), size, 0.0f);
+    sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, ypos + offsy - t*0.25f), size, 0.0f); // cannon
+    sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, ypos + offsy - t*0.25f), size, 0.0f); // flashlight
+    sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, ypos + offsy-t*0.25f), size, 0.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
