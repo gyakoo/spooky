@@ -280,9 +280,10 @@ void EntityManager::CreateDeviceDependentResources()
     // TEST
     //AddEntity(std::make_shared<EnemyFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
     //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
-    AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
-    AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
-    AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3,0,2)));
+    //AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
+    //AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
+    AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
+    AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
 }
 
 void EntityManager::ReleaseDeviceDependentResources()
@@ -812,7 +813,79 @@ bool EnemyGirl::GetNextTargetPoint()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////// BLACK HANDS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EnemyBlackHands::EnemyBlackHands(const XMUINT2& tile)
+EnemyBlackHands::EnemyBlackHands(const XMUINT2& tile, int n)
 {
+    //m_flags &= ~ACCEPT_RAYCAST;
+    auto& rnd = DX::GameResources::instance->m_random;
+    float x = (float)tile.x;
+    float z = (float)tile.y;
+    m_size = XMFLOAT2(1.0f, 0.50f);
+    m_pos = XMFLOAT3(x + 0.5f, 0.25f, z + 0.5f);
+    m_hands.reserve(n);
+    Hand h; 
+    h.distToCamSq = 0.0f;
+    for (int i = 0; i < n; ++i)
+    {
+        h.pos.x = rnd.GetF(x, x + 1.0f);
+        h.pos.z = rnd.GetF(z, z + 1.0f);
+        h.size = XMFLOAT2(rnd.GetF(0.3f, 0.45f), rnd.GetF(0.3f, 0.45f));
+        h.pos.y = h.size.y*0.5f;
+        h.t = rnd.GetF(0.0f, 5.0f);
+        m_hands.push_back(h);
+    }
+}
 
+void EnemyBlackHands::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    if (m_hands.empty()) return;
+    EntityEnemyBase::Update(stepTime, camera);
+    auto gameRes = DX::GameResources::instance;
+    UpdateSort(camera); 
+    
+    for (auto& h : m_hands)
+    {
+        h.t += stepTime;
+    }
+}
+
+void EnemyBlackHands::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
+{
+    if (pass == PASS_SPRITE3D)
+    {
+        XMFLOAT3 p;
+        for (const auto& h : m_hands)
+        {
+            p.x = h.pos.x;
+            p.y = h.pos.y + sin(h.t*8.0f)*h.size.y*0.5f;
+            p.z = h.pos.z;
+            sprite.Draw3D(1, p, h.size, m_modulate );
+        }
+    }
+}
+
+void EnemyBlackHands::DoHit()
+{
+    ModulateToColor(XMFLOAT4(1, 0, 0, 1), 0.5f);
+    ShootToPlayer(1, 4.0f, XMFLOAT3(0, 0.20f, 0), m_hands.back().size);
+    m_hands.pop_back();
+    if (m_hands.empty())
+        Invalidate();
+}
+
+void EnemyBlackHands::UpdateSort(const CameraFirstPerson& camera)
+{
+    auto gameRes = DX::GameResources::instance;
+    const int ndx = (gameRes->m_frameCount % m_hands.size()); // every frame we compute distance to diff hand
+    
+    if (ndx == 0)// every time we compute dist to all hands, we sort them (we pay the first time)
+    {
+        std::sort(m_hands.begin(), m_hands.end(), [this](const auto& a, const auto& b) -> bool
+        {
+            return a.distToCamSq > b.distToCamSq;
+        });
+    }
+    
+    auto& h = m_hands[ndx];
+    auto cp = camera.GetPosition();
+    h.distToCamSq = XM3LenSq(XM3Sub(h.pos, cp));
 }

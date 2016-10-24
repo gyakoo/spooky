@@ -220,8 +220,22 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyBlackHands : public EntityEnemyBase
     {
-        EnemyBlackHands(const XMUINT2& TILE);
+        struct Hand
+        {
+            XMFLOAT3 pos;
+            XMFLOAT2 size;
+            float distToCamSq;
+            float t;
+        };
+        EnemyBlackHands(const XMUINT2& tile, int n=16);
 
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
+        virtual void DoHit();  
+        void UpdateSort(const CameraFirstPerson& camera);
+
+
+        std::vector<Hand> m_hands;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
