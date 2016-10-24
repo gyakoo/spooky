@@ -13,7 +13,7 @@ using namespace SpookyAdulthood;
 Entity::Entity(int flags)
     : m_pos(0,0,0), m_size(1,1), m_rotation(0), m_spriteIndex(-1)
     , m_flags(flags), m_timeOut(FLT_MAX)//, m_distToCamSq(FLT_MAX)
-    , m_totalTime(0.0f), m_modulate(1,1,1,1)
+    , m_totalTime(0.0f), m_modulate(1,1,1,1), m_invalidateReason(NONE_i)
 {
 }
 
@@ -58,8 +58,15 @@ bool Entity::IsActive() const
     return !isInactive;
 }
 
-void Entity::Invalidate()
+bool Entity::IsValid() const
 {
+    const bool isInvalid = (m_flags & INVALID) != 0;
+    return !isInvalid;
+}
+
+void Entity::Invalidate(InvReason reason)
+{
+    m_invalidateReason = reason;
     m_flags |= INVALID;
 }
 
@@ -103,10 +110,23 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
                 e->m_flags |= Entity::INVALID;
             else
                 e->m_totalTime += dt;
-            toDel = ((*it)->m_flags & Entity::INVALID) != 0;
-        }
+            toDel = !(*it)->IsValid();
+        }        
 
-        it = toDel ? m_entities.erase(it) : it + 1;
+        if (toDel)
+        {
+            switch ((*it)->m_invalidateReason)
+            {
+            case Entity::KILLED:
+                break;
+            }
+
+            it = m_entities.erase(it);            
+        }
+        else
+        {
+            ++it;
+        }
     }
     m_duringUpdate = false;
 
@@ -120,7 +140,7 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
     // test
     if (GlobalFlags::SpawnProjectile)
     {
-        auto proj = std::make_shared<EntityProjectile>(camera.GetPosition(), 19, EntityProjectile::STRAIGHT, EntityProjectile::FREE, 16.0f, camera.m_forward);
+        auto proj = std::make_shared<EntityProjectile>(camera.GetPosition(), 19, 16.0f, camera.m_forward);
         AddEntity(proj);
         GlobalFlags::SpawnProjectile = false;
     }
@@ -280,8 +300,8 @@ void EntityManager::CreateDeviceDependentResources()
     // TEST
     //AddEntity(std::make_shared<EnemyFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
     //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
-    //AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
-    //AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
+    AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
+    AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
     AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
     AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
 }
@@ -338,11 +358,9 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////// PROJECTILE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, float speed, const XMFLOAT3& dir)
-    : Entity(SPRITE3D | ANIMATION3D), m_firstTime(true), m_speed(speed)
+EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float speed, const XMFLOAT3& dir, bool receiveHit )
+    : Entity(SPRITE3D | ANIMATION3D | (receiveHit?ACCEPT_RAYCAST:0)), m_firstTime(true), m_speed(speed)
 {
-    if (behavior == FOLLOWER && target == FREE)
-        throw std::exception("Follower behavior must have a target");
     m_collidePlayer = true;
     m_pos = pos;
     m_dir = dir;
@@ -354,14 +372,6 @@ EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior 
 
 void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
 {
-    if (m_target == PLAYER)
-    {
-        if (m_behavior == FOLLOWER || (m_behavior == STRAIGHT && m_firstTime))
-        {
-            const auto cp = camera.GetPosition();
-            m_dir = XM3Normalize(XM3Sub(cp, m_pos));
-        }
-    }
     m_firstTime = false;
 
     XMFLOAT3 newPos = XM3Mad(m_pos, m_dir, m_speed*stepTime);
@@ -400,6 +410,11 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     {
         m_pos = newPos;
     }
+}
+
+void EntityProjectile::DoHit()
+{
+    Invalidate(KILLED);
 }
 
 
@@ -500,8 +515,7 @@ void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT
     XMFLOAT3 toPl = XM3Sub(gameRes->m_camera.GetPosition(), origin);
     XM3Normalize_inplace(toPl);
 
-    auto proj = std::make_shared<EntityProjectile>(
-        origin, projSprIndex, EntityProjectile::STRAIGHT, EntityProjectile::FREE, speed, toPl);
+    auto proj = std::make_shared<EntityProjectile>(origin, projSprIndex, speed, toPl);
     proj->m_size = size;
     gameRes->m_entityMgr.AddEntity(proj);
 }
@@ -799,7 +813,7 @@ bool EnemyGirl::GetNextTargetPoint()
 
     if (c == 0)
     {
-        Invalidate(); // stuck, she dies, poor little creature
+        Invalidate(KILLED); // stuck, she dies, poor little creature
         return false;
     }
 
@@ -869,7 +883,7 @@ void EnemyBlackHands::DoHit()
     ShootToPlayer(1, 4.0f, XMFLOAT3(0, 0.20f, 0), m_hands.back().size);
     m_hands.pop_back();
     if (m_hands.empty())
-        Invalidate();
+        Invalidate(KILLED);
 }
 
 void EnemyBlackHands::UpdateSort(const CameraFirstPerson& camera)

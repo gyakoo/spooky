@@ -31,6 +31,12 @@ namespace SpookyAdulthood
             INACTIVE=1<<8
         };
 
+        enum InvReason
+        {
+            NONE_i,
+            KILLED
+        };
+
         enum RenderPass { PASS_SPRITE3D, PASS_SPRITE2D, PASS_3D };
     public:
         Entity(int flags=NONE);        
@@ -43,7 +49,8 @@ namespace SpookyAdulthood
         bool SupportPass(RenderPass pass) const;        
         bool SupportRaycast() const;
         bool IsActive() const;
-        void Invalidate();
+        bool IsValid() const;
+        void Invalidate(InvReason reason=NONE_i);
 
         friend class EntityManager;
         XMFLOAT3 m_pos;
@@ -54,6 +61,7 @@ namespace SpookyAdulthood
         int m_flags;
         float m_timeOut;
         float m_totalTime;
+        InvReason m_invalidateReason;
         bool m_constraintY;
     };
 
@@ -107,14 +115,11 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityProjectile : public Entity
     {
-        enum Behavior{ STRAIGHT, FOLLOWER };
-        enum Target { PLAYER, FREE };
-        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, Behavior behavior, Target target, float speed, const XMFLOAT3& dir=XMFLOAT3(0,0,0));
+        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float speed, const XMFLOAT3& dir=XMFLOAT3(0,0,0), bool receiveHit=false);
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-
-        Behavior m_behavior;
-        Target m_target;
+        virtual void DoHit();
+        
         XMFLOAT3 m_dir;
         float m_speed;
         bool m_firstTime;
