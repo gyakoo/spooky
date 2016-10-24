@@ -13,7 +13,7 @@ using namespace SpookyAdulthood;
 Entity::Entity(int flags)
     : m_pos(0,0,0), m_size(1,1), m_rotation(0), m_spriteIndex(-1)
     , m_flags(flags), m_timeOut(FLT_MAX)//, m_distToCamSq(FLT_MAX)
-    , m_totalTime(0.0f)
+    , m_totalTime(0.0f), m_modulate(1,1,1,1)
 {
 }
 
@@ -29,7 +29,7 @@ void Entity::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteMana
     if ((m_flags & SPRITE3D) != 0)
     {
         if (pass == PASS_SPRITE3D)
-            sprite.Draw3D(m_spriteIndex, m_pos, m_size);
+            sprite.Draw3D(m_spriteIndex, m_pos, m_size, m_modulate);
     }
     else if ((m_flags & SPRITE2D) != 0)
     {
@@ -371,6 +371,8 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     XMFLOAT3 hit;
     bool wasHit = false;
     wasHit = map.RaycastSeg(m_pos, newPos, hit, 0.5f); // against level?
+    if ( !wasHit && newPos.y <= m_size.y*0.5f )
+        wasHit = true;
 
     if (!wasHit) // against player?
     {
@@ -379,11 +381,8 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
         const float plRad = camera.m_radiusCollide;
         wasHit = distToPl < (plRad*plRad);
         if (wasHit)
-        {
-            gameRes->FlashScreen(1.0f, XMFLOAT4(1, 0, 0, 1));
-            gameRes->SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
-            gameRes->SoundPlay(DX::GameResources::SFX_HIT0, false);
-        }
+            gameRes->HitPlayer();
+
     }
     else
     {
@@ -466,11 +465,32 @@ void EntityTeleport::Update(float stepTime, const CameraFirstPerson& camera)
 // ///////////////////////////////////////////////// ENEMY BASE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EntityEnemyBase::EntityEnemyBase()
-    : Entity(SPRITE3D | ACCEPT_RAYCAST)
+    : Entity(SPRITE3D | ACCEPT_RAYCAST), m_modulateTime(-1.0f)
 {
 }
 
-void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs)
+void EntityEnemyBase::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    if (m_modulateTime >= 0.0f)
+    {
+        const float s = (std::max(m_modulateTime, 0.0f) / m_modulateDuration);
+        const float onemins = 1.0f - s;
+        m_modulate.x = s*m_modulateTargetColor.x + onemins;
+        m_modulate.y = s*m_modulateTargetColor.y + onemins;
+        m_modulate.z = s*m_modulateTargetColor.z + onemins;
+        m_modulate.w = s*m_modulateTargetColor.w + onemins;
+    }
+    m_modulateTime -= stepTime;
+}
+
+void EntityEnemyBase::ModulateToColor(const XMFLOAT4& color, float duration)
+{
+    m_modulateDuration = m_modulateTime = duration;
+    m_modulateTargetColor = color;
+}
+
+
+void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size)
 {
     auto gameRes = DX::GameResources::instance;
     auto& rnd = gameRes->m_random;
@@ -481,6 +501,7 @@ void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT
 
     auto proj = std::make_shared<EntityProjectile>(
         origin, projSprIndex, EntityProjectile::STRAIGHT, EntityProjectile::FREE, speed, toPl);
+    proj->m_size = size;
     gameRes->m_entityMgr.AddEntity(proj);
 }
 
@@ -529,6 +550,7 @@ EnemyPuky::~EnemyPuky()
 
 void EnemyPuky::Update(float stepTime, const CameraFirstPerson& camera)
 {
+    EntityEnemyBase::Update(stepTime, camera);
     m_pos.y = m_origin.y + sin(m_totalTime)*stepTime;
 }
 
@@ -552,12 +574,14 @@ void EnemyTreeBlack::Render(RenderPass pass, const CameraFirstPerson& camera, Sp
 
 void EnemyTreeBlack::Update(float stepTime, const CameraFirstPerson& camera)
 {
+    EntityEnemyBase::Update(stepTime, camera);
+
     m_timeToNextShoot -= stepTime;
     if (m_timeToNextShoot <= 0.0f)
     {
         auto& rnd = DX::GameResources::instance->m_random;
         const XMFLOAT3 offsets[2] = { XMFLOAT3(0,-.5f,0), XMFLOAT3(0,.45f,0) };
-        ShootToPlayer(19, 4.0f, offsets[rnd.Get01()]);
+        ShootToPlayer(19, 4.0f, offsets[rnd.Get01()], XMFLOAT2(0.5f, 0.5f));
         m_timeToNextShoot = m_shootEvery - m_timeToNextShoot;
     }
 }
@@ -576,6 +600,8 @@ EnemyGargoyle::EnemyGargoyle(const XMFLOAT3& pos, float minDist)
 
 void EnemyGargoyle::Update(float stepTime, const CameraFirstPerson& camera)
 {
+    EntityEnemyBase::Update(stepTime, camera);
+
     if (m_totalTime > 0.40f)
     {
         const float curDistSq = DistSqToPlayer();
@@ -585,7 +611,7 @@ void EnemyGargoyle::Update(float stepTime, const CameraFirstPerson& camera)
             if (m_timeToNextShoot <= 0.0f)
             {
                 auto gameRes = DX::GameResources::instance;
-                ShootToPlayer(19, 3.0f, XMFLOAT3(0, 0.5f, 0));
+                ShootToPlayer(19, 3.0f, XMFLOAT3(0, 0.5f, 0), XMFLOAT2(0.5f,0.5f));
                 m_timeToNextShoot = gameRes->m_random.GetF(0.5f, 5.0f);
             }
         }
@@ -601,7 +627,7 @@ void EnemyGargoyle::Update(float stepTime, const CameraFirstPerson& camera)
 void EnemyGargoyle::DoHit()
 {
     // on hit, automatically shoots (if gargoyle is in shooting mode)
-    ShootToPlayer(19, 5.0f, XMFLOAT3(0, 0.5f, 0));
+    ShootToPlayer(19, 5.0f, XMFLOAT3(0, 0.5f, 0), XMFLOAT2(0.5f,0.5f));
     m_spriteIndex = 28;
 }
 
@@ -618,6 +644,8 @@ EnemyGirl::EnemyGirl(const XMFLOAT3& pos)
     m_waitingForNextTarget = -1.0f;
     m_speed = 1.0f;
     m_hitTime = -1.0f;
+    m_followingPlayer = -.1f;
+    m_timeToNextShoot = DX::GameResources::instance->m_random.GetF(0.0f, 10.0f);
     if (GetNextTargetPoint())
         m_state = GOING;
     else
@@ -626,6 +654,8 @@ EnemyGirl::EnemyGirl(const XMFLOAT3& pos)
 
 void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
 {
+    EntityEnemyBase::Update(stepTime, camera);
+
     m_waitingForNextTarget -= stepTime;
     auto gameRes = DX::GameResources::instance;
     switch (m_state)
@@ -636,7 +666,7 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
         {
             if (GetNextTargetPoint())
             {
-                m_speed = gameRes->m_random.GetF(0.5f, 4.5f);
+                m_speed = gameRes->m_random.GetF(2.0f, 4.5f);
                 m_state = GOING;
             }
             else
@@ -651,34 +681,58 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
             XMFLOAT3 dir;
             const float distToPlayerSq = DistSqToPlayer(&dir);
             bool move = true;
+            // close to player?
             if (distToPlayerSq <= 3.0f*3.0f || m_hitTime >= 0.0f)
             {
-                // close to player
-                m_speed = m_hitTime >= 0.0f ? 1.5f : 0.8f;
-                if ( (gameRes->m_frameCount % 3) == 0 )
-                    move = CanSeePlayer();
-            }
-            else
-            {
-                dir = XM3Sub(m_nextTargetPoint, m_pos);
-                const float distSq = XM3LenSq(dir);
-                if (distSq < 0.25f*0.25f)
+                m_followingPlayer += stepTime;
+                if (m_followingPlayer > 2.5f)
                 {
+                    // 2.5 seconds after following the player
                     move = false;
                 }
                 else
                 {
-                    XM3Mul_inplace(dir, 1.0f / sqrt(distSq)); // normalize dir to target
+                    if (distToPlayerSq <= gameRes->m_camera.RadiusCollideSq())
+                    {
+                        // catches the player
+                        gameRes->HitPlayer();
+                        move = false;
+                    }
+                    else
+                    {
+                        // following player, speed depending if girl was startled with shotgun or we were too close
+                        m_speed = m_hitTime >= 0.0f ? 2.5f : 1.5f;
+                        if ((gameRes->m_frameCount % 3) == 0)
+                            move = CanSeePlayer(); // every 3 frames checks for a line of sight when following
+                    }
+                }
+            }
+            else
+            {
+                // wandering, going to next target point
+                m_followingPlayer = -0.1f;
+                dir = XM3Sub(m_nextTargetPoint, m_pos);
+                const float distSq = XM3LenSq(dir);
+                if (distSq < 0.25f*0.25f)
+                {
+                    // reached goal
+                    move = false;
+                }
+                else
+                {
+                    // just linear move, direction
+                    XM3Mul_inplace(dir, 1.0f / sqrt(distSq)); 
                 }
             }
 
+            // girl has to move
             if (move)
             {
                 XM3Mad_inplace(m_pos, dir, m_speed*stepTime);
             }
             else
             {
-                // goal reached, wait to get next one
+                // girl won't move, next goal ?
                 m_waitingForNextTarget = gameRes->m_random.GetF(0.0f, 0.5f);
                 m_state = WAITING;
             }
@@ -687,12 +741,34 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
 
     // floating effect :)
     m_pos.y = 0.7f + sinf(m_totalTime*4.0f)*0.05f;
+
+    // check if it should shoot player
+    if (m_timeToNextShoot <= 0.0f)
+    {
+        ShootToPlayer(9, gameRes->m_random.GetF(3.0f, 5.0f), XMFLOAT3(-0.3f, 0, 0), XMFLOAT2(0.4f,0.2f));
+        m_timeToNextShoot = gameRes->m_random.GetF(1.0f, 10.0f);
+    }
+    m_timeToNextShoot -= stepTime;
     m_hitTime -= stepTime;
 }
 
 void EnemyGirl::DoHit()
 {
-    m_hitTime = DX::GameResources::instance->m_random.GetF(1.0f, 3.5f);
+    auto gameRes = DX::GameResources::instance;
+    if (m_followingPlayer >= 0.0f)
+    {
+        if (GetNextTargetPoint())
+        {
+            m_speed = gameRes->m_random.GetF(2.0f, 4.5f);
+            m_state = GOING;
+        }
+        m_hitTime = 0.0f;
+    }
+    else
+    {
+        m_hitTime = gameRes->m_random.GetF(1.0f, 3.5f);
+    }
+    ModulateToColor(XMFLOAT4(1, 0, 0, 1), 0.5f);
 }
 
 bool EnemyGirl::GetNextTargetPoint()
@@ -731,4 +807,12 @@ bool EnemyGirl::GetNextTargetPoint()
     m_nextTargetPoint.y = m_pos.y;
     m_nextTargetPoint.z = selected.y + 0.5f;
     return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// BLACK HANDS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EnemyBlackHands::EnemyBlackHands(const XMUINT2& tile)
+{
+
 }

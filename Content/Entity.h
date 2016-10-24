@@ -35,7 +35,6 @@ namespace SpookyAdulthood
     public:
         Entity(int flags=NONE);        
 
-    protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
         virtual void DoHit() {}
@@ -49,6 +48,7 @@ namespace SpookyAdulthood
         friend class EntityManager;
         XMFLOAT3 m_pos;
         XMFLOAT2 m_size;
+        XMFLOAT4 m_modulate;
         float m_rotation;
         int m_spriteIndex;
         int m_flags;
@@ -148,10 +148,16 @@ namespace SpookyAdulthood
         EntityEnemyBase();
 
     protected:
-        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size);
         LevelMapBSPNode* GetCurrentRoom();
         float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();
+        void ModulateToColor(const XMFLOAT4& color, float duration);
+
+        XMFLOAT4 m_modulateTargetColor;
+        float m_modulateTime;
+        float m_modulateDuration;
     };
 
 
@@ -196,6 +202,8 @@ namespace SpookyAdulthood
         eState m_state;
         float m_speed;
         float m_hitTime;
+        float m_followingPlayer;
+        float m_timeToNextShoot;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,8 +218,9 @@ namespace SpookyAdulthood
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EnemyBlackHand : public EntityEnemyBase
+    struct EnemyBlackHands : public EntityEnemyBase
     {
+        EnemyBlackHands(const XMUINT2& TILE);
 
     };
 

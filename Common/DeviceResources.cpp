@@ -765,6 +765,7 @@ DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
+    , m_invincibleTime(-1.0f)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -893,9 +894,11 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
     if (!m_readyToRender)
         return;
 
+    const float stepTime = (float)timer.GetElapsedSeconds();
     m_frameCount = timer.GetFrameCount();
-    m_flashScreenTime -= (float)timer.GetElapsedSeconds();
-    
+    m_flashScreenTime -= stepTime;
+    m_invincibleTime -= stepTime;
+
     // Update SPRITE MANAGER
     m_sprite.Update(timer);
     m_entityMgr.Update(timer, camera);
@@ -1065,6 +1068,17 @@ void DX::GameResources::OpenDoor(uint32_t index)
 void DX::GameResources::OpenRoomDoors()
 {
     
+}
+
+void DX::GameResources::HitPlayer()
+{
+    if (m_invincibleTime <= 0.0f)
+    {
+        FlashScreen(1.0f, XMFLOAT4(1, 0, 0, 1));
+        SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
+        SoundPlay(DX::GameResources::SFX_HIT0, false);
+        m_invincibleTime = 1.0f;
+    }
 }
 
 void DX::GameResources::GenerateNewLevel()

@@ -71,13 +71,14 @@ namespace DX
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffect>> m_soundEffects;
         concurrency::concurrent_vector<std::unique_ptr<DirectX::SoundEffectInstance>> m_sounds;
         RandomProvider m_random;
-        SpookyAdulthood::CameraFirstPerson m_camera;
+        SpookyAdulthood::CameraFirstPerson  m_camera;
 
         float m_levelTime;
         float m_flashScreenTime;
         XMFLOAT4 m_flashColor;
         bool m_readyToRender;
         uint32_t m_frameCount;
+        float m_invincibleTime;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundStop(uint32_t index)const;
@@ -93,6 +94,7 @@ namespace DX
         void OpenDoor(uint32_t index);
         void GenerateNewLevel();
         void SpawnPlayer();
+        void HitPlayer();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

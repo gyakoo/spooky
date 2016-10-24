@@ -8,7 +8,7 @@ CameraFirstPerson::CameraFirstPerson(float fovYDeg)
     , m_aspectRatio(1.0f), m_runningTime(0.0f)
     , m_near(-1), m_moving(false), m_leftDown(false)
     , m_timeShoot(-1.0f), m_timeToNextShoot(-1.0f)
-    , m_radiusCollide(CAM_DEFAULT_RADIUS*1.5f)
+    , m_radiusCollide(CAM_DEFAULT_RADIUS*2.0f)
 {
     m_camXZ = XMVectorSet(0, 0, 0, 0);
     XMFLOAT4X4 id;

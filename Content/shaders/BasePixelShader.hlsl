@@ -17,6 +17,7 @@ cbuffer constants
 {
     float4 texAtlasSize;  // xy=atlas size, z=global Time, w=aspect ratio
     float4 other; // x=color.rgb multiplier, y=0|1 all lit
+    float4 modulate;
 };
 
 
@@ -58,7 +59,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
     {
         //color.rgb *= saturate(1.0f - input.sPos.z / 6.0f);
     }
-    return color;
+    return color*modulate;
 }
 
 // blocky

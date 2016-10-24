@@ -739,7 +739,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     for (const auto& d : m_portals)
     {
         d.GetTransform(dp, rotY);
-        spr.Draw3D(24, dp, XMFLOAT2(1, 1.5f), false, false, false, rotY);
+        spr.Draw3D(24, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
     }
     spr.End3D();
 }
@@ -794,7 +794,10 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     //float t = std::max(std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(gameRes->m_flashScreenTime*0.7f, 0.0f));
     float t = std::max( 0.5f, std::max(gameRes->m_flashScreenTime*0.7f,0.0f));
     if (GlobalFlags::AllLit) t = 1.0f;
-    PixelShaderConstantBuffer pscb = { { 16,16, gameRes->m_levelTime,camera.m_aspectRatio }, {t,1.0f-int(GlobalFlags::AllLit),0,0} };
+    PixelShaderConstantBuffer pscb = { 
+        { 16,16, gameRes->m_levelTime,camera.m_aspectRatio }, 
+        {t,1.0f-int(GlobalFlags::AllLit),0,0},
+        {1,1,1,1} };
     context->UpdateSubresource1(gameRes->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, gameRes->m_basePSCB.GetAddressOf());
     context->PSSetShader(gameRes->m_basePS.Get(), nullptr, 0);

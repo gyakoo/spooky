@@ -17,6 +17,7 @@ namespace SpookyAdulthood
     {
         DirectX::XMFLOAT4 texAtlasSize;
         DirectX::XMFLOAT4 other;
+        DirectX::XMFLOAT4 modulate;
     };
 
 

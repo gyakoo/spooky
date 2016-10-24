@@ -79,7 +79,8 @@ namespace SpookyAdulthood
         }
     }
     
-    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth, bool constraintY, bool fullBillboard, float rotY)
+    void SpriteManager::Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, const XMFLOAT4& modulate, 
+        bool disableDepth, bool constraintY, bool fullBillboard, float rotY)
     {
         DX::ThrowIfFalse(m_rendering[R3D]); // Begin not called
 
@@ -101,6 +102,7 @@ namespace SpookyAdulthood
         sprR.m_disableDepth = disableDepth;
         sprR.m_constraintY = constraintY;
         sprR.m_fullBillboard = fullBillboard;
+        sprR.m_modulate = modulate;
         m_spritesToRender[R3D].push_back(sprR);
     }
 
@@ -152,15 +154,10 @@ namespace SpookyAdulthood
         context->IASetInputLayout(dxCommon->m_baseIL.Get());
         context->VSSetShader(dxCommon->m_baseVS.Get(), nullptr, 0);
         context->PSSetShader(dxCommon->m_basePS.Get(), nullptr, 0);        
-        //float t = std::max(std::min(camera.m_rightDownTime*2.0f, 1.f), std::max(dxCommon->m_flashScreenTime*0.35f, 0.0f));
-        float t = std::max(0.5f, std::max(dxCommon->m_flashScreenTime*0.35f, 0.0f));
-        if (GlobalFlags::AllLit) t = 1.0f;
-        PixelShaderConstantBuffer pscb = { { 1,1,dxCommon->m_levelTime,camera.m_aspectRatio }, { t,1.0f-int(GlobalFlags::AllLit),0,0} };
         context->OMSetBlendState(dxCommon->m_commonStates->AlphaBlend(), nullptr, 0xffffffff);
         auto rsState = GlobalFlags::DrawWireframe ? dxCommon->m_commonStates->Wireframe() : dxCommon->m_commonStates->CullNone();
         context->RSSetState(rsState);
-        context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
-        context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
+
         m_camInvYaw = XMMatrixRotationY(-camera.m_pitchYaw.y); // billboard oriented to cam (Y constrained)
         m_camInvPitch = XMMatrixRotationX(-camera.m_pitchYaw.x);
         m_cbData.view = camera.m_view;
@@ -217,6 +214,16 @@ namespace SpookyAdulthood
             XMStoreFloat4x4(&m_cbData.model, XMMatrixMultiplyTranspose(ms, mr));
 
             // render
+            float t = std::max(0.5f, std::max(dxCommon->m_flashScreenTime*0.35f, 0.0f));
+            if (GlobalFlags::AllLit) t = 1.0f;
+            PixelShaderConstantBuffer pscb = { 
+                { 1,1,dxCommon->m_levelTime,dxCommon->m_camera.m_aspectRatio },
+                { t, 1.0f - int(GlobalFlags::AllLit),0,0 },
+                sprI.m_modulate
+            };
+            context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
+            context->PSSetConstantBuffers(0, 1, dxCommon->m_basePSCB.GetAddressOf());
+
             auto depthS = sprI.m_disableDepth ? dxCommon->m_commonStates->DepthNone() : dxCommon->m_commonStates->DepthDefault();
             context->OMSetDepthStencilState(depthS, 0);
             ID3D11SamplerState* sampler = dxCommon->m_commonStates->PointClamp();   
@@ -329,6 +336,7 @@ namespace SpookyAdulthood
         sprR.m_disableDepth = false;
         sprR.m_constraintY = false;
         sprR.m_fullBillboard = false;
+        sprR.m_modulate = XMFLOAT4(1, 1, 1, 1);
         m_spritesToRender[R2D].push_back(sprR);
     }
 
@@ -350,6 +358,7 @@ namespace SpookyAdulthood
         sprR.m_disableDepth = false;
         sprR.m_constraintY = false;
         sprR.m_fullBillboard = false;
+        sprR.m_modulate = XMFLOAT4(1, 1, 1, 1);
         m_spritesToRender[R2D].push_back(sprR);
     }
 

@@ -16,9 +16,10 @@ namespace SpookyAdulthood
 
     struct SpriteRender
     {
-        size_t m_index; // if m_isAnim==true then index to m_animInstances
         XMFLOAT3 m_position;
         XMFLOAT2 m_size;
+        XMFLOAT4 m_modulate;
+        size_t m_index; // if m_isAnim==true then index to m_animInstances
         float m_distSqOrRot;
         float m_rotY;
         bool m_isAnim;
@@ -54,7 +55,8 @@ namespace SpookyAdulthood
 
         void Begin3D(const CameraFirstPerson& camera);
         void End3D();
-        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, bool disableDepth=false, bool constraintY = true, bool fullBillboard=false, float rotY=0.0f);
+        void Draw3D(int spriteIndex, const XMFLOAT3& position, const XMFLOAT2& size, const XMFLOAT4& modulate,
+            bool disableDepth=false, bool constraintY = true, bool fullBillboard=false, float rotY=0.0f);
         
         void Begin2D(const CameraFirstPerson& camera);
         void End2D();

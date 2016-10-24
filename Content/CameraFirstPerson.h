@@ -17,11 +17,12 @@ namespace SpookyAdulthood
         void ComputeProjection(float fovAngleYRad, float aspectRatio, float Near, float Far, const XMFLOAT4X4& orientationMatrix);
         void ComputeViewLookAt(const XMFLOAT3& eye, const XMFLOAT3& at, const XMFLOAT3& up = XMFLOAT3(0, 1, 0));
         template<typename T, typename A>
-        void Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun);
-        XMFLOAT3 GetPosition() const { return m_xyz; }
-        XMFLOAT3 GetPositionWithMovement() const { return m_movxyz; }
+        inline void Update(DX::StepTimer const& timer, T& collisionFun, A& actionFun);
+        inline XMFLOAT3 GetPosition() const { return m_xyz; }
+        inline XMFLOAT3 GetPositionWithMovement() const { return m_movxyz; }
         void SetPosition(const XMFLOAT3& p);
         float ComputeHeightAtHit(const XMFLOAT3& hit);
+        inline float RadiusCollideSq() const { return m_radiusCollide*m_radiusCollide; }
 
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_view;
