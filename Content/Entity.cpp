@@ -7,6 +7,7 @@
 
 using namespace SpookyAdulthood;
 
+static const XMFLOAT4 XM4RED(1, 0, 0, 1);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////// BASE ENTITY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -14,6 +15,7 @@ Entity::Entity(int flags)
     : m_pos(0,0,0), m_size(1,1), m_rotation(0), m_spriteIndex(-1)
     , m_flags(flags), m_timeOut(FLT_MAX)//, m_distToCamSq(FLT_MAX)
     , m_totalTime(0.0f), m_modulate(1,1,1,1), m_invalidateReason(NONE_i)
+    , m_life(-1.0f)
 {
 }
 
@@ -29,7 +31,15 @@ void Entity::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteMana
     if ((m_flags & SPRITE3D) != 0)
     {
         if (pass == PASS_SPRITE3D)
+        {
             sprite.Draw3D(m_spriteIndex, m_pos, m_size, m_modulate);
+            if (m_life >= 0.0f)
+            {
+                const XMFLOAT3 barp(m_pos.x, m_pos.y + m_size.y*0.5f, m_pos.z);
+                const XMFLOAT2 bars(m_size.x, 0.015f*m_life);
+                sprite.Draw3D(29, barp, bars, XM4RED);
+            }
+        }
     }
     else if ((m_flags & SPRITE2D) != 0)
     {
@@ -294,6 +304,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\teleport1.png"); // 26
     sprite.CreateSprite(L"assets\\sprites\\teleport2.png"); // 27
     sprite.CreateSprite(L"assets\\sprites\\garg2.png"); // 28
+    sprite.CreateSprite(L"assets\\textures\\white.png"); // 29
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 
@@ -783,7 +794,11 @@ void EnemyGirl::DoHit()
     {
         m_hitTime = gameRes->m_random.GetF(1.0f, 3.5f);
     }
-    ModulateToColor(XMFLOAT4(1, 0, 0, 1), 0.5f);
+    ModulateToColor(XM4RED, 0.5f);
+
+    XMFLOAT3 ppos = gameRes->m_camera.GetPosition();
+    ppos.y = 0.0f;
+
 }
 
 bool EnemyGirl::GetNextTargetPoint()
@@ -828,6 +843,7 @@ bool EnemyGirl::GetNextTargetPoint()
 // //////////////////////////////////////// BLACK HANDS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EnemyBlackHands::EnemyBlackHands(const XMUINT2& tile, int n)
+    : m_origN(n)
 {
     //m_flags &= ~ACCEPT_RAYCAST;
     auto& rnd = DX::GameResources::instance->m_random;
@@ -847,6 +863,7 @@ EnemyBlackHands::EnemyBlackHands(const XMUINT2& tile, int n)
         h.t = rnd.GetF(0.0f, 5.0f);
         m_hands.push_back(h);
     }
+    m_life = 1.0f;
 }
 
 void EnemyBlackHands::Update(float stepTime, const CameraFirstPerson& camera)
@@ -879,11 +896,12 @@ void EnemyBlackHands::Render(RenderPass pass, const CameraFirstPerson& camera, S
 
 void EnemyBlackHands::DoHit()
 {
-    ModulateToColor(XMFLOAT4(1, 0, 0, 1), 0.5f);
+    ModulateToColor(XM4RED, 0.5f);
     ShootToPlayer(1, 4.0f, XMFLOAT3(0, 0.20f, 0), m_hands.back().size);
     m_hands.pop_back();
     if (m_hands.empty())
         Invalidate(KILLED);
+    m_life = float(m_hands.size()) / m_origN;
 }
 
 void EnemyBlackHands::UpdateSort(const CameraFirstPerson& camera)

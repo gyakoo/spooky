@@ -42,8 +42,9 @@ namespace SpookyAdulthood
         float m_runningTime;
         float m_timeShoot;
         float m_timeToNextShoot;
-        bool m_leftDown;
         float m_rightDownTime;
+        float m_shotgunRange;
+        bool m_leftDown;
     };
 
     // there are better(faster) ways to do this, anyways

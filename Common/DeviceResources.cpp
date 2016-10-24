@@ -1018,7 +1018,6 @@ void DX::GameResources::PlayerShoot()
         XMMatrixMultiply(XMMatrixRotationX(A+Rr), XMMatrixRotationY(-A-Rr))
     };
 #undef Rr
-    const float SHOOT_RANGE = 5.0f;
     const XMVECTOR fw = XMLoadFloat3(&m_camera.m_forward);
     XMFLOAT3 newfw, endpos, hitE, hitM;
     bool wasHitE, wasHitM;
@@ -1027,7 +1026,7 @@ void DX::GameResources::PlayerShoot()
     for (int i = 0; i < 7; ++i)
     {
         XMStoreFloat3(&newfw, XMVector3TransformNormal(fw, rotations[i]));
-        endpos = XM3Mad(startpos, newfw, SHOOT_RANGE);
+        endpos = XM3Mad(startpos, newfw, m_camera.m_shotgunRange);
 
         // we cast this ray against entities then map
         wasHitE = m_entityMgr.RaycastSeg(startpos, endpos, hitE, -1.0f, &eNdx);

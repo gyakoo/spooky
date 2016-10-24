@@ -61,6 +61,7 @@ namespace SpookyAdulthood
         int m_flags;
         float m_timeOut;
         float m_totalTime;
+        float m_life;
         InvReason m_invalidateReason;
         bool m_constraintY;
     };
@@ -239,7 +240,7 @@ namespace SpookyAdulthood
         virtual void DoHit();  
         void UpdateSort(const CameraFirstPerson& camera);
 
-
+        int m_origN;
         std::vector<Hand> m_hands;
     };
 
