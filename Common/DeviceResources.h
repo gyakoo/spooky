@@ -77,6 +77,7 @@ namespace DX
         float m_flashScreenTime;
         XMFLOAT4 m_flashColor;
         bool m_readyToRender;
+        uint32_t m_frameCount;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundStop(uint32_t index)const;

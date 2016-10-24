@@ -30,12 +30,12 @@ namespace SpookyAdulthood
         uint32_t SizeX() const { return m_x1 - m_x0 + 1; }
         uint32_t SizeY() const { return m_y1 - m_y0 + 1; }
         uint32_t CountTiles() const { return SizeX() * SizeY(); }
-        bool operator ==(const LevelMapBSPTileArea& rhs) const {
+        inline bool operator ==(const LevelMapBSPTileArea& rhs) const {
             return m_x0 == rhs.m_x0 && m_x1 == rhs.m_x1 && m_y0 == rhs.m_y0 && m_y1 == rhs.m_y1;
         }
-        bool Contains(const XMUINT2& o) {
+        inline bool Contains(const XMUINT2& o) const {
             return o.x >= m_x0 && o.x <= m_x1 && o.y >= m_y0 && o.y <= m_y1;
-        }
+        }        
 
         uint32_t m_x0, m_x1;
         uint32_t m_y0, m_y1;
@@ -51,12 +51,13 @@ namespace SpookyAdulthood
         enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_VERT, WALL_HORIZ };
         enum PortalDir { NONE, NORTH, SOUTH, WEST, EAST };
 
-        bool IsLeaf() const { return m_type == NODE_ROOM; }
-        bool IsWall() const { return m_type == WALL_VERT || m_type == WALL_HORIZ;  }
+        inline bool IsLeaf() const { return m_type == NODE_ROOM; }
+        inline bool IsWall() const { return m_type == WALL_VERT || m_type == WALL_HORIZ;  }
         void CreateDeviceDependentResources(const LevelMap& lmap, const std::shared_ptr<DX::DeviceResources>& device);
         void ReleaseDeviceDependentResources();
         PortalDir GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y);
         void GenerateCollisionSegments(const LevelMap& lmap);
+        bool IsPillar(const XMUINT2& ppos)const;
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;

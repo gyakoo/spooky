@@ -134,6 +134,11 @@ inline XMFLOAT3 XM3Mad(const XMFLOAT3& a, const XMFLOAT3& b, float c)
     return XMFLOAT3(a.x + b.x*c, a.y + b.y*c, a.z + b.z*c);
 }
 
+inline void XM3Mad_inplace(XMFLOAT3& a, const XMFLOAT3& b, float c)
+{
+    a.x += b.x*c; a.y += b.y*c; a.z += b.z*c;
+}
+
 inline XMFLOAT3 XM3Neg(const XMFLOAT3& a)
 {
     return XMFLOAT3(-a.x, -a.y, -a.z);

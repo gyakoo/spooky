@@ -209,6 +209,9 @@
     <Image Include="Assets\sprites\teleport2.png">
       <Filter>Assets\img</Filter>
     </Image>
+    <Image Include="Assets\sprites\garg2.png">
+      <Filter>Assets\img</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

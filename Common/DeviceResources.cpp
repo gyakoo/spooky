@@ -893,6 +893,7 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
     if (!m_readyToRender)
         return;
 
+    m_frameCount = timer.GetFrameCount();
     m_flashScreenTime -= (float)timer.GetElapsedSeconds();
     
     // Update SPRITE MANAGER
@@ -1018,6 +1019,7 @@ void DX::GameResources::PlayerShoot()
     const XMVECTOR fw = XMLoadFloat3(&m_camera.m_forward);
     XMFLOAT3 newfw, endpos, hitE, hitM;
     bool wasHitE, wasHitM;
+    uint32_t eNdx;
     GlobalFlags::ShootHits = 0;
     for (int i = 0; i < 7; ++i)
     {
@@ -1025,7 +1027,7 @@ void DX::GameResources::PlayerShoot()
         endpos = XM3Mad(startpos, newfw, SHOOT_RANGE);
 
         // we cast this ray against entities then map
-        wasHitE = m_entityMgr.RaycastSeg(startpos, endpos, hitE);
+        wasHitE = m_entityMgr.RaycastSeg(startpos, endpos, hitE, -1.0f, &eNdx);
         wasHitM = m_map.RaycastSeg(startpos, endpos, hitM, -1.0f, -0.05f);
         
         if (wasHitE && wasHitM)
@@ -1041,6 +1043,7 @@ void DX::GameResources::PlayerShoot()
         {
             // hit only agains entity
             m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hitE));
+            m_entityMgr.DoHitOnEntity(eNdx);
             GlobalFlags::ShootHits++;
         }
         else if (wasHitM)

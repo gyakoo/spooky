@@ -972,7 +972,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
     m_dx = std::make_shared<NodeDXResources>();
 
     const auto& area = m_area;
-    const int pvc = m_pillars ? m_pillars->size() : 0;
+    const int pvc = m_pillars ? (int)m_pillars->size() : 0;
     std::vector<VertexPositionNormalColorTextureNdx> vertices;
     vertices.reserve(area.CountTiles() * 4 + pvc*16);
     std::vector<unsigned short> indices; 
@@ -1319,6 +1319,17 @@ void LevelMapBSPNode::GenerateCollisionSegments(const LevelMap& lmap)
         }
     }
 }
+
+bool LevelMapBSPNode::IsPillar(const XMUINT2& ppos)const
+{
+    if (!m_pillars) return false;
+    return std::find_if(m_pillars->begin(), m_pillars->end(), [ppos](const auto& p)->bool
+    {
+        return p.x == ppos.x && p.y == ppos.y;
+    }) != m_pillars->end();
+}
+
+
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////

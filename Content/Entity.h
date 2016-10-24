@@ -8,6 +8,7 @@ namespace SpookyAdulthood
 {
     struct CameraFirstPerson;
     class SpriteManager;
+    struct LevelMapBSPNode;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +38,8 @@ namespace SpookyAdulthood
     protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
-        
+        virtual void DoHit() {}
+
         float GetBoundingRadius() const;
         bool SupportPass(RenderPass pass) const;        
         bool SupportRaycast() const;
@@ -72,8 +74,10 @@ namespace SpookyAdulthood
         void RenderSprites3D(const CameraFirstPerson& camera);
         void RenderSprites2D(const CameraFirstPerson& camera);
         void RenderModel3D(const CameraFirstPerson& camera);
-        bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit);
-        bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f);
+        bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit, uint32_t* sprNdx=nullptr);
+        bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, uint32_t* sprNdx=nullptr);
+        void DoHitOnEntity(uint32_t ndx);
+        Entity& GetEntity(uint32_t ndx) { return *m_entities[ndx]; }
 
         static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
@@ -89,19 +93,6 @@ namespace SpookyAdulthood
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EntityFluffy : public Entity
-    {
-        EntityFluffy( const XMFLOAT3& pos);
-        ~EntityFluffy();
-
-    protected:
-        virtual void Update(float stepTime, const CameraFirstPerson& camera);
-
-        XMFLOAT3 m_origin;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityGun : public Entity
     {
         enum { PUMPKIN=0, CANDIES, CANNON, FLASHLIGHT, SPRITES_MAX };
@@ -111,28 +102,6 @@ namespace SpookyAdulthood
         int m_spriteIndices[SPRITES_MAX];
         int m_animIndex;
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EntityTreeBlack : public Entity
-    {
-        EntityTreeBlack(const XMFLOAT3& pos, float shootEverySecs=20.5f);
-        virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
-        void Shoot(const CameraFirstPerson& camera);
-
-        float m_shootEvery;
-        float m_timeToNextShoot;
-    };
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EntityGirl : public Entity
-    {
-
-    };
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,19 +133,92 @@ namespace SpookyAdulthood
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EntityDoor : public Entity
-    {
-        EntityDoor();
-    };
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EntityTeleport: public Entity
+    struct EntityTeleport : public Entity
     {
         EntityTeleport(const XMFLOAT3& pos);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         int m_dir;
     };
+    
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ////// ENEMIES
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityEnemyBase : public Entity
+    {
+        EntityEnemyBase();
+
+    protected:
+        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs);
+        LevelMapBSPNode* GetCurrentRoom();
+        float DistSqToPlayer(XMFLOAT3* dir=nullptr);
+        bool CanSeePlayer();
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyPuky : public EntityEnemyBase
+    {
+        EnemyPuky(const XMFLOAT3& pos);
+        ~EnemyPuky();
+
+    protected:
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+
+        XMFLOAT3 m_origin;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyTreeBlack : public EntityEnemyBase
+    {
+        EnemyTreeBlack(const XMFLOAT3& pos, float shootEverySecs = 20.5f);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
+
+        float m_shootEvery;
+        float m_timeToNextShoot;
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyGirl : public EntityEnemyBase
+    {
+        enum eState{ WAITING, GOING };
+
+        EnemyGirl(const XMFLOAT3& pos);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void DoHit();
+
+        bool GetNextTargetPoint();
+
+        LevelMapBSPNode* m_roomNode;
+        XMFLOAT3 m_nextTargetPoint;
+        float m_waitingForNextTarget;
+        eState m_state;
+        float m_speed;
+        float m_hitTime;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyGargoyle : public EntityEnemyBase
+    {
+        EnemyGargoyle(const XMFLOAT3& pos, float minDist=2.5f);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void DoHit();
+
+        float m_timeToNextShoot;
+        float m_minDistSq;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyBlackHand : public EntityEnemyBase
+    {
+
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /*struct EnemyBlackHand : public EntityEnemyBase
+    {
+
+    };*/
 
 };
