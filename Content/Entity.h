@@ -157,7 +157,7 @@ namespace SpookyAdulthood
 
     protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life=-1.0f);
+        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life=-1.0f, bool predict=false);
         LevelMapBSPNode* GetCurrentRoom();
         float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();

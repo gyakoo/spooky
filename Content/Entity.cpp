@@ -529,13 +529,18 @@ void EntityEnemyBase::ModulateToColor(const XMFLOAT4& color, float duration)
 }
 
 
-void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life)
+void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life, bool predict)
 {
     auto gameRes = DX::GameResources::instance;
     auto& rnd = gameRes->m_random;
+    auto& cam = gameRes->m_camera;
 
     XMFLOAT3 origin = XM3Add(m_pos, offs);
-    XMFLOAT3 toPl = XM3Sub(gameRes->m_camera.GetPosition(), origin);
+    XMFLOAT3 end = cam.GetPosition();
+    if (predict)
+        XM3Add_inplace(end, XM3Mul(cam.m_movDir, 32.0f));
+
+    XMFLOAT3 toPl = XM3Sub(end, origin);
     XM3Normalize_inplace(toPl);
 
     auto proj = std::make_shared<EntityProjectile>(origin, projSprIndex, speed, toPl, life>0.0f);
@@ -921,7 +926,7 @@ void EnemyBlackHands::Render(RenderPass pass, const CameraFirstPerson& camera, S
 void EnemyBlackHands::DoHit()
 {
     ModulateToColor(XM4RED, 0.5f);    
-    ShootToPlayer(1, RND.GetF(3.0f,4.5f), XMFLOAT3(0,CAM.m_height,0), m_hands.back().size, 0.1f);
+    ShootToPlayer(1, RND.GetF(3.0f,4.5f), XMFLOAT3(0,CAM.m_height,0), m_hands.back().size, 0.1f,true);
     m_hands.pop_back();
     if (m_hands.empty())
         Invalidate(KILLED);

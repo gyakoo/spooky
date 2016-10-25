@@ -25,26 +25,27 @@ namespace SpookyAdulthood
         inline float RadiusCollideSq() const { return m_radiusCollide*m_radiusCollide; }
 
         XMFLOAT4X4 m_projection;
+        XMFLOAT4X4 m_orientMatrix;
         XMFLOAT4X4 m_view;
         XMFLOAT2 m_pitchYaw;
-        bool m_running;
-        bool m_moving;
+        XMFLOAT3 m_movDir;        
+        XMVECTOR m_camXZ;
+        XMFLOAT3 m_xyz, m_movxyz;
+        XMFLOAT3 m_forward;
         float m_height;
         float m_radius;
         float m_radiusCollide;
         float m_aspectRatio;
         float m_fovAngleYRad;
-        float m_near, m_far;
-        XMFLOAT4X4 m_orientMatrix;
-        XMVECTOR m_camXZ;
-        XMFLOAT3 m_xyz, m_movxyz;
-        XMFLOAT3 m_forward;
+        float m_near, m_far;        
         float m_runningTime;
         float m_timeShoot;
         float m_timeToNextShoot;
         float m_rightDownTime;
         float m_shotgunRange;
         bool m_leftDown;
+        bool m_running;
+        bool m_moving;
     };
 
     // there are better(faster) ways to do this, anyways
@@ -124,7 +125,8 @@ namespace SpookyAdulthood
             XMVECTOR ri = ry.r[0];
             md = XMVectorSet(movSt, movSt, movSt, movSt);
             newPos = XMVectorMultiplyAdd(ri, md, newPos);
-            XMVECTOR movDir = XMVectorSubtract(newPos, m_camXZ);
+            XMStoreFloat3(&m_movDir, XMVectorSubtract(newPos, m_camXZ));
+            m_movDir.z = -m_movDir.z;
 
             // collision func
             XMVECTOR cp = m_camXZ, np = newPos;
@@ -140,6 +142,7 @@ namespace SpookyAdulthood
         else
         {
             m_moving = false;
+            m_movDir.x = m_movDir.y = m_movDir.z = 0.0f;
         }
 
         // walking pseudo effect
