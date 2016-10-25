@@ -188,6 +188,15 @@ namespace SpookyAdulthood
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyPumpkin : public EntityEnemyBase
+    {
+        EnemyPumpkin(const XMFLOAT3& pos);
+
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void DoHit();
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyTreeBlack : public EntityEnemyBase
     {
         EnemyTreeBlack(const XMFLOAT3& pos, float shootEverySecs = 20.5f);

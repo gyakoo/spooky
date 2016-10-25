@@ -317,19 +317,9 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\teleport2.png"); // 27
     sprite.CreateSprite(L"assets\\sprites\\garg2.png"); // 28
     sprite.CreateSprite(L"assets\\textures\\white.png"); // 29
+    sprite.CreateSprite(L"assets\\sprites\\pumpkin.png"); // 30
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
-
-    // TEST
-    //AddEntity(std::make_shared<EnemyFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
-    //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
-    for (int i = 0; i < 10; ++i)
-        AddEntity(std::make_shared<EnemyPuky>());
-    
-    //AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
-    //AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
-    //AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
-    AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
 }
 
 void EntityManager::ReleaseDeviceDependentResources()
@@ -580,17 +570,14 @@ bool EntityEnemyBase::CanSeePlayer()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////// PUKY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region PUKY
 EnemyPuky::EnemyPuky()
 {
     m_pos = XMFLOAT3(3, 1, 3);
     auto room = GetCurrentRoom();
     if (!room) throw std::exception("no room for puky");
-    const auto& a = room->m_area;
-    XMFLOAT3 p;
-    auto& r = RND;
-    p.x = r.GetF((float)a.m_x0, (float)a.m_x1);
-    p.y = r.GetF(0.3f, 0.8f);
-    p.z = r.GetF((float)a.m_y0, (float)a.m_y1);
+    XMFLOAT3 p = room->GetRandomXZ();
+    p.y = RND.GetF(0.3f, 0.8f);
     Init(p);
 }
 
@@ -655,6 +642,7 @@ void EnemyPuky::GetNextTarget()
     const XMFLOAT3 p(m_pos.x, 0.0f, m_pos.z);
     m_targetDir = XM3Normalize(XM3Sub(m_nextTarget, p));
 }
+#pragma endregion
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////// TREE BLACK
@@ -736,6 +724,7 @@ void EnemyGargoyle::DoHit()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////// GIRL
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma region GIRL
 EnemyGirl::EnemyGirl(const XMFLOAT3& pos)
 {
     // check which room am I
@@ -924,14 +913,13 @@ bool EnemyGirl::GetNextTargetPoint()
     m_nextTargetPoint.z = selected.y + 0.5f;
     return true;
 }
-
+#pragma endregion
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////// BLACK HANDS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EnemyBlackHands::EnemyBlackHands(const XMUINT2& tile, int n)
     : m_origN(n)
 {
-    //m_flags &= ~ACCEPT_RAYCAST;
     auto& rnd = RND;
     float x = (float)tile.x;
     float z = (float)tile.y;
@@ -1008,5 +996,31 @@ void EnemyBlackHands::UpdateSort(const CameraFirstPerson& camera)
     auto cp = camera.GetPosition();
     h.distToCamSq = XM3LenSq(h.pos, cp);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// PUMPKIN
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EnemyPumpkin::EnemyPumpkin(const XMFLOAT3& pos)
+{
+    m_spriteIndex = 30;
+    m_size = XMFLOAT2(0.25f, 0.25f);
+    m_pos = pos;
+    m_pos.y = m_size.y*0.5f;
+}
+
+void EnemyPumpkin::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    EntityEnemyBase::Update(stepTime, camera);
+    if (DistSqToPlayer() < camera.RadiusCollideSq()*16.0f && m_modulateTime <= 0.0f)
+    {
+        ModulateToColor(XM4RED, 0.3f);
+    }
+}
+
+void EnemyPumpkin::DoHit()
+{
+
+}
+
 #undef CAM
 #undef RND

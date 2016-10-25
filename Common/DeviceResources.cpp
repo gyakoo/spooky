@@ -1092,6 +1092,21 @@ void DX::GameResources::GenerateNewLevel()
 
     m_entityMgr.AddEntity(std::make_shared<EntityGun>()); // GUN
 
+
+    // // TEST
+    //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
+    auto room = m_map.GetLeafAt(m_camera.GetPosition()).get();
+    for (int i = 0; i < 10; ++i)
+    {
+        m_entityMgr.AddEntity(std::make_shared<EnemyPumpkin>(room->GetRandomXZ(XMFLOAT2(0.5f, 0.5f))));
+        m_entityMgr.AddEntity(std::make_shared<EnemyPuky>());
+    }
+
+    m_entityMgr.AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
+    m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
+    m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
+    m_entityMgr.AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
+
 }
 
 void DX::GameResources::SpawnPlayer()

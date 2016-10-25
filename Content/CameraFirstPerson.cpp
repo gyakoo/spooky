@@ -54,6 +54,13 @@ void CameraFirstPerson::SetPosition(const XMFLOAT3& p)
 {
     XMFLOAT3 _p(p.x, 0, -p.z);
     m_camXZ = XMLoadFloat3(&_p);
+
+
+    XMStoreFloat3(&m_xyz, m_camXZ);
+    m_movxyz = m_xyz;
+    m_movxyz.z = -m_movxyz.z;
+    m_xyz.y = m_height;
+    m_xyz.z = -m_xyz.z;
 }
 
 // this is wrong because 'l' is incorrect below as it lacks of component Y in hit

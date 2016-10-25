@@ -58,6 +58,7 @@ namespace SpookyAdulthood
         PortalDir GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y);
         void GenerateCollisionSegments(const LevelMap& lmap);
         bool IsPillar(const XMUINT2& ppos)const;
+        XMFLOAT3 GetRandomXZ(const XMFLOAT2& shrink=XMFLOAT2(0,0)) const;
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;

@@ -1332,6 +1332,16 @@ bool LevelMapBSPNode::IsPillar(const XMUINT2& ppos)const
     }) != m_pillars->end();
 }
 
+XMFLOAT3 LevelMapBSPNode::GetRandomXZ(const XMFLOAT2& shrink) const
+{
+    auto& r = DX::GameResources::instance->m_random;
+    XMFLOAT3 xz;
+    xz.x = r.GetF((float)m_area.m_x0+shrink.x, (float)m_area.m_x1-shrink.x);
+    xz.y = 0.0f,
+    xz.z = r.GetF((float)m_area.m_y0+shrink.y, (float)m_area.m_y1-shrink.y);
+    return xz;
+}
+
 
 #pragma endregion
 
