@@ -98,6 +98,12 @@ inline void XM3Mul_inplace(XMFLOAT3& a, float s)
     a.x *= s; a.y *= s; a.z *= s;
 }
 
+inline float XM3LenSq(const XMFLOAT3& a, const XMFLOAT3& b)
+{
+    const float xyz[3] = { a.x - b.x, a.y - b.y, a.z - b.z };
+    return xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2];
+}
+
 inline float XM3LenSq(const XMFLOAT3& a)
 {
     return a.x*a.x + a.y*a.y + a.z*a.z;

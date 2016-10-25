@@ -172,13 +172,19 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyPuky : public EntityEnemyBase
     {
+        EnemyPuky();
         EnemyPuky(const XMFLOAT3& pos);
-        ~EnemyPuky();
 
-    protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void DoHit();
+        void GetNextTarget();
+        void Init(const XMFLOAT3& pos);
+        bool OutOfBounds();
 
-        XMFLOAT3 m_origin;
+        XMFLOAT3 m_nextTarget;
+        XMFLOAT3 m_targetDir;
+        XMFLOAT2 m_bounds[2];
+        float m_speed, m_amplitude;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

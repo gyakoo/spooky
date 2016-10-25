@@ -266,7 +266,7 @@ bool EntityManager::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFL
     
     if (RaycastDir(origin, dir, outHit, sprNdx))
     {
-        const float distToHitSq = XM3LenSq(XM3Sub(outHit, origin));
+        const float distToHitSq = XM3LenSq(outHit,origin);
         const float compRad = optRad > 0.0f ? (optRad) : lenSq;
         return (distToHitSq <= compRad);
     }
@@ -323,9 +323,12 @@ void EntityManager::CreateDeviceDependentResources()
     // TEST
     //AddEntity(std::make_shared<EnemyFluffy>(XMFLOAT3(5.0f, 1.0f, 5.0f)), 10.0f);
     //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
-    AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
-    AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
-    AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
+    for (int i = 0; i < 10; ++i)
+        AddEntity(std::make_shared<EnemyPuky>());
+    
+    //AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
+    //AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
+    //AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
     AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
 }
 
@@ -412,8 +415,7 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     {
         XMFLOAT3 toPl = XM3Sub(camera.GetPosition(), newPos);
         float distToPl = XM3LenSq(toPl);
-        const float plRad = camera.m_radiusCollide;
-        wasHit = distToPl < (plRad*plRad);
+        wasHit = distToPl < camera.RadiusCollideSq();
         if (wasHit)
             gameRes->HitPlayer();
 
@@ -578,24 +580,80 @@ bool EntityEnemyBase::CanSeePlayer()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////// PUKY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EnemyPuky::EnemyPuky()
+{
+    m_pos = XMFLOAT3(3, 1, 3);
+    auto room = GetCurrentRoom();
+    if (!room) throw std::exception("no room for puky");
+    const auto& a = room->m_area;
+    XMFLOAT3 p;
+    auto& r = RND;
+    p.x = r.GetF((float)a.m_x0, (float)a.m_x1);
+    p.y = r.GetF(0.3f, 0.8f);
+    p.z = r.GetF((float)a.m_y0, (float)a.m_y1);
+    Init(p);
+}
+
 EnemyPuky::EnemyPuky(const XMFLOAT3& pos)
-    : m_origin(pos)
+{
+    Init(pos);    
+}
+
+void EnemyPuky::Init(const XMFLOAT3& pos)
 {
     m_spriteIndex = 0;
     m_pos = pos;
     m_size = XMFLOAT2(0.3f, 0.3f);
-
-}
-
-EnemyPuky::~EnemyPuky()
-{
-    m_pos.x = 0.0f;
+    auto room = GetCurrentRoom();
+    if (!room) throw std::exception("no room for puky");
+    const auto& a = room->m_area;
+    const float sxh = m_size.x*0.5f;
+    const float syh = m_size.y*0.5f;
+    m_bounds[0] = XMFLOAT2(a.m_x0 + sxh, a.m_y0 - sxh);
+    m_bounds[1] = XMFLOAT2(a.m_x1 + syh, a.m_y1 - syh);
+    GetNextTarget();
+    auto& r = RND;
+    m_totalTime = r.GetF(0.0f, 10.0f);
+    m_speed = r.GetF(1.0f, 4.5f);
+    m_amplitude = r.GetF(0.1f, 0.35f); 
 }
 
 void EnemyPuky::Update(float stepTime, const CameraFirstPerson& camera)
 {
     EntityEnemyBase::Update(stepTime, camera);
-    m_pos.y = m_origin.y + sin(m_totalTime)*stepTime;
+
+    const XMFLOAT3 p(m_pos.x, 0.0f, m_pos.z);
+    m_pos = XM3Mad(p, m_targetDir, 1.0f*stepTime);
+    m_pos.y = 0.5f + cos(m_totalTime*m_speed)*m_amplitude;
+    //
+    if (DistSqToPlayer() <= camera.RadiusCollideSq())
+    {
+        DX::GameResources::instance->HitPlayer();
+        GetNextTarget();
+    }
+    else if (XM3LenSq(m_pos, m_nextTarget) < 0.50f*0.50f || OutOfBounds())
+        GetNextTarget();
+}
+
+void EnemyPuky::DoHit()
+{
+    Invalidate(KILLED);
+}
+
+bool EnemyPuky::OutOfBounds() // shouldn't need this :( anyways!
+{
+    return (m_pos.x < m_bounds[0].x || m_pos.x > m_bounds[1].x ||
+        m_pos.z < m_bounds[0].y || m_pos.z > m_bounds[1].y);
+}
+
+void EnemyPuky::GetNextTarget()
+{
+    auto& r = RND;
+    m_nextTarget.x = r.GetF(m_bounds[0].x, m_bounds[1].x);
+    m_nextTarget.y = 0.0f;
+    m_nextTarget.z = r.GetF(m_bounds[0].y, m_bounds[1].y);
+    const XMFLOAT3 p(m_pos.x, 0.0f, m_pos.z);
+    m_targetDir = XM3Normalize(XM3Sub(m_nextTarget, p));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -948,7 +1006,7 @@ void EnemyBlackHands::UpdateSort(const CameraFirstPerson& camera)
     
     auto& h = m_hands[ndx];
     auto cp = camera.GetPosition();
-    h.distToCamSq = XM3LenSq(XM3Sub(h.pos, cp));
+    h.distToCamSq = XM3LenSq(h.pos, cp);
 }
 #undef CAM
 #undef RND
