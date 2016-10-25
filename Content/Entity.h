@@ -45,6 +45,7 @@ namespace SpookyAdulthood
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
         virtual void DoHit() {}
 
+        void PerformHit();
         float GetBoundingRadius() const;
         bool SupportPass(RenderPass pass) const;        
         bool SupportRaycast() const;
@@ -62,6 +63,7 @@ namespace SpookyAdulthood
         float m_timeOut;
         float m_totalTime;
         float m_life;
+        uint32_t m_lastFrameHit;
         InvReason m_invalidateReason;
         bool m_constraintY;
     };
@@ -155,7 +157,7 @@ namespace SpookyAdulthood
 
     protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size);
+        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life=-1.0f);
         LevelMapBSPNode* GetCurrentRoom();
         float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();

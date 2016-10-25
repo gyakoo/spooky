@@ -1076,7 +1076,7 @@ void DX::GameResources::HitPlayer()
         FlashScreen(1.0f, XMFLOAT4(1, 0, 0, 1));
         SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
         SoundPlay(DX::GameResources::SFX_HIT0, false);
-        m_invincibleTime = 1.0f;
+        m_invincibleTime += 0.7f;
     }
 }
 
