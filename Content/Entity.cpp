@@ -567,6 +567,16 @@ bool EntityEnemyBase::CanSeePlayer()
     return !gameRes->m_map.RaycastSeg(m_pos, gameRes->m_camera.GetPosition(), hit);
 }
 
+bool EntityEnemyBase::PlayerLookintAtMe(float range)
+{
+    auto& cam = CAM;
+    auto plPos = cam.GetPosition(); plPos.y = 0.0f;
+    const XMFLOAT3 myPos(m_pos.x, 0.0f, m_pos.z);
+    const XMFLOAT3 toPl = XM3Normalize(XM3Sub(plPos, myPos));
+    const float dot = XM3Dot(toPl, XM3Neg(cam.m_forward));
+    return dot >= range;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////// PUKY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -695,7 +705,7 @@ void EnemyGargoyle::Update(float stepTime, const CameraFirstPerson& camera)
     if (m_totalTime > 0.40f)
     {
         const float curDistSq = DistSqToPlayer();
-        if (curDistSq <= m_minDistSq)
+        if (curDistSq <= m_minDistSq )
         {
             m_spriteIndex = 28;
             if (m_timeToNextShoot <= 0.0f)
@@ -868,7 +878,7 @@ void EnemyGirl::DoHit()
     if (distToPl == 0.0f) distToPl = 1.0f;
     distToPl = sqrt(distToPl);
     const float t = std::max(1.0f - distToPl / gameRes->m_camera.m_shotgunRange, 0.0f);
-    const float MAXDAMAGE = 0.4f;
+    const float MAXDAMAGE = 0.8f;
     m_life -= t*MAXDAMAGE;
     if (m_life <= 0.0f)
     {
@@ -950,6 +960,12 @@ void EnemyBlackHands::Update(float stepTime, const CameraFirstPerson& camera)
     for (auto& h : m_hands)
     {
         h.t += stepTime;
+    }
+
+    if (DistSqToPlayer() < 5.0f*5.0f && PlayerLookintAtMe(0.97f) && m_totalTime>3.0f)
+    {
+        DoHit();
+        m_totalTime = 0.0f;
     }
 }
 

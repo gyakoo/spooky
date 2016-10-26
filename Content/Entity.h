@@ -162,6 +162,7 @@ namespace SpookyAdulthood
         float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();
         void ModulateToColor(const XMFLOAT4& color, float duration);
+        bool PlayerLookintAtMe(float range);
 
         XMFLOAT4 m_modulateTargetColor;
         float m_modulateTime;
