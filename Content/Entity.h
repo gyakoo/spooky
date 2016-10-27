@@ -9,6 +9,7 @@ namespace SpookyAdulthood
     struct CameraFirstPerson;
     class SpriteManager;
     struct LevelMapBSPNode;
+    struct EntityProjectile;
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -125,6 +126,7 @@ namespace SpookyAdulthood
         
         XMFLOAT3 m_dir;
         float m_speed;
+        float m_waitToCheck;
         bool m_firstTime;
         bool m_collidePlayer;
     };
@@ -147,6 +149,19 @@ namespace SpookyAdulthood
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         int m_dir;
     };
+
+    struct EntityAnimation : public Entity
+    {
+        EntityAnimation(const XMFLOAT3& pos, const XMFLOAT2& size, const std::vector<int>& indices, float fps, 
+            bool finishOnEnd=true, const std::vector<XMFLOAT2>* sizes=nullptr);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+
+        std::vector<int> m_indices;
+        std::unique_ptr<std::vector<XMFLOAT2>> m_sizes;
+        bool m_finishOnEnd;
+        int m_curIndex;
+        float m_period;
+    };
     
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ///////// ENEMIES ////// ENEMIES
@@ -157,7 +172,7 @@ namespace SpookyAdulthood
 
     protected:
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        void ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life=-1.0f, bool predict=false);
+        EntityProjectile* ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life=-1.0f, bool predict=false, float waitTime=-1.0f);
         LevelMapBSPNode* GetCurrentRoom();
         float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();
@@ -191,10 +206,16 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyPumpkin : public EntityEnemyBase
     {
+        const float radiusOuterSq = 1.5f*1.5f;
+        const float radiusInnerSq = 0.8f*0.8f;
+        const float maxTimeToExplode = 5.0f;
+
         EnemyPumpkin(const XMFLOAT3& pos);
+        
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void DoHit();
+        float m_timeInOuter;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

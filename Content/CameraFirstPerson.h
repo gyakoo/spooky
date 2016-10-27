@@ -66,7 +66,7 @@ namespace SpookyAdulthood
                     m_leftDown = true;
                     actionFun(AC_SHOOT);
                     m_timeShoot = 0.5f;
-                    m_timeToNextShoot = 0.85f;
+                    m_timeToNextShoot = 0.70f;
                 }
             }
             else

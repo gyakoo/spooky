@@ -318,6 +318,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\garg2.png"); // 28
     sprite.CreateSprite(L"assets\\textures\\white.png"); // 29
     sprite.CreateSprite(L"assets\\sprites\\pumpkin.png"); // 30
+    sprite.CreateSprite(L"assets\\sprites\\door1.png"); // 31
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 }
@@ -376,6 +377,7 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float speed, const XMFLOAT3& dir, bool receiveHit )
     : Entity(SPRITE3D | ANIMATION3D | (receiveHit?ACCEPT_RAYCAST:0)), m_firstTime(true), m_speed(speed)
+    , m_waitToCheck(-1.0f)
 {
     m_collidePlayer = true;
     m_pos = pos;
@@ -397,11 +399,15 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
     auto& map = gameRes->m_map;
     XMFLOAT3 hit;
     bool wasHit = false;
-    wasHit = map.RaycastSeg(m_pos, newPos, hit, 0.5f); // against level?
-    if ( !wasHit && newPos.y <= m_size.y*0.5f )
-        wasHit = true;
+    m_waitToCheck -= stepTime;
+    if (m_waitToCheck <= 0.0f)
+    {
+        wasHit = map.RaycastSeg(m_pos, newPos, hit, 0.5f); // against level?
+        if (!wasHit && newPos.y <= m_size.y*0.5f)
+            wasHit = true;
+    }
 
-    if (!wasHit) // against player?
+    if (!wasHit) // no collided map, against player then?
     {
         XMFLOAT3 toPl = XM3Sub(camera.GetPosition(), newPos);
         float distToPl = XM3LenSq(toPl);
@@ -492,6 +498,49 @@ void EntityTeleport::Update(float stepTime, const CameraFirstPerson& camera)
         m_totalTime = 0.0f;
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////// ANIMATION
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityAnimation::EntityAnimation(const XMFLOAT3& pos, const XMFLOAT2& size, const std::vector<int>& indices, float fps, 
+    bool finishOnEnd, const std::vector<XMFLOAT2>* sizes)
+    : Entity(SPRITE3D)
+{
+    if (fps == 0.0f) throw std::exception("fps must be > 0.0f");
+    if (indices.empty()) throw std::exception("indices must contain at least 1 element");
+    if (sizes && sizes->size() != indices.size()) throw std::exception("sizes must have == count of elements than indices");
+
+    m_pos = pos;
+    m_size = size;
+    m_indices = indices;
+    m_period = 1.0f / fps;
+    m_finishOnEnd = finishOnEnd;
+    m_curIndex = 0;
+    m_spriteIndex = indices.front();
+    if (sizes)
+        m_sizes = std::make_unique<std::vector<XMFLOAT2>>(*sizes);
+}
+
+void EntityAnimation::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    m_totalTime += stepTime;
+    if (m_totalTime >= m_period)
+    {
+        ++m_curIndex;
+        if (m_curIndex >= (int)m_indices.size() && m_finishOnEnd)
+        {
+            Invalidate();
+            return;
+        }
+        m_totalTime -= m_period;
+    }
+
+    const int boundIndex = m_curIndex % m_indices.size();
+    m_spriteIndex = m_indices[boundIndex];
+    if ( m_sizes )
+        m_size = m_sizes->at(boundIndex);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////// ENEMY BASE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -521,7 +570,7 @@ void EntityEnemyBase::ModulateToColor(const XMFLOAT4& color, float duration)
 }
 
 
-void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life, bool predict)
+EntityProjectile* EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life, bool predict, float waitTime)
 {
     auto gameRes = DX::GameResources::instance;
     auto& rnd = gameRes->m_random;
@@ -538,7 +587,9 @@ void EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT
     auto proj = std::make_shared<EntityProjectile>(origin, projSprIndex, speed, toPl, life>0.0f);
     proj->m_size = size;
     proj->m_life = life;
+    proj->m_waitToCheck = waitTime;
     gameRes->m_entityMgr.AddEntity(proj);
+    return proj.get();
 }
 
 LevelMapBSPNode* EntityEnemyBase::GetCurrentRoom()
@@ -585,7 +636,8 @@ EnemyPuky::EnemyPuky()
 {
     m_pos = XMFLOAT3(3, 1, 3);
     auto room = GetCurrentRoom();
-    if (!room) throw std::exception("no room for puky");
+    if (!room) 
+        throw std::exception("no room for puky");
     XMFLOAT3 p = room->GetRandomXZ();
     p.y = RND.GetF(0.3f, 0.8f);
     Init(p);
@@ -602,7 +654,8 @@ void EnemyPuky::Init(const XMFLOAT3& pos)
     m_pos = pos;
     m_size = XMFLOAT2(0.3f, 0.3f);
     auto room = GetCurrentRoom();
-    if (!room) throw std::exception("no room for puky");
+    if (!room) 
+        throw std::exception("no room for puky");
     const auto& a = room->m_area;
     const float sxh = m_size.x*0.5f;
     const float syh = m_size.y*0.5f;
@@ -988,7 +1041,7 @@ void EnemyBlackHands::Render(RenderPass pass, const CameraFirstPerson& camera, S
 void EnemyBlackHands::DoHit()
 {
     ModulateToColor(XM4RED, 0.5f);    
-    ShootToPlayer(1, RND.GetF(3.0f,4.5f), XMFLOAT3(0,CAM.m_height,0), m_hands.back().size, 0.1f,true);
+    ShootToPlayer(1, RND.GetF(3.0f,4.5f), XMFLOAT3(0,CAM.m_height,0), m_hands.back().size, 0.1f, true, 0.2f);
     m_hands.pop_back();
     if (m_hands.empty())
         Invalidate(KILLED);
@@ -1017,6 +1070,7 @@ void EnemyBlackHands::UpdateSort(const CameraFirstPerson& camera)
 // //////////////////////////////////////// PUMPKIN
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EnemyPumpkin::EnemyPumpkin(const XMFLOAT3& pos)
+    : m_timeInOuter(0.0f)
 {
     m_spriteIndex = 30;
     m_size = XMFLOAT2(0.25f, 0.25f);
@@ -1027,15 +1081,31 @@ EnemyPumpkin::EnemyPumpkin(const XMFLOAT3& pos)
 void EnemyPumpkin::Update(float stepTime, const CameraFirstPerson& camera)
 {
     EntityEnemyBase::Update(stepTime, camera);
-    if (DistSqToPlayer() < camera.RadiusCollideSq()*16.0f && m_modulateTime <= 0.0f)
+
+    const float distSqToPl = DistSqToPlayer();
+    if (distSqToPl < radiusInnerSq || m_timeInOuter > maxTimeToExplode)
     {
-        ModulateToColor(XM4RED, 0.3f);
+        DoHit();
     }
+    else if (distSqToPl < radiusOuterSq)
+    {
+        if (m_modulateTime <= 0.0f)
+        {
+            const float t = 0.1f + (1.0f - (distSqToPl - radiusInnerSq) / (radiusOuterSq - radiusInnerSq))*0.4f;
+            const float s = 0.1f + (m_timeInOuter / maxTimeToExplode)*0.4f;
+            ModulateToColor(XM4RED, std::min(t,s));
+        }
+        m_timeInOuter += stepTime;
+    }
+    else
+        m_timeInOuter = 0.0f;
 }
 
 void EnemyPumpkin::DoHit()
 {
-
+    Invalidate(KILLED);
+    if ( DistSqToPlayer() <= radiusInnerSq )
+        DX::GameResources::instance->HitPlayer();
 }
 
 #undef CAM

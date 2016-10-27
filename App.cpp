@@ -1,6 +1,5 @@
 ﻿#include "pch.h"
 #include "App.h"
-
 #include <ppltasks.h>
 
 using namespace SpookyAdulthood;
@@ -20,7 +19,8 @@ using namespace Windows::Graphics::Display;
 int main(Platform::Array<Platform::String^>^)
 {
 	auto direct3DApplicationSource = ref new Direct3DApplicationSource();
-	CoreApplication::Run(direct3DApplicationSource);
+    CoreApplication::Run(direct3DApplicationSource);
+
 	return 0;
 }
 

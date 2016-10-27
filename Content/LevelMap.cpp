@@ -739,7 +739,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     for (const auto& d : m_portals)
     {
         d.GetTransform(dp, rotY);
-        spr.Draw3D(24, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
+        spr.Draw3D(31, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
     }
     spr.End3D();
 }

@@ -40,7 +40,8 @@ float4 main(PixelShaderInput input) : SV_TARGET
     const float aspect = texAtlasSize.w;
     float dist = length(input.viewSpace); // range based
 
-    if (texColor.r!=1 || texColor.g!=0 || texColor.b!=0) // red bypass fog
+    if ( (texColor.r!=1 || texColor.g!=0 || texColor.b!=0) &&
+         (texColor.r!=0 || texColor.g!=1 || texColor.b!=0) ) // red bypass fog
     {
         // Changing fog density depending on circle from origin 
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);

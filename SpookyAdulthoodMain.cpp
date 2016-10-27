@@ -3,6 +3,8 @@
 #include "Common\DirectXHelper.h"
 #include "Content\GlobalFlags.h"
 #include "Content\Entity.h"
+#include <locale>
+#include <codecvt>
 
 using namespace SpookyAdulthood;
 using namespace Windows::Foundation;
@@ -42,16 +44,28 @@ void SpookyAdulthoodMain::CreateWindowSizeDependentResources()
 // Updates the application state once per frame.
 void SpookyAdulthoodMain::Update()
 {
-	// Update scene objects.
-	m_timer.Tick([&]()
-	{
-		m_sceneRenderer->Update(m_timer);
-		m_fpsTextRenderer->Update(m_timer);
-        GlobalFlags::Update(m_timer);
-        auto gameRes = m_deviceResources->GetGameResources();
-        if (gameRes)
-            gameRes->Update(m_timer, gameRes->m_camera);
-	});
+    try
+    {
+        // Update scene objects.
+        m_timer.Tick([&]()
+        {
+            m_sceneRenderer->Update(m_timer);
+            m_fpsTextRenderer->Update(m_timer);
+            GlobalFlags::Update(m_timer);
+            auto gameRes = m_deviceResources->GetGameResources();
+            if (gameRes)
+                gameRes->Update(m_timer, gameRes->m_camera);
+        });
+    }
+    catch (const std::exception& e)
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::wstring intermediateForm = converter.from_bytes(e.what());
+        Windows::UI::Popups::MessageDialog^ msg = ref new Windows::UI::Popups::MessageDialog(ref new Platform::String(intermediateForm.c_str()));
+        msg->DefaultCommandIndex = 0;
+        msg->CancelCommandIndex = 1;
+        msg->ShowAsync();
+    }
 }
 
 // Renders the current frame according to the current application state.
