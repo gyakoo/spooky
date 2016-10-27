@@ -810,7 +810,21 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     return true;
 }
 
-LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos)
+int LevelMap::GetLeafIndexAt(const XMFLOAT3& pos) const
+{
+    // linear search (this works so far, do the BSP search later with more time)
+    XMUINT2 ipos((UINT)pos.x, (UINT)pos.z);
+    int i = -1;
+    for (auto room : m_leaves)
+    {
+        ++i;
+        if (room->m_area.Contains(ipos))
+            break;
+    }
+    return i;
+}
+
+LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos) const
 {
     // linear search (this works so far, do the BSP search later with more time)
     XMUINT2 ipos((UINT)pos.x, (UINT)pos.z);

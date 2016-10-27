@@ -66,6 +66,7 @@ namespace SpookyAdulthood
         float m_life;
         uint32_t m_lastFrameHit;
         InvReason m_invalidateReason;
+        uint32_t m_roomIndex;
         bool m_constraintY;
     };
 
@@ -78,28 +79,35 @@ namespace SpookyAdulthood
 
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
+        void Reserve(int roomCount);
+        void SetCurrentRoom(int roomIndex) { m_curRoomIndex = roomIndex; }
 
-        void AddEntity(const std::shared_ptr<Entity>& entity);
-        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout);
+        // romIndex can be -1 (current), -2 (persistent) or > 0 for specific room
+        void AddEntity(const std::shared_ptr<Entity>& entity, int roomIndex=-1);
+        // romIndex can be -1 (current), -2 (persistent) or > 0 for specific room
+        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout, int roomIndex=-1);
         void Clear();
         void Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera);
-        void RenderSprites3D(const CameraFirstPerson& camera);
-        void RenderSprites2D(const CameraFirstPerson& camera);
-        void RenderModel3D(const CameraFirstPerson& camera);
-        bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit, uint32_t* sprNdx=nullptr);
-        bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, uint32_t* sprNdx=nullptr);
+        void RenderSprites3D( const CameraFirstPerson& camera);
+        void RenderSprites2D( const CameraFirstPerson& camera);
+        void RenderModel3D( const CameraFirstPerson& camera);
+        bool RaycastDir( const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit, uint32_t* sprNdx=nullptr);
+        bool RaycastSeg( const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, uint32_t* sprNdx=nullptr);
         void DoHitOnEntity(uint32_t ndx);
-        Entity& GetEntity(uint32_t ndx) { return *m_entities[ndx]; }
 
         static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
+
     protected:
         bool RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac);
 
         friend class Entity;
         typedef std::vector<std::shared_ptr<Entity>> EntitiesCollection;
-        EntitiesCollection m_entities;
+        
+        std::vector<EntitiesCollection> m_rooms;
+        EntitiesCollection m_omniEntities;
         EntitiesCollection m_entitiesToAdd;
+        int m_curRoomIndex;
         bool m_duringUpdate;
     };
 

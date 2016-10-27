@@ -111,43 +111,54 @@ bool Entity::SupportRaycast() const
 EntityManager* EntityManager::s_instance = nullptr;
 
 EntityManager::EntityManager(const std::shared_ptr<DX::DeviceResources>& device)
-    : m_device(device), m_duringUpdate(false)
+    : m_device(device), m_duringUpdate(false), m_curRoomIndex(-1)
 {
     EntityManager::s_instance = this;
+}
+
+void EntityManager::Reserve(int roomCount)
+{
+    if (roomCount <= 0)
+        throw std::exception("No rooms in entity manager?");
+    m_rooms.resize(roomCount);
 }
 
 void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera)
 {
     m_duringUpdate = true;
-    const float dt = (float)stepTimer.GetElapsedSeconds();
-    for (auto it = m_entities.begin(); it < m_entities.end(); )
+    for (int pass = 0; pass < 2; ++pass)
     {
-        auto& e = *it;
-        bool toDel = false;
-        if (e->IsActive())
+        auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
+        const float dt = (float)stepTimer.GetElapsedSeconds();
+        for (auto it = entities.begin(); it < entities.end(); )
         {
-            e->Update(dt, camera);
-            e->m_timeOut -= dt;
-            if (e->m_timeOut <= 0.0f)
-                e->m_flags |= Entity::INVALID;
-            else
-                e->m_totalTime += dt;
-            toDel = !(*it)->IsValid();
-        }        
-
-        if (toDel)
-        {
-            switch ((*it)->m_invalidateReason)
+            auto& e = *it;
+            bool toDel = false;
+            if (e->IsActive())
             {
-            case Entity::KILLED:
-                break;
+                e->Update(dt, camera);
+                e->m_timeOut -= dt;
+                if (e->m_timeOut <= 0.0f)
+                    e->m_flags |= Entity::INVALID;
+                else
+                    e->m_totalTime += dt;
+                toDel = !(*it)->IsValid();
             }
 
-            it = m_entities.erase(it);            
-        }
-        else
-        {
-            ++it;
+            if (toDel)
+            {
+                switch ((*it)->m_invalidateReason)
+                {
+                case Entity::KILLED:
+                    break;
+                }
+
+                it = entities.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
         }
     }
     m_duringUpdate = false;
@@ -155,16 +166,12 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
     // add buffered
     if ( !m_entitiesToAdd.empty() )
     {
-        m_entities.insert(m_entities.end(), m_entitiesToAdd.begin(), m_entitiesToAdd.end());
+        for (auto& e : m_entitiesToAdd)
+        {
+            auto& whatColl = e->m_roomIndex >= 0 ? m_rooms[e->m_roomIndex] : m_omniEntities;
+            whatColl.push_back(e);
+        }
         m_entitiesToAdd.clear();
-    }
-
-    // test
-    if (GlobalFlags::SpawnProjectile)
-    {
-        auto proj = std::make_shared<EntityProjectile>(camera.GetPosition(), 19, 16.0f, camera.m_forward);
-        AddEntity(proj);
-        GlobalFlags::SpawnProjectile = false;
     }
 }
 
@@ -176,11 +183,15 @@ void EntityManager::RenderSprites3D(const CameraFirstPerson& camera)
 
     auto& sprite = gameRes->m_sprite;
     sprite.Begin3D(camera);
-    std::for_each(m_entities.begin(), m_entities.end(), [&](auto& e)
+    for (int pass = 0; pass < 2; ++pass)
     {
-        if ( e->SupportPass(Entity::PASS_SPRITE3D) /*&& e->IsActive()*/ )
-            e->Render(Entity::PASS_SPRITE3D, camera, sprite);
-    });
+        auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
+        std::for_each(entities.begin(), entities.end(), [&](auto& e)
+        {
+            if (e->SupportPass(Entity::PASS_SPRITE3D) /*&& e->IsActive()*/)
+                e->Render(Entity::PASS_SPRITE3D, camera, sprite);
+        });
+    }
     sprite.End3D();
 }
 
@@ -191,13 +202,16 @@ void EntityManager::RenderSprites2D(const CameraFirstPerson& camera)
         return;
 
     auto& sprite = gameRes->m_sprite;
-    
-    sprite.Begin2D(camera);
-    std::for_each(m_entities.begin(), m_entities.end(), [&](auto& e)
+    sprite.Begin2D(camera);    
+    for (int pass = 0; pass < 2; ++pass)
     {
-        if (e->SupportPass(Entity::PASS_SPRITE2D) /*&& e->IsActive()*/)
-            e->Render(Entity::PASS_SPRITE2D, camera, sprite);
-    });
+        auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
+        std::for_each(entities.begin(), entities.end(), [&](auto& e)
+        {
+            if (e->SupportPass(Entity::PASS_SPRITE2D) /*&& e->IsActive()*/)
+                e->Render(Entity::PASS_SPRITE2D, camera, sprite);
+        });
+    }
     sprite.End2D();
 }
 
@@ -208,30 +222,43 @@ void EntityManager::RenderModel3D(const CameraFirstPerson& camera)
         return;
 
     auto& sprite = gameRes->m_sprite;
-    std::for_each(m_entities.begin(), m_entities.end(), [&](auto& e)
+    for (int pass = 0; pass < 2; ++pass)
     {
-        if (e->SupportPass(Entity::PASS_3D) /*&& e->IsActive()*/)
-            e->Render(Entity::PASS_3D, camera, sprite);
-    });
+        auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
+        std::for_each(entities.begin(), entities.end(), [&](auto& e)
+        {
+            if (e->SupportPass(Entity::PASS_3D) /*&& e->IsActive()*/)
+                e->Render(Entity::PASS_3D, camera, sprite);
+        });
+    }
 }
 
-void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, float timeout)
+void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, float timeout, int roomIndex)
 {
-    auto& coll = m_duringUpdate ? m_entitiesToAdd : m_entities;
+    const int ri = roomIndex < 0 ? m_curRoomIndex : roomIndex;
+    auto& entities = roomIndex == -2 ? m_omniEntities : m_rooms[ri];
+    auto& coll = m_duringUpdate ? m_entitiesToAdd : entities;
     coll.push_back(entity);
+    entity->m_roomIndex = ri;
     entity->m_timeOut = timeout;
 }
 
-void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity)
+void EntityManager::AddEntity(const std::shared_ptr<Entity>& entity, int roomIndex)
 {
-    auto& coll = m_duringUpdate ? m_entitiesToAdd : m_entities;
+    const int ri = roomIndex < 0 ? m_curRoomIndex : roomIndex;
+    auto& entities = roomIndex == -2 ? m_omniEntities : m_rooms[ri];
+    auto& coll = m_duringUpdate ? m_entitiesToAdd : entities;
     coll.push_back(entity);
+    entity->m_roomIndex = ri;
 }
 
 void EntityManager::Clear()
 {
-    m_entities.clear();
+    for (auto& rc : m_rooms)
+        rc.clear();
     m_entitiesToAdd.clear();
+    m_omniEntities.clear();
+    m_curRoomIndex = -1;
 }
 
 bool EntityManager::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit, uint32_t* sprNdx)
@@ -240,21 +267,30 @@ bool EntityManager::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFL
     int closestNdx = -1;
     float closestFrac = FLT_MAX;
     float frac;
-    XMFLOAT3 closestHit(0,0,0), hit;
-    const int count = (int)m_entities.size();
-    for (int i = 0; i < count; ++i)
+    XMFLOAT3 closestHit(0, 0, 0), hit;
+
+    for (int pass = 0; pass < 2; ++pass)
     {
-        auto& e = m_entities[i];
-        if (!e->SupportRaycast()) continue;
-        if (RaycastEntity(*e.get(), origin, dir, hit, frac) && frac < closestFrac )
+        auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
+        const int count = (int)entities.size();
+        for (int i = 0; i < count; ++i)
         {
-            closestFrac = frac;
-            closestNdx = i;
-            closestHit = hit;
-        }
+            auto& e = entities[i];
+            if (!e->SupportRaycast()) continue;
+            if (RaycastEntity(*e.get(), origin, dir, hit, frac) && frac < closestFrac)
+            {
+                closestFrac = frac;
+                closestNdx = i;
+                closestHit = hit;
+                if (sprNdx)
+                {
+                    outHit = closestHit;
+                    int ri = !pass ? m_curRoomIndex : 0xffff;
+                    *sprNdx = (ri << 16) | (closestNdx & 0xffff);
+                }
+            }
+        }        
     }
-    outHit = closestHit;
-    if (sprNdx) *sprNdx = closestNdx;
     return closestNdx != -1;
 }
 
@@ -276,7 +312,10 @@ bool EntityManager::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFL
 
 void EntityManager::DoHitOnEntity(uint32_t ndx)
 {
-    auto& e = m_entities[ndx];
+    const int ri = ndx >> 16;
+    const int n = ndx & 0xffff;
+    auto& entities = (ri == 0xffff) ? m_omniEntities : m_rooms[ri];
+    auto& e = entities[n];
     if (e->IsActive())
         e->PerformHit();
 }
@@ -369,6 +408,7 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     sprite.Draw2D(m_spriteIndices[CANNON], XMFLOAT2(offsx, ypos + offsy - t*0.25f), size, 0.0f); // cannon
     sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, ypos + offsy - t*0.25f), size, 0.0f); // flashlight
     sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, ypos + offsy-t*0.25f), size, 0.0f);
+    sprite.Draw2D(7, XMFLOAT2(0, 0), XMFLOAT2(0.01f, 0.01f), 0);
 }
 
 

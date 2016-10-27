@@ -1043,7 +1043,7 @@ void DX::GameResources::PlayerShoot()
 
         if (wasHitE)
         {
-            // hit only agains entity
+            // hit only against entity
             m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hitE));
             m_entityMgr.DoHitOnEntity(eNdx);
             GlobalFlags::ShootHits++;
@@ -1082,7 +1082,6 @@ void DX::GameResources::HitPlayer()
 
 void DX::GameResources::GenerateNewLevel()
 {
-    m_entityMgr.Clear();
     m_mapSettings.m_tileCount = XMUINT2(35, 35);
     m_mapSettings.m_minTileCount = XMUINT2(4, 4);
     m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
@@ -1090,6 +1089,9 @@ void DX::GameResources::GenerateNewLevel()
     m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
     SpawnPlayer();
 
+    m_entityMgr.Clear();
+    m_entityMgr.Reserve(m_map.GetRooms().size());
+    m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
     m_entityMgr.AddEntity(std::make_shared<EntityGun>()); // GUN
 
 
@@ -1100,7 +1102,7 @@ void DX::GameResources::GenerateNewLevel()
     {
         for (int i = 0; i < 3; ++i)
         {
-            m_entityMgr.AddEntity(std::make_shared<EnemyPumpkin>(room->GetRandomXZ(XMFLOAT2(0.5f, 0.5f))));
+            m_entityMgr.AddEntity(std::make_shared<EnemyPumpkin>(room->GetRandomXZ(XMFLOAT2(0.5f, 0.5f))),1);
             m_entityMgr.AddEntity(std::make_shared<EnemyPuky>());
         }
     }
