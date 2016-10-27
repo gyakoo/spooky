@@ -20,6 +20,12 @@ namespace SpookyAdulthood
         inline bool IsValid() const { return start.x != end.x || start.y != end.y; }
         inline bool IsDisabled() const { return (flags & DISABLED) != 0; }
         inline bool IsPortalOpen() const { return IsDisabled() && (flags & PORTAL)!=0; }
+        inline bool IsPortal() const { return (flags&PORTAL) != 0; }
+        inline void SetDisabled(bool dis)
+        {
+            if (dis) flags |= DISABLED;
+            else flags &= ~DISABLED;
+        }
     };
 
     typedef std::vector<CollSegment> SegmentList;

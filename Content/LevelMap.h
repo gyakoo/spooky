@@ -86,11 +86,11 @@ namespace SpookyAdulthood
     {
         LevelMapBSPNodePtr  m_leaves[2];
         LevelMapBSPNodePtr  m_wallNode; // must be WALL_X or WALL_Y
-
-        XMUINT2 GetPortalPosition(XMUINT2* opposite=nullptr) const;
-        void GetTransform(XMFLOAT3& pos, float& rotY) const;
-
         int m_index;
+        bool m_open;
+
+        XMUINT2 GetPortalPosition(XMUINT2* opposite = nullptr) const;
+        void GetTransform(XMFLOAT3& pos, float& rotY) const;
     };
 
     //* ***************************************************************** *//
@@ -165,6 +165,7 @@ namespace SpookyAdulthood
         const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
         const std::vector<LevelMapBSPPortal>& GetPortals()const { return m_portals; }
         const std::vector<LevelMapBSPNodePtr>& GetRooms() const { return m_leaves; }
+        void ToggleRoomDoors(int roomIndex=-1, bool open=true);
 
         bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit);
         bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, float offsHit=0.0f);
@@ -186,7 +187,7 @@ namespace SpookyAdulthood
         void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
         bool RenderSetCommonState(const CameraFirstPerson& camera);
-        void GetCurrentDoors(std::vector<uint32_t>& doorIndices) const;
+        void GetRoomDoorIndices(std::vector<uint32_t>& doorIndices, int roomIndex=-1) const;
 
     private:
         LevelMapBSPNodePtr m_root;

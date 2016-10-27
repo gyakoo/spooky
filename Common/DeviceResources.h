@@ -90,11 +90,12 @@ namespace DX
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);
         void PlayerShoot();
-        void OpenRoomDoors();
+        void ToggleRoomDoors();
         void OpenDoor(uint32_t index);
         void GenerateNewLevel();
         void SpawnPlayer();
         void HitPlayer();
+        void FinishCurrentRoom();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

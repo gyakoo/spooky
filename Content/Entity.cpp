@@ -380,6 +380,24 @@ bool EntityManager::RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const
     return IntersectRayBillboardQuad(raypos, dir, e.m_pos, e.m_size, outhit, frac);
 }
 
+int EntityManager::CountAliveEnemies(int roomIndex)
+{
+    const int ri = roomIndex < 0 ? m_curRoomIndex : roomIndex;
+
+    int count = 0;
+    for (int pass = 0; pass < 3; ++pass)
+    {
+        auto& entities = !pass ? m_rooms[ri] : (pass==1 ? m_omniEntities : m_entitiesToAdd);
+        for (auto& e : entities)
+        {
+            if (e->CanDie())
+                ++count;
+        }
+    }
+    return count;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////// GUN
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -411,6 +429,21 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     sprite.Draw2D(7, XMFLOAT2(0, 0), XMFLOAT2(0.01f, 0.01f), 0);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////// EntityRoomChecker_AllDead
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void EntityRoomChecker_AllDead::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    // check there's no enemy entity
+    auto gameRes = DX::GameResources::instance;
+    auto& entityMgr = gameRes->m_entityMgr;
+    const int count = entityMgr.CountAliveEnemies();    
+    if (!count)
+    {
+        gameRes->FinishCurrentRoom();
+        Invalidate();
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////// PROJECTILE

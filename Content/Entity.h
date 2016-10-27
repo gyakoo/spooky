@@ -45,6 +45,7 @@ namespace SpookyAdulthood
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
         virtual void DoHit() {}
+        virtual bool CanDie() { return false; }
 
         void PerformHit();
         float GetBoundingRadius() const;
@@ -75,6 +76,7 @@ namespace SpookyAdulthood
     class EntityManager
     {
     public:
+        enum{ CURRENT_ROOM=-1, ALL_ROOMS = -2};
         EntityManager(const std::shared_ptr<DX::DeviceResources>& device);
 
         void CreateDeviceDependentResources();
@@ -83,9 +85,9 @@ namespace SpookyAdulthood
         void SetCurrentRoom(int roomIndex) { m_curRoomIndex = roomIndex; }
 
         // romIndex can be -1 (current), -2 (persistent) or > 0 for specific room
-        void AddEntity(const std::shared_ptr<Entity>& entity, int roomIndex=-1);
+        void AddEntity(const std::shared_ptr<Entity>& entity, int roomIndex= CURRENT_ROOM);
         // romIndex can be -1 (current), -2 (persistent) or > 0 for specific room
-        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout, int roomIndex=-1);
+        void AddEntity(const std::shared_ptr<Entity>& entity, float timeout, int roomIndex= CURRENT_ROOM);
         void Clear();
         void Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera);
         void RenderSprites3D( const CameraFirstPerson& camera);
@@ -94,6 +96,7 @@ namespace SpookyAdulthood
         bool RaycastDir( const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit, uint32_t* sprNdx=nullptr);
         bool RaycastSeg( const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, uint32_t* sprNdx=nullptr);
         void DoHitOnEntity(uint32_t ndx);
+        int CountAliveEnemies(int roomIndex= CURRENT_ROOM);
 
         static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
@@ -112,6 +115,17 @@ namespace SpookyAdulthood
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OMNI
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EntityRoomChecker_AllDead: public Entity
+    {
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // OMNI
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityGun : public Entity
     {
@@ -201,6 +215,8 @@ namespace SpookyAdulthood
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void DoHit();
+        virtual bool CanDie() { return true; }
+
         void GetNextTarget();
         void Init(const XMFLOAT3& pos);
         bool OutOfBounds();
@@ -219,7 +235,8 @@ namespace SpookyAdulthood
         const float maxTimeToExplode = 5.0f;
 
         EnemyPumpkin(const XMFLOAT3& pos);
-        
+        virtual bool CanDie() { return true; }
+
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void DoHit();
@@ -232,6 +249,7 @@ namespace SpookyAdulthood
         EnemyTreeBlack(const XMFLOAT3& pos, float shootEverySecs = 20.5f);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
+        virtual bool CanDie() { return true; }
 
         float m_shootEvery;
         float m_timeToNextShoot;
@@ -245,6 +263,7 @@ namespace SpookyAdulthood
 
         EnemyGirl(const XMFLOAT3& pos);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual bool CanDie() { return true; }
         virtual void DoHit();
 
         bool GetNextTargetPoint();
@@ -285,16 +304,11 @@ namespace SpookyAdulthood
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
         virtual void DoHit();  
+        virtual bool CanDie() { return true; }
         void UpdateSort(const CameraFirstPerson& camera);
 
         int m_origN;
         std::vector<Hand> m_hands;
     };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /*struct EnemyBlackHand : public EntityEnemyBase
-    {
-
-    };*/
 
 };

@@ -472,7 +472,8 @@ void LevelMap::VisGeneratePortal(const LevelMapBSPNodePtr& roomA, const LevelMap
             {
                 { roomA, roomB },
                 parent,
-                VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type )
+                VisComputeRandomPortalIndex(roomA->m_area, roomB->m_area, parent->m_type ),
+                false
             };
             uint32_t portalNdx = (uint32_t)m_portals.size();
             m_leafPortals.insert(std::make_pair(roomA.get(), portalNdx));
@@ -739,7 +740,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     for (const auto& d : m_portals)
     {
         d.GetTransform(dp, rotY);
-        spr.Draw3D(31, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
+        spr.Draw3D(d.m_open ? 31 : 24, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
     }
     spr.End3D();
 }
@@ -938,18 +939,44 @@ bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3&
     return wasHit;
 }
 
-void LevelMap::GetCurrentDoors(std::vector<uint32_t>& doorIndices) const
+void LevelMap::GetRoomDoorIndices(std::vector<uint32_t>& doorIndices, int roomIndex) const
 {
-    if (!m_cameraCurLeaf) return;
-    auto it = m_leafPortals.find(m_cameraCurLeaf.get());
-    while (it != m_leafPortals.end() && it->first != m_cameraCurLeaf.get())
+    if (roomIndex==-1 && !m_cameraCurLeaf) 
+        return;
+    auto leaf = roomIndex < 0 ? m_cameraCurLeaf : m_leaves[roomIndex];
+    auto it = m_leafPortals.find(leaf.get());
+    while (it != m_leafPortals.end() && it->first == leaf.get())
     {
         doorIndices.push_back(it->second);
         ++it;
     }
 }
 
+void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
+{
+    // mark door open
+    if (roomIndex == -1 && !m_cameraCurLeaf)
+        return;
+    std::vector<uint32_t> doors; doors.reserve(4);
+    GetRoomDoorIndices(doors, roomIndex);
+    for (const auto& di : doors)
+    {
+        m_portals[di].m_open = open;
+    }
 
+    // disable collision segment
+    auto leaf = roomIndex < 0 ? m_cameraCurLeaf : m_leaves[roomIndex];
+    if (!leaf) return;
+    if (leaf->m_collisionSegments)
+    {
+        for (auto& collseg : *leaf->m_collisionSegments)
+        {
+            if (!collseg.IsPortal()) continue;
+            collseg.SetDisabled(open);            
+        }
+    }
+
+}
 
 #pragma endregion
 

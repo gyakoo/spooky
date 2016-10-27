@@ -899,7 +899,7 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
     m_flashScreenTime -= stepTime;
     m_invincibleTime -= stepTime;
 
-    // Update SPRITE MANAGER
+    // Update SPRITE / ENTITY Managers
     m_sprite.Update(timer);
     m_entityMgr.Update(timer, camera);
 
@@ -1064,7 +1064,7 @@ void DX::GameResources::OpenDoor(uint32_t index)
 }
 
 
-void DX::GameResources::OpenRoomDoors()
+void DX::GameResources::ToggleRoomDoors()
 {
     
 }
@@ -1080,6 +1080,13 @@ void DX::GameResources::HitPlayer()
     }
 }
 
+void DX::GameResources::FinishCurrentRoom()
+{
+    // open the doors 
+    m_map.ToggleRoomDoors();
+}
+
+
 void DX::GameResources::GenerateNewLevel()
 {
     m_mapSettings.m_tileCount = XMUINT2(35, 35);
@@ -1090,9 +1097,9 @@ void DX::GameResources::GenerateNewLevel()
     SpawnPlayer();
 
     m_entityMgr.Clear();
-    m_entityMgr.Reserve(m_map.GetRooms().size());
+    m_entityMgr.Reserve((int)m_map.GetRooms().size());
     m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
-    m_entityMgr.AddEntity(std::make_shared<EntityGun>()); // GUN
+    m_entityMgr.AddEntity(std::make_shared<EntityGun>(), EntityManager::ALL_ROOMS); // GUN
 
 
     // // TEST
@@ -1107,11 +1114,13 @@ void DX::GameResources::GenerateNewLevel()
         }
     }
 
+
+
 //     m_entityMgr.AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
 //     m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
 //     m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
      m_entityMgr.AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
-
+     m_entityMgr.AddEntity(std::make_shared<EntityRoomChecker_AllDead>());
 }
 
 void DX::GameResources::SpawnPlayer()
