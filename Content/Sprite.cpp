@@ -218,7 +218,7 @@ namespace SpookyAdulthood
             if (GlobalFlags::AllLit) t = 1.0f;
             PixelShaderConstantBuffer pscb = { 
                 { 1,1,dxCommon->m_levelTime,dxCommon->m_camera.m_aspectRatio },
-                { t, 1.0f - int(GlobalFlags::AllLit),0,0 },
+                { t, 1.0f - int(GlobalFlags::AllLit), dxCommon->m_curDensityMult,0 },
                 sprI.m_modulate
             };
             context->UpdateSubresource1(dxCommon->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);

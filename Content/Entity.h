@@ -141,7 +141,7 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityProjectile : public Entity
     {
-        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float speed, const XMFLOAT3& dir=XMFLOAT3(0,0,0), bool receiveHit=false);
+        EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float speed, const XMFLOAT3& dir=XM3Zero(), bool receiveHit=false);
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void DoHit();

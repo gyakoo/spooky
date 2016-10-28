@@ -79,6 +79,7 @@ namespace DX
         bool m_readyToRender;
         uint32_t m_frameCount;
         float m_invincibleTime;
+        float m_curDensityMult;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundStop(uint32_t index)const;

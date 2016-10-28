@@ -188,3 +188,15 @@ inline XMFLOAT2 XM2Neg(const XMFLOAT2& a)
 {
     return XMFLOAT2(-a.x, -a.y);
 }
+
+inline const XMFLOAT3& XM3Zero()
+{
+    static XMFLOAT3 g_zero(0, 0, 0);
+    return g_zero;
+}
+
+inline const XMFLOAT3& XM3Up()
+{
+    static XMFLOAT3 g_up(0, 1, 0);
+    return g_up;
+}

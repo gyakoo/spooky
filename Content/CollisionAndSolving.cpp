@@ -171,9 +171,9 @@ namespace SpookyAdulthood
     bool IntersectRayPlane(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& normal, const XMFLOAT3& p, XMFLOAT3& outHit, float& outFrac)
     {
         const float den = DotProduct(normal, dir);
-        if (den > 1e-6f )
+        if (den < -1e-6f )
         {
-            XMFLOAT3 po(p.x - origin.x, p.y - origin.y, p.z - origin.z);
+            const XMFLOAT3 po = XM3Normalize(XM3Sub(p, origin));
             const float f = DotProduct(po, normal) / den;
             outHit.x = origin.x + dir.x*f;
             outHit.y = origin.y + dir.y*f;

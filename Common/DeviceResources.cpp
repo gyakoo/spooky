@@ -818,7 +818,7 @@ DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
-    , m_invincibleTime(-1.0f)
+    , m_invincibleTime(-1.0f), m_curDensityMult(0.4f)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -954,8 +954,13 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
 
     // Update SPRITE / ENTITY Managers
     m_sprite.Update(timer);
-    if ((m_frameCount % 2 == 0))
-        m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
+    //if ((m_frameCount % 2 == 0))
+    auto& room = m_map.GetLeafAt(m_camera.GetPosition());
+    if (room)
+    {
+        m_curDensityMult = room->m_finished ? 0.15f : 0.4f;
+        m_entityMgr.SetCurrentRoom(room->m_leafNdx);
+    }
     m_entityMgr.Update(timer, camera);
 
     // Update AUDIO
@@ -1086,7 +1091,6 @@ void DX::GameResources::PlayerShoot()
         // we cast this ray against entities then map
         wasHitE = m_entityMgr.RaycastSeg(startpos, endpos, hitE, -1.0f, &eNdx);
         wasHitM = m_map.RaycastSeg(startpos, endpos, hitM, -1.0f, -0.05f);
-        
         if (wasHitE && wasHitM)
         {
             // hit both, get the closest one
@@ -1134,7 +1138,7 @@ void DX::GameResources::FinishCurrentRoom()
 {
     // open the doors 
     SoundPlay(SFX_LAUGH, false);
-    m_map.ToggleRoomDoors();
+    m_map.ToggleRoomDoors();    
 }
 
 void DX::GameResources::OnEnterRoom(int roomEntering)

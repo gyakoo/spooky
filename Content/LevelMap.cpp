@@ -799,7 +799,7 @@ bool LevelMap::RenderSetCommonState(const CameraFirstPerson& camera)
     if (GlobalFlags::AllLit) t = 1.0f;
     PixelShaderConstantBuffer pscb = { 
         { 16,16, gameRes->m_levelTime,camera.m_aspectRatio }, 
-        {t,1.0f-int(GlobalFlags::AllLit),0,0},
+        {t,1.0f-int(GlobalFlags::AllLit), gameRes->m_curDensityMult,0},
         {1,1,1,1} };
     context->UpdateSubresource1(gameRes->m_basePSCB.Get(), 0, NULL, &pscb, 0, 0, 0);
     context->PSSetConstantBuffers(0, 1, gameRes->m_basePSCB.GetAddressOf());
@@ -904,7 +904,7 @@ bool LevelMap::RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3&
             minCSIndex = i;
         }
     }
-
+    
     // was there any hit?
     if (minCSIndex != -1)
     {
@@ -933,16 +933,38 @@ bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3&
     dir2D.x *= invSq; dir2D.z *= invSq;
     XMFLOAT3 origin2D(origin.x, 0, origin.z);
 
+    // ground?
+    float fracToG = 0;
+    XMFLOAT3 hitG(0, 0, 0);
+    const XMFLOAT3 dir3D = XM3Normalize(XM3Sub(end, origin));
+    const bool hitGround = false;// IntersectRayPlane(origin, dir3D, XM3Up(), XM3Zero(), hitG, fracToG);
+
+    // any wall
     bool wasHit = false;
-    if (RaycastDir(origin2D, dir2D, outHit))
+    bool hitWalls = RaycastDir(origin2D, dir2D, outHit);
+    if ( hitWalls || hitGround)
     {
+        hitG.y = 0.0f;
         XMFLOAT3 toHit = XM3Sub(outHit, origin2D);
-        const float lenToHitSq = XM3LenSq(toHit);
+        const float lenToHitSq = hitWalls ? XM3LenSq(toHit) : FLT_MAX;
+        const float lenToGSq = hitGround ? XM3LenSq(origin, hitG) : FLT_MAX;
         const float compRad = optRad > 0.0f ? (optRad) : distSq;
+
         wasHit = lenToHitSq <= compRad;
-        if (wasHit && offsHit!=0)
+        if (hitGround)
         {
-            outHit = XM3Mad(outHit, dir2D, offsHit);
+            if (wasHit && lenToGSq < lenToHitSq)
+                outHit = hitG;
+            else if (!wasHit)
+            {
+                outHit = hitG;
+                wasHit = true;
+            }
+        }
+
+        if (wasHit && offsHit!=0 && !hitGround)
+        {
+            outHit = XM3Mad(outHit, dir3D, offsHit);
         }
     }
     return wasHit;
@@ -967,7 +989,6 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
             portalSegments.push_back(collseg);
         }
     }
-
     
     // look for all portal objects, mark as open
     {
@@ -995,6 +1016,7 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
             ++it;
         }
     }
+    m_cameraCurLeaf->m_finished = true;
 }
 
 #pragma endregion
@@ -1054,12 +1076,18 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
         }
         auto& random = device->GetGameResources()->m_random;
         UINT FLOORTEX = random.Get01();
+        UINT CEILINGTEX = random.Get(0, 4);
+        UINT WALLTEX = random.Get(3, 6);
+        bool ceiling = true;
         if (m_profile == LevelMap::RP_GRAVE || m_profile == LevelMap::RP_WOODS || m_profile == LevelMap::RP_PUMPKINFIELD)
         {
             FLOORTEX = random.Get(0, 4);
+            if (m_profile == LevelMap::RP_GRAVE) WALLTEX = 1;
+            else if (m_profile == LevelMap::RP_WOODS) WALLTEX = 0;
+            else WALLTEX = 2;
+            ceiling = false;
         }
-        const UINT CEILINGTEX = random.Get(0, 4);
-        const UINT WALLTEX = 0;// random.Get(0, 4);
+        
         unsigned short cvi = 0; // current vertex index
         float x, z;
         for (uint32_t _z = area.m_y0; _z <= area.m_y1; ++_z)
@@ -1072,8 +1100,8 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                     float h0 = 0.0f, h1 = 0.0f;
                     if (m_profile == LevelMap::RP_GRAVE || m_profile == LevelMap::RP_WOODS || m_profile == LevelMap::RP_PUMPKINFIELD)
                     {
-                        h0 = fabs(sin(x)*0.15f);
-                        h1 = fabs(sin(x + 1)*0.15f);
+                        h0 = fabs(sin(x)*0.1f);
+                        h1 = fabs(sin(x + 1)*0.1f);
                     }
                     quadVerts[0].position = XMFLOAT3(x, h0, z);
                     quadVerts[1].position = XMFLOAT3(x + EP, h1, z);
@@ -1091,6 +1119,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                 }
 
                 // ceiling tile
+                if ( ceiling )
                 {
                     quadVerts[0].position = XMFLOAT3(x, FH, z);
                     quadVerts[3].position = XMFLOAT3(x + EP, FH, z);
@@ -1195,7 +1224,7 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
         if (m_pillars)
         {
             for (int i = 0; i < 4; ++i)
-                quadVerts[i].textureIndex = XMUINT2(1, 0);
+                quadVerts[i].textureIndex = XMUINT2(random.Get(3,6), 0);
             float x, z;
             for (const auto& pillar : *m_pillars)
             {
