@@ -82,7 +82,7 @@ namespace SpookyAdulthood
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
         void Reserve(int roomCount);
-        void SetCurrentRoom(int roomIndex) { m_curRoomIndex = roomIndex; }
+        void SetCurrentRoom(int roomIndex);
 
         // romIndex can be -1 (current), -2 (persistent) or > 0 for specific room
         void AddEntity(const std::shared_ptr<Entity>& entity, int roomIndex= CURRENT_ROOM);

@@ -757,9 +757,10 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav",
     L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
-    L"assets\\sounds\\heartbeat.wav", L"assets\\sounds\\hit0.wav" };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.3f, 0.25f, 1.0f };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f };
+    L"assets\\sounds\\heartbeat.wav", L"assets\\sounds\\hit0.wav",
+    L"assets\\sounds\\laugh.wav"};
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f };
 
 DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
@@ -901,6 +902,8 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
 
     // Update SPRITE / ENTITY Managers
     m_sprite.Update(timer);
+    if ((m_frameCount % 2 == 0))
+        m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
     m_entityMgr.Update(timer, camera);
 
     // Update AUDIO
@@ -1064,11 +1067,6 @@ void DX::GameResources::OpenDoor(uint32_t index)
 }
 
 
-void DX::GameResources::ToggleRoomDoors()
-{
-    
-}
-
 void DX::GameResources::HitPlayer()
 {
     if (m_invincibleTime <= 0.0f)
@@ -1083,7 +1081,18 @@ void DX::GameResources::HitPlayer()
 void DX::GameResources::FinishCurrentRoom()
 {
     // open the doors 
+    SoundPlay(SFX_LAUGH, false);
     m_map.ToggleRoomDoors();
+}
+
+void DX::GameResources::OnEnterRoom(int roomEntering)
+{
+
+}
+
+void DX::GameResources::OnLeaveRoom(int roomLeaving)
+{
+
 }
 
 
@@ -1104,14 +1113,18 @@ void DX::GameResources::GenerateNewLevel()
 
     // // TEST
     //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
-    auto room = m_map.GetLeafAt(m_camera.GetPosition()).get();
+    auto room = m_map.GetLeafAtIndex(1).get();
     if (room)
     {
         for (int i = 0; i < 3; ++i)
         {
             m_entityMgr.AddEntity(std::make_shared<EnemyPumpkin>(room->GetRandomXZ(XMFLOAT2(0.5f, 0.5f))),1);
-            m_entityMgr.AddEntity(std::make_shared<EnemyPuky>());
         }
+    }
+
+    for (int i = 0; i < 3; ++i)
+    {
+        m_entityMgr.AddEntity(std::make_shared<EnemyPuky>());
     }
 
 
@@ -1120,7 +1133,9 @@ void DX::GameResources::GenerateNewLevel()
 //     m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
 //     m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
      m_entityMgr.AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
-     m_entityMgr.AddEntity(std::make_shared<EntityRoomChecker_AllDead>());
+
+     m_entityMgr.AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 0); // all dead for room 0
+     m_entityMgr.AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 1); // all dead for room 1
 }
 
 void DX::GameResources::SpawnPlayer()

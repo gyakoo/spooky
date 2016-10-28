@@ -123,6 +123,21 @@ void EntityManager::Reserve(int roomCount)
     m_rooms.resize(roomCount);
 }
 
+void EntityManager::SetCurrentRoom(int roomIndex) 
+{ 
+    if (m_curRoomIndex != roomIndex)
+    {
+        auto gameRes = DX::GameResources::instance;
+        if (m_curRoomIndex != -1)
+            gameRes->OnLeaveRoom(m_curRoomIndex);
+        
+        if ( roomIndex != -1 )
+            gameRes->OnEnterRoom(roomIndex);
+    }
+    m_curRoomIndex = roomIndex; 
+}
+
+
 void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera)
 {
     m_duringUpdate = true;

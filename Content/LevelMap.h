@@ -91,6 +91,7 @@ namespace SpookyAdulthood
 
         XMUINT2 GetPortalPosition(XMUINT2* opposite = nullptr) const;
         void GetTransform(XMFLOAT3& pos, float& rotY) const;
+        LevelMapBSPNodePtr GetOtherLeaf(LevelMapBSPNodePtr l) const;
     };
 
     //* ***************************************************************** *//
@@ -161,6 +162,7 @@ namespace SpookyAdulthood
         XMUINT2 GetRandomPosition();
         XMUINT2 ConvertToMapPosition(const XMFLOAT3& xyz) const;
         LevelMapBSPNodePtr GetLeafAt(const XMFLOAT3& pos) const;
+        LevelMapBSPNodePtr GetLeafAtIndex(int index) const;
         int GetLeafIndexAt(const XMFLOAT3& pos) const;
         const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
         const std::vector<LevelMapBSPPortal>& GetPortals()const { return m_portals; }
@@ -187,7 +189,6 @@ namespace SpookyAdulthood
         void GenerateTeleports(const VisMatrix& visMatrix);
         XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
         bool RenderSetCommonState(const CameraFirstPerson& camera);
-        void GetRoomDoorIndices(std::vector<uint32_t>& doorIndices, int roomIndex=-1) const;
 
     private:
         LevelMapBSPNodePtr m_root;

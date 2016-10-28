@@ -344,6 +344,7 @@
     <Media Include="Assets\sounds\breathing.wav" />
     <Media Include="Assets\sounds\heartbeat.wav" />
     <Media Include="Assets\sounds\hit0.wav" />
+    <Media Include="Assets\sounds\laugh.wav" />
     <Media Include="Assets\sounds\piano.wav" />
     <Media Include="Assets\sounds\shotgun.wav" />
     <Media Include="Assets\sounds\walk.wav" />

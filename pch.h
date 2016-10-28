@@ -173,3 +173,18 @@ inline bool operator ==(const DirectX::XMUINT2& a, const DirectX::XMUINT2& b)
 {
     return a.x == b.x && a.y == b.y;
 }
+
+inline bool XM3Eq(const XMFLOAT3& a, const XMFLOAT3& b, float EPSI=0.0001f)
+{
+    return fabs(a.x - b.x) < EPSI && fabs(a.y - b.y) < EPSI && fabs(a.z - b.z) < EPSI;
+}
+
+inline bool XM2Eq(const XMFLOAT2& a, const XMFLOAT2& b, float EPSI = 0.0001f)
+{
+    return fabs(a.x - b.x) < EPSI && fabs(a.y - b.y) < EPSI;
+}
+
+inline XMFLOAT2 XM2Neg(const XMFLOAT2& a)
+{
+    return XMFLOAT2(-a.x, -a.y);
+}

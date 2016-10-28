@@ -17,6 +17,8 @@ namespace SpookyAdulthood
         XMFLOAT2 normal;
         int flags;
 
+        inline bool operator ==(const CollSegment& rhs) const { return EqualTo(rhs); }
+        inline bool EqualTo(const CollSegment& rhs)const { return XM2Eq(start, rhs.start) && XM2Eq(end, rhs.end) && XM2Eq(normal, XM2Neg(rhs.normal)); }
         inline bool IsValid() const { return start.x != end.x || start.y != end.y; }
         inline bool IsDisabled() const { return (flags & DISABLED) != 0; }
         inline bool IsPortalOpen() const { return IsDisabled() && (flags & PORTAL)!=0; }

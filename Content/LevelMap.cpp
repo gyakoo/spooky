@@ -157,6 +157,10 @@ void LevelMapBSPPortal::GetTransform(XMFLOAT3& pos, float& rotY) const
     }
 }
 
+LevelMapBSPNodePtr LevelMapBSPPortal::GetOtherLeaf(LevelMapBSPNodePtr l) const
+{
+    return (l == m_leaves[0]) ? m_leaves[1] : m_leaves[0];
+}
 #pragma endregion
 
 //////////////////////////////////////////////////////////////////////////
@@ -825,6 +829,13 @@ int LevelMap::GetLeafIndexAt(const XMFLOAT3& pos) const
     return i;
 }
 
+
+LevelMapBSPNodePtr LevelMap::GetLeafAtIndex(int index) const
+{
+    return m_leaves[index];
+}
+
+
 LevelMapBSPNodePtr LevelMap::GetLeafAt(const XMFLOAT3& pos) const
 {
     // linear search (this works so far, do the BSP search later with more time)
@@ -939,32 +950,14 @@ bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3&
     return wasHit;
 }
 
-void LevelMap::GetRoomDoorIndices(std::vector<uint32_t>& doorIndices, int roomIndex) const
-{
-    if (roomIndex==-1 && !m_cameraCurLeaf) 
-        return;
-    auto leaf = roomIndex < 0 ? m_cameraCurLeaf : m_leaves[roomIndex];
-    auto it = m_leafPortals.find(leaf.get());
-    while (it != m_leafPortals.end() && it->first == leaf.get())
-    {
-        doorIndices.push_back(it->second);
-        ++it;
-    }
-}
-
 void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
 {
-    // mark door open
     if (roomIndex == -1 && !m_cameraCurLeaf)
         return;
-    std::vector<uint32_t> doors; doors.reserve(4);
-    GetRoomDoorIndices(doors, roomIndex);
-    for (const auto& di : doors)
-    {
-        m_portals[di].m_open = open;
-    }
-
-    // disable collision segment
+    
+    // disable collision segments for this leaf
+    std::vector<CollSegment> portalSegments; 
+    portalSegments.reserve(4);
     auto leaf = roomIndex < 0 ? m_cameraCurLeaf : m_leaves[roomIndex];
     if (!leaf) return;
     if (leaf->m_collisionSegments)
@@ -972,10 +965,38 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
         for (auto& collseg : *leaf->m_collisionSegments)
         {
             if (!collseg.IsPortal()) continue;
-            collseg.SetDisabled(open);            
+            collseg.SetDisabled(open);
+            portalSegments.push_back(collseg);
         }
     }
 
+    
+    // look for all portal objects, mark as open
+    {
+        auto it = m_leafPortals.find(leaf.get());
+        while (it != m_leafPortals.end() && it->first == leaf.get())
+        {
+            auto& portal = m_portals[it->second];
+            portal.m_open = open;
+
+            // for this portal, get the connected room and disable its matching portal segment 
+            auto ol = portal.GetOtherLeaf(leaf);
+            if (ol->m_collisionSegments)
+            {
+                for (auto& collseg : *ol->m_collisionSegments)
+                {
+                    if (!collseg.IsPortal()) continue;
+                    if (std::find(portalSegments.begin(), portalSegments.end(), collseg) != portalSegments.end())
+                    {
+                        collseg.SetDisabled(open);
+                        break;
+                    }
+                }
+            }
+
+            ++it;
+        }
+    }
 }
 
 #pragma endregion

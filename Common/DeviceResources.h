@@ -42,7 +42,7 @@ namespace DX
     //* ***************************************************************** *//
     struct GameResources // common
     {
-        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_HEART, SFX_HIT0, SFX_MAX};
+        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_HEART, SFX_HIT0, SFX_LAUGH, SFX_MAX};
         GameResources(const std::shared_ptr<DX::DeviceResources>& device);
         ~GameResources();
 
@@ -90,12 +90,13 @@ namespace DX
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);
         void PlayerShoot();
-        void ToggleRoomDoors();
         void OpenDoor(uint32_t index);
         void GenerateNewLevel();
         void SpawnPlayer();
         void HitPlayer();
         void FinishCurrentRoom();
+        void OnEnterRoom(int roomEntering);
+        void OnLeaveRoom(int roomLeaving);
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

@@ -264,5 +264,8 @@
     <Media Include="Assets\sounds\hit0.wav">
       <Filter>Assets\snd</Filter>
     </Media>
+    <Media Include="Assets\sounds\laugh.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
   </ItemGroup>
 </Project>
