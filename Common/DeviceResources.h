@@ -29,7 +29,7 @@ namespace DX
         uint32_t Get(uint32_t minN, uint32_t maxN);
         uint32_t Get01();
         float GetF(float minN, float maxN);
-
+        uint32_t GetWithDensity(const uint32_t* func, int count);
 
     protected:
         std::unique_ptr<std::mt19937> m_gen;

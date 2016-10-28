@@ -81,7 +81,7 @@ namespace SpookyAdulthood
 
         void CreateDeviceDependentResources();
         void ReleaseDeviceDependentResources();
-        void Reserve(int roomCount);
+        void ReserveAndCreateEntities(int roomCount);
         void SetCurrentRoom(int roomIndex);
 
         // romIndex can be -1 (current), -2 (persistent) or > 0 for specific room

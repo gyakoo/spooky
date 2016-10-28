@@ -70,6 +70,7 @@ namespace SpookyAdulthood
         int m_teleportNdx;
         int m_leafNdx;
         uint32_t m_tag;
+        uint32_t m_profile;
     };
 
     struct NodeDXResources
@@ -150,6 +151,19 @@ namespace SpookyAdulthood
 	class LevelMap
 	{
 	public:
+        enum RoomProfile
+        {
+            RP_NORMAL = 0,
+            RP_GRAVE,
+            RP_WOODS,
+            RP_BODYPILES,
+            RP_GARGOYLES,
+            RP_HANDS,
+            RP_SCARYMESSAGES,
+            RP_PUMPKINFIELD,
+            RP_MAX
+        };
+
 		LevelMap(const std::shared_ptr<DX::DeviceResources>& device);
         ~LevelMap() { Destroy(); }
 		void Generate(const LevelMapGenerationSettings& settings);
@@ -177,6 +191,7 @@ namespace SpookyAdulthood
         void Destroy();
         void RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateDetailsForRoom(LevelMapBSPNodePtr& node, const LevelMapGenerationSettings& settings);
+        void GeneratePillarsForRoom(LevelMapBSPNodePtr& node, const XMUINT2& minForPillars, const XMFLOAT2& probRange);
         void GenerateVisibility(const LevelMapGenerationSettings& settings);
         void GenerateCollisionInfo();
         bool VisRoomAreContiguous(const LevelMapBSPNodePtr& roomA, const LevelMapBSPNodePtr& roomB);

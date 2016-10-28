@@ -753,6 +753,58 @@ DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
 	return rotation;
 }
 
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+#pragma region RandomProvider
+void DX::RandomProvider::SetSeed(uint32_t seed)
+{
+    if (!m_gen || m_lastSeed != seed)
+        m_gen = std::make_unique<std::mt19937>(seed);
+    m_lastSeed = seed;
+}
+
+uint32_t DX::RandomProvider::Get(uint32_t minN, uint32_t maxN)
+{
+    // slow?
+    if (!m_gen)
+        SetSeed(RANDOM_DEFAULT_SEED);
+    return std::uniform_int_distribution<uint32_t>(minN, maxN)(*m_gen);
+}
+
+float DX::RandomProvider::GetF(float minN, float maxN)
+{
+    if (!m_gen)
+        SetSeed(RANDOM_DEFAULT_SEED);
+    return std::uniform_real_distribution<float>(minN, maxN)(*m_gen);
+}
+
+uint32_t DX::RandomProvider::Get01()
+{
+    if (!m_gen)
+        SetSeed(RANDOM_DEFAULT_SEED);
+    return std::bernoulli_distribution(0.5)(*m_gen);
+}
+
+uint32_t DX::RandomProvider::GetWithDensity(const uint32_t* func, int count)
+{
+    const uint32_t prob = Get(0, 99);
+    uint32_t a = 0, i = 0;
+    for (i = 0; i < (uint32_t)count; ++i)
+    {
+        if (prob >= a && prob < func[i])
+            return i;
+        a = func[i];
+    }    
+    if (i >= count)
+        throw std::exception("Out of range of prob. density function for room profiles");
+    return 0xffffffff;
+}
+#pragma endregion
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+
 // default values for SOUNDS
 static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav",
@@ -1106,7 +1158,7 @@ void DX::GameResources::GenerateNewLevel()
     SpawnPlayer();
 
     m_entityMgr.Clear();
-    m_entityMgr.Reserve((int)m_map.GetRooms().size());
+    m_entityMgr.ReserveAndCreateEntities((int)m_map.GetRooms().size());
     m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
     m_entityMgr.AddEntity(std::make_shared<EntityGun>(), EntityManager::ALL_ROOMS); // GUN
 

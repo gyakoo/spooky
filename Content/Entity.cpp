@@ -116,11 +116,29 @@ EntityManager::EntityManager(const std::shared_ptr<DX::DeviceResources>& device)
     EntityManager::s_instance = this;
 }
 
-void EntityManager::Reserve(int roomCount)
+void EntityManager::ReserveAndCreateEntities(int roomCount)
 {
     if (roomCount <= 0)
         throw std::exception("No rooms in entity manager?");
     m_rooms.resize(roomCount);
+
+    // will create the entities depending on the room profiles
+    auto gameRes = m_device->GetGameResources();
+    auto& rooms = gameRes->m_map.GetRooms();
+    for (auto& r : rooms)
+    {
+        switch (r->m_profile)
+        {
+        case LevelMap::RP_NORMAL: break;
+        case LevelMap::RP_GRAVE: break;
+        case LevelMap::RP_WOODS: break;
+        case LevelMap::RP_BODYPILES: break;
+        case LevelMap::RP_GARGOYLES: break;
+        case LevelMap::RP_HANDS: break;
+        case LevelMap::RP_SCARYMESSAGES: break;
+        case LevelMap::RP_PUMPKINFIELD: break;
+        }
+    }
 }
 
 void EntityManager::SetCurrentRoom(int roomIndex) 
@@ -1103,7 +1121,10 @@ void EnemyBlackHands::Update(float stepTime, const CameraFirstPerson& camera)
         h.t += stepTime;
     }
 
-    if (DistSqToPlayer() < 5.0f*5.0f && PlayerLookintAtMe(0.97f) && m_totalTime>3.0f)
+    if (DistSqToPlayer() < 5.0f*5.0f 
+        && PlayerLookintAtMe(0.97f) 
+        && m_totalTime>3.0f 
+        && CanSeePlayer())
     {
         DoHit();
         m_totalTime = 0.0f;
@@ -1161,7 +1182,7 @@ EnemyPumpkin::EnemyPumpkin(const XMFLOAT3& pos)
     : m_timeInOuter(0.0f)
 {
     m_spriteIndex = 30;
-    m_size = XMFLOAT2(0.25f, 0.25f);
+    m_size = XMFLOAT2(0.3f, 0.3f);
     m_pos = pos;
     m_pos.y = m_size.y*0.5f;
 }

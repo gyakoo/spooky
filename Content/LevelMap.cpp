@@ -80,40 +80,6 @@ void LevelMapGenerationSettings::Validate() const
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-#pragma region RandomProvider
-void RandomProvider::SetSeed(uint32_t seed)
-{
-    if (!m_gen || m_lastSeed != seed)
-        m_gen = std::make_unique<std::mt19937>(seed);
-    m_lastSeed = seed;
-}
-
-uint32_t RandomProvider::Get(uint32_t minN, uint32_t maxN)
-{
-    // slow?
-    if (!m_gen)
-        SetSeed(RANDOM_DEFAULT_SEED);
-    return std::uniform_int_distribution<uint32_t>(minN, maxN)(*m_gen);
-}
-
-float RandomProvider::GetF(float minN, float maxN)
-{
-    if (!m_gen)
-        SetSeed(RANDOM_DEFAULT_SEED);
-    return std::uniform_real_distribution<float>(minN, maxN)(*m_gen);
-}
-
-uint32_t RandomProvider::Get01()
-{
-    if (!m_gen)
-        SetSeed(RANDOM_DEFAULT_SEED);
-    return std::bernoulli_distribution(0.5)(*m_gen);
-}
-
-#pragma endregion
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 #pragma region LevelMapBSPPortal
 XMUINT2 LevelMapBSPPortal::GetPortalPosition(XMUINT2* opposite/*0*/) const
 {
@@ -244,21 +210,53 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
     }
 }
 
+static const uint32_t RPDENSITY[LevelMap::RP_MAX] = {
+    30, 40, 50, 60, 70, 80, 90, 100
+};
+
 void LevelMap::GenerateDetailsForRoom(LevelMapBSPNodePtr& node, const LevelMapGenerationSettings& settings)
 {
+    auto& random = m_device->GetGameResources()->m_random;    
+    node->m_profile = random.GetWithDensity(RPDENSITY, RP_MAX);
+
+    switch (node->m_profile)
+    {
+        case RP_NORMAL:
+            GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.01f, 0.3f));
+            break;
+        case RP_GRAVE: break;
+        case RP_WOODS: break;
+        case RP_BODYPILES: 
+            GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.01f, 0.15f));
+            break;
+        case RP_GARGOYLES: 
+            GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.01f, 0.1f));
+            break;
+        case RP_HANDS: 
+            GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.01f, 0.2f));
+            break;
+        case RP_SCARYMESSAGES: 
+            GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.01f, 0.05f));
+            break;
+        case RP_PUMPKINFIELD: break;
+    }
+}
+
+void LevelMap::GeneratePillarsForRoom(LevelMapBSPNodePtr& node, const XMUINT2& minForPillars, const XMFLOAT2& probRange)
+{
     // pillars
+    auto& random = m_device->GetGameResources()->m_random;
     const auto& area = node->m_area;
     if (area.SizeX() > 2 && area.SizeY() > 2)
     {
         // we don't want pillars next to a door (can block a door)
         uint32_t sx = area.SizeX() - 2;
         uint32_t sy = area.SizeY() - 2;
-        if (sx >= settings.m_minForPillars.x && sy >= settings.m_minForPillars.y)
+        if (sx >= minForPillars.x && sy >= minForPillars.y)
         {
             // compute no of pillars to generate and allocate vector
-            auto& random = m_device->GetGameResources()->m_random;
             int areaSize = sx*sy;
-            float p = random.GetF(settings.m_pillarsProbRange.x, settings.m_pillarsProbRange.y);
+            float p = random.GetF(probRange.x, probRange.y);
             int nPillars = (int)(areaSize*p);
             if (nPillars && !node->m_pillars)
             {
@@ -703,7 +701,7 @@ void LevelMap::Render(const CameraFirstPerson& camera)
         {
             if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
                 continue;
-
+            
             UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
             UINT offset = 0;
             context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
@@ -1055,7 +1053,11 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
             quadVerts[i].color = argb;
         }
         auto& random = device->GetGameResources()->m_random;
-        const UINT FLOORTEX = random.Get01();
+        UINT FLOORTEX = random.Get01();
+        if (m_profile == LevelMap::RP_GRAVE || m_profile == LevelMap::RP_WOODS || m_profile == LevelMap::RP_PUMPKINFIELD)
+        {
+            FLOORTEX = random.Get(0, 4);
+        }
         const UINT CEILINGTEX = random.Get(0, 4);
         const UINT WALLTEX = 0;// random.Get(0, 4);
         unsigned short cvi = 0; // current vertex index
@@ -1067,10 +1069,16 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                 x = float(_x); z = float(_z);
                 // floor tile
                 {
-                    quadVerts[0].position = XMFLOAT3(x, 0.0f, z);
-                    quadVerts[1].position = XMFLOAT3(x + EP, 0.0f, z);
-                    quadVerts[2].position = XMFLOAT3(x + EP, 0.0f, z + EP);
-                    quadVerts[3].position = XMFLOAT3(x, 0.0f, z + EP);
+                    float h0 = 0.0f, h1 = 0.0f;
+                    if (m_profile == LevelMap::RP_GRAVE || m_profile == LevelMap::RP_WOODS || m_profile == LevelMap::RP_PUMPKINFIELD)
+                    {
+                        h0 = fabs(sin(x)*0.15f);
+                        h1 = fabs(sin(x + 1)*0.15f);
+                    }
+                    quadVerts[0].position = XMFLOAT3(x, h0, z);
+                    quadVerts[1].position = XMFLOAT3(x + EP, h1, z);
+                    quadVerts[2].position = XMFLOAT3(x + EP, h1, z + EP);
+                    quadVerts[3].position = XMFLOAT3(x, h0, z + EP);
                     quadVerts[0].SetTexCoord(0, 0, FLOORTEX, 1);
                     quadVerts[1].SetTexCoord(1, 0, FLOORTEX, 1);
                     quadVerts[2].SetTexCoord(1, 1, FLOORTEX, 1);
