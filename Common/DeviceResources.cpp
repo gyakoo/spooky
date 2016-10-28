@@ -795,7 +795,7 @@ uint32_t DX::RandomProvider::GetWithDensity(const uint32_t* func, int count)
             return i;
         a = func[i];
     }    
-    if (i >= count)
+    if (i >= (uint32_t)count)
         throw std::exception("Out of range of prob. density function for room profiles");
     return 0xffffffff;
 }
@@ -807,10 +807,14 @@ uint32_t DX::RandomProvider::GetWithDensity(const uint32_t* func, int count)
 
 // default values for SOUNDS
 static const wchar_t* g_sndNames[] = {
-    L"assets\\sounds\\walk.wav", L"assets\\sounds\\breathing.wav",
-    L"assets\\sounds\\piano.wav", L"assets\\sounds\\shotgun.wav",
-    L"assets\\sounds\\heartbeat.wav", L"assets\\sounds\\hit0.wav",
-    L"assets\\sounds\\laugh.wav"};
+    L"assets\\sounds\\walk.wav",        // 0
+    L"assets\\sounds\\breathing.wav",   // 1
+    L"assets\\sounds\\piano.wav",       // 2
+    L"assets\\sounds\\shotgun.wav",     // 3
+    L"assets\\sounds\\heartbeat.wav",   // 4
+    L"assets\\sounds\\hit0.wav",        // 5
+    L"assets\\sounds\\laugh.wav"        // 6
+};
 static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f };
 static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f };
 
@@ -818,7 +822,7 @@ DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
-    , m_invincibleTime(-1.0f), m_curDensityMult(0.4f)
+    , m_invincibleTime(-1.0f), m_curDensityMult(0.45f)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -958,7 +962,7 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
     auto& room = m_map.GetLeafAt(m_camera.GetPosition());
     if (room)
     {
-        m_curDensityMult = room->m_finished ? 0.15f : 0.4f;
+        m_curDensityMult = room->m_finished ? 0.15f : 0.45f;
         m_entityMgr.SetCurrentRoom(room->m_leafNdx);
     }
     m_entityMgr.Update(timer, camera);

@@ -119,6 +119,40 @@ void SceneRenderer::Render()
     sprite.Draw3D(12, XMFLOAT3(3.35f, 0.7f, 7.34f), XMFLOAT2(0.6f, 1.0f));
 
     sprite.End3D();
+
+    sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
+    sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
+    sprite.CreateSprite(L"assets\\sprites\\gun0.png"); // 2
+    sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
+    sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
+    sprite.CreateSprite(L"assets\\sprites\\dep1.png"); // 5
+    sprite.CreateSprite(L"assets\\sprites\\grave1.png"); // 6
+    sprite.CreateSprite(L"assets\\sprites\\crosshair.png"); // 7
+    sprite.CreateSprite(L"assets\\sprites\\tree1.png"); // 8
+    sprite.CreateSprite(L"assets\\sprites\\msgdie.png"); // 9
+    sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
+    sprite.CreateSprite(L"assets\\sprites\\bodpile1.png"); // 11
+    sprite.CreateSprite(L"assets\\sprites\\girl1.png"); // 12
+    sprite.CreateSprite(L"assets\\sprites\\gunshoot0.png"); // 13
+    sprite.CreateSprite(L"assets\\sprites\\gunshoot1.png"); // 14
+    sprite.CreateSprite(L"assets\\sprites\\gunshoot2.png"); // 15
+    sprite.CreateSprite(L"assets\\sprites\\gun1.png"); // 16
+    sprite.CreateSprite(L"assets\\sprites\\gun2.png"); // 17
+    sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
+    sprite.CreateSprite(L"assets\\sprites\\proj0.png"); // 19
+    sprite.CreateSprite(L"assets\\sprites\\hit00.png"); // 20
+    sprite.CreateSprite(L"assets\\sprites\\hit01.png"); // 21
+    sprite.CreateSprite(L"assets\\sprites\\hit10.png"); // 22
+    sprite.CreateSprite(L"assets\\sprites\\hit11.png"); // 23
+    sprite.CreateSprite(L"assets\\sprites\\door0.png"); // 24
+    sprite.CreateSprite(L"assets\\sprites\\teleport0.png"); // 25
+    sprite.CreateSprite(L"assets\\sprites\\teleport1.png"); // 26
+    sprite.CreateSprite(L"assets\\sprites\\teleport2.png"); // 27
+    sprite.CreateSprite(L"assets\\sprites\\garg2.png"); // 28
+    sprite.CreateSprite(L"assets\\textures\\white.png"); // 29
+    sprite.CreateSprite(L"assets\\sprites\\pumpkin.png"); // 30
+    sprite.CreateSprite(L"assets\\sprites\\door1.png"); // 31
+
     */
     // some other input
 }

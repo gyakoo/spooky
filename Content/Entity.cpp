@@ -124,19 +124,65 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
 
     // will create the entities depending on the room profiles
     auto gameRes = m_device->GetGameResources();
+    auto& rnd = gameRes->m_random;
     auto& rooms = gameRes->m_map.GetRooms();
+    XMUINT2 decoProbs[DECORMAX]; 
     for (auto& r : rooms)
     {
+        ZeroMemory(decoProbs, sizeof(XMUINT2)*DECORMAX);
         switch (r->m_profile)
         {
-        case LevelMap::RP_NORMAL: break;
-        case LevelMap::RP_GRAVE: break;
-        case LevelMap::RP_WOODS: break;
-        case LevelMap::RP_BODYPILES: break;
-        case LevelMap::RP_GARGOYLES: break;
-        case LevelMap::RP_HANDS: break;
-        case LevelMap::RP_SCARYMESSAGES: break;
-        case LevelMap::RP_PUMPKINFIELD: break;
+        case LevelMap::RP_NORMAL:
+            break;
+        case LevelMap::RP_GRAVE:
+            decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 3), 20);
+            decoProbs[GRAVE] = XMUINT2(rnd.Get(3, 20), 90);
+            decoProbs[TREEBLACK] = XMUINT2(rnd.Get(1, 4), 70);
+            decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 4), 50);
+            decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 4), 50);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(2, 10), 80);
+        break;
+        case LevelMap::RP_WOODS: 
+            decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
+            decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 60);
+            decoProbs[TREEBLACK] = XMUINT2(rnd.Get(5, 20), 100);
+            decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 4), 50);
+            decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 4), 50);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
+            break;
+        case LevelMap::RP_BODYPILES: 
+            decoProbs[BODYPILE] = XMUINT2(rnd.Get(4, 10), 60);
+            decoProbs[GREENHAND] = XMUINT2(rnd.Get(4, 10), 40);
+            decoProbs[BLACKHAND] = XMUINT2(rnd.Get(4, 10), 40);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(4, 15), 80);
+            break;
+        case LevelMap::RP_GARGOYLES: 
+            break;
+        case LevelMap::RP_HANDS: 
+            break;
+        case LevelMap::RP_SCARYMESSAGES: 
+            break;
+        case LevelMap::RP_PUMPKINFIELD: 
+            break;
+        }
+
+        // decorations
+        XMFLOAT2 shrink(0, 0), s;
+        for ( int i = 0; i < DECORMAX; ++i )
+        { 
+            const auto& p = decoProbs[i];
+            if (p.x == 0 || p.y == 0) continue;
+            for (uint32_t j = 0; j < p.x; ++j)
+            {
+                if (rnd.Get(0, 99) < p.y)
+                {
+                    s = EntitySingleDecoration::GetSizeOf((DecorType)i);
+                    shrink.x = shrink.y = std::max(s.x, s.y);
+                    auto decopos = r->GetRandomXZ(shrink);
+                    if ( r->Clearance( XMUINT2((UINT)decopos.x, (UINT)decopos.z) ) )
+                        AddEntity(std::make_shared<EntitySingleDecoration>((DecorType)i, decopos), r->m_leafNdx);
+                }
+            }
         }
     }
 }
@@ -391,6 +437,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\textures\\white.png"); // 29
     sprite.CreateSprite(L"assets\\sprites\\pumpkin.png"); // 30
     sprite.CreateSprite(L"assets\\sprites\\door1.png"); // 31
+    sprite.CreateSprite(L"assets\\sprites\\skull.png"); // 32
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 }
@@ -814,38 +861,6 @@ void EnemyPuky::GetNextTarget()
 #pragma endregion
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////// TREE BLACK
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EnemyTreeBlack::EnemyTreeBlack(const XMFLOAT3& pos, float shootEverySecs)
-    : m_shootEvery(shootEverySecs)
-{
-    m_spriteIndex = 8;
-    m_size = XMFLOAT2(0.7f, 1.9f);
-    m_pos = pos;
-    m_pos.y = 0.95f;
-    m_timeToNextShoot = shootEverySecs;
-}
-
-void EnemyTreeBlack::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
-{
-    Entity::Render(pass, camera, sprite);    
-}
-
-void EnemyTreeBlack::Update(float stepTime, const CameraFirstPerson& camera)
-{
-    EntityEnemyBase::Update(stepTime, camera);
-
-    m_timeToNextShoot -= stepTime;
-    if (m_timeToNextShoot <= 0.0f)
-    {
-        auto& rnd = RND;
-        const XMFLOAT3 offsets[2] = { XMFLOAT3(0,-.5f,0), XMFLOAT3(0,.45f,0) };
-        ShootToPlayer(19, 4.0f, offsets[rnd.Get01()], XMFLOAT2(0.5f, 0.5f));
-        m_timeToNextShoot = m_shootEvery - m_timeToNextShoot;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////// GARGOYLE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EnemyGargoyle::EnemyGargoyle(const XMFLOAT3& pos, float minDist)
@@ -1065,8 +1080,8 @@ bool EnemyGirl::GetNextTargetPoint()
     for (int i = 0; i < 8; ++i)
     {
         p.x = cx + offsets[i].x;
-        p.y = cy + offsets[i].y;
-        if (area.Contains(p) && !m_roomNode->IsPillar(p))
+        p.y = cy + offsets[i].y;        
+        if (m_roomNode->Clearance(p))
             allowedMoves[c++] = p;
     }
 
@@ -1215,6 +1230,76 @@ void EnemyPumpkin::DoHit()
     Invalidate(KILLED);
     if ( DistSqToPlayer() <= radiusInnerSq )
         DX::GameResources::instance->HitPlayer();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// DECORATION
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntitySingleDecoration::EntitySingleDecoration(DecorType type, const XMFLOAT3& pos)
+    : m_type(type)
+{
+    m_pos = pos;
+    auto& rnd = DX::GameResources::instance->m_random;
+    // we know the size and sprite index and pos.y of every decoration type
+    switch (m_type)
+    {
+    case BODYPILE:
+        m_spriteIndex = 11;
+        m_size = XMFLOAT2( rnd.GetF(1.2f,1.7f), rnd.GetF(0.5f,0.7f));
+        break;
+    case GRAVE:
+    {
+        m_spriteIndex = 6;
+        const float f = rnd.GetF(0.45f, 0.55f);
+        m_size = XMFLOAT2(f, f);
+    }break;
+    case TREEBLACK:
+        m_spriteIndex = 8;
+        m_size = XMFLOAT2(0.7f, rnd.GetF(1.7f, 2.0f));
+        break;
+    case GREENHAND:
+        m_spriteIndex = 3;
+        m_size = XMFLOAT2(0.2f,0.3f);
+        break;
+    case BLACKHAND:
+        m_spriteIndex = 1;
+        m_size = XMFLOAT2(0.25f, 0.25f);
+        break;
+    case SKULL: 
+        m_spriteIndex = 32;
+        m_size = XMFLOAT2(0.25f, 0.25f);
+        break;
+    }
+    m_pos.y = m_size.y*0.5f;
+}
+
+XMFLOAT2 EntitySingleDecoration::GetSizeOf(DecorType type)
+{
+    XMFLOAT2 s;
+    switch (type)
+    {
+    case BODYPILE: s = XMFLOAT2(1.5f, 0.6f); break;
+    case GRAVE: s = XMFLOAT2(0.5f, 0.5f); break;
+    case TREEBLACK: s = XMFLOAT2(0.7f, 1.9f); break;
+    case GREENHAND: s = XMFLOAT2(0.2f, 0.3f); break;
+    case BLACKHAND: s = XMFLOAT2(0.25f, 0.25f); break;
+    case SKULL: s = XMFLOAT2(0.25f, 0.25f); break;
+    }
+    return s;
+}
+
+
+void EntitySingleDecoration::DoHit()
+{
+    switch (m_type)
+    {
+    case BODYPILE:break;
+    case GRAVE:break;
+    case TREEBLACK:break;
+    case GREENHAND:break;
+    case BLACKHAND:break;
+    case SKULL: break;
+    }
 }
 
 #undef CAM

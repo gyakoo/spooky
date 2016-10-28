@@ -1075,9 +1075,9 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
             quadVerts[i].color = argb;
         }
         auto& random = device->GetGameResources()->m_random;
-        UINT FLOORTEX = random.Get01();
+        UINT FLOORTEX = random.Get(5,8);
         UINT CEILINGTEX = random.Get(0, 4);
-        UINT WALLTEX = random.Get(3, 6);
+        UINT WALLTEX = random.Get(3, 7);
         bool ceiling = true;
         if (m_profile == LevelMap::RP_GRAVE || m_profile == LevelMap::RP_WOODS || m_profile == LevelMap::RP_PUMPKINFIELD)
         {

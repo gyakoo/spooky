@@ -59,6 +59,7 @@ namespace SpookyAdulthood
         void GenerateCollisionSegments(const LevelMap& lmap);
         bool IsPillar(const XMUINT2& ppos)const;
         XMFLOAT3 GetRandomXZ(const XMFLOAT2& shrink=XMFLOAT2(0,0)) const;
+        inline bool Clearance(const XMUINT2& pos) const { return m_area.Contains(pos) && !IsPillar(pos); };
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;

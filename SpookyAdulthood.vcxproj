@@ -215,6 +215,7 @@
     <Image Include="Assets\sprites\msgdie.png" />
     <Image Include="Assets\sprites\proj0.png" />
     <Image Include="Assets\sprites\pumpkin.png" />
+    <Image Include="Assets\sprites\skull.png" />
     <Image Include="Assets\sprites\teleport0.png" />
     <Image Include="Assets\sprites\teleport1.png" />
     <Image Include="Assets\sprites\teleport2.png" />

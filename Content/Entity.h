@@ -244,19 +244,6 @@ namespace SpookyAdulthood
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    struct EnemyTreeBlack : public EntityEnemyBase
-    {
-        EnemyTreeBlack(const XMFLOAT3& pos, float shootEverySecs = 20.5f);
-        virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
-        virtual bool CanDie() { return true; }
-
-        float m_shootEvery;
-        float m_timeToNextShoot;
-    };
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyGirl : public EntityEnemyBase
     {
         enum eState{ WAITING, GOING };
@@ -309,6 +296,26 @@ namespace SpookyAdulthood
 
         int m_origN;
         std::vector<Hand> m_hands;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    enum DecorType {
+        BODYPILE = 0,
+        GRAVE,
+        TREEBLACK,
+        GREENHAND,
+        BLACKHAND,
+        SKULL,
+        DECORMAX
+    };
+    struct EntitySingleDecoration : public EntityEnemyBase
+    {
+        EntitySingleDecoration(DecorType type, const XMFLOAT3& pos);
+        virtual void DoHit();
+
+        static XMFLOAT2 GetSizeOf(DecorType type);
+
+        DecorType m_type;
     };
 
 };
