@@ -775,6 +775,7 @@ float DX::RandomProvider::GetF(float minN, float maxN)
 {
     if (!m_gen)
         SetSeed(RANDOM_DEFAULT_SEED);
+    if (minN > maxN) std::swap(minN, maxN);
     return std::uniform_real_distribution<float>(minN, maxN)(*m_gen);
 }
 
@@ -825,7 +826,7 @@ static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\broken.wav"       // 15
 };
 static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.9f, 0.0f, 0.0f, 0.0f, 0.2f, -0.9f, 0.0f, -0.8f, -0.7f };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.1f, 0.0f, 0.0f, 0.0f, 0.2f, -0.1f, 0.0f, -0.2f, -1.0f };
 float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
 
 DX::GameResources* DX::GameResources::instance = nullptr;

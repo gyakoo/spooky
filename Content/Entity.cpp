@@ -170,7 +170,7 @@ void EntityManager::CreateEntities_Gargoyle(LevelMapBSPNode* r, int n, uint32_t 
         {
             p = r->GetRandomXZ(XMFLOAT2(0.75f, 0.75f));
             if (r->Clearance(p))
-                AddEntity(std::make_shared<EnemyGargoyle>(p, rnd.GetF(1.0f,3.5f)), r->m_leafNdx);
+                AddEntity(std::make_shared<EnemyGargoyle>(p, rnd.GetF(3.0f,6.0f)), r->m_leafNdx);
         }
     }
 }
