@@ -1073,7 +1073,7 @@ void DX::GameResources::PlayerShoot()
     auto startpos = m_camera.GetPosition();
     // compute all rays for shotgun (this is so ugly and expensive)
     const float A = 0.0f; // aperture angle shoot
-#define Rr (m_random.GetF(0.0f,0.3f))
+#define Rr (m_random.GetF(0.0f,0.2f))
     const XMMATRIX rotations[7] = { // buh, we have memory enough!
         XMMatrixMultiply(XMMatrixRotationX(-A-Rr), XMMatrixRotationY(A+Rr)),
         XMMatrixMultiply(XMMatrixRotationX(-A-Rr),XMMatrixRotationY(-A-Rr)),
@@ -1127,7 +1127,7 @@ void DX::GameResources::OpenDoor(uint32_t index)
 }
 
 
-void DX::GameResources::HitPlayer()
+void DX::GameResources::HitPlayer(bool killer)
 {
     if (m_invincibleTime <= 0.0f)
     {
@@ -1135,7 +1135,14 @@ void DX::GameResources::HitPlayer()
         SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
         SoundPlay(DX::GameResources::SFX_HIT0, false);
         m_invincibleTime += 0.7f;
+        if (killer)
+            KillPlayer();
     }
+}
+
+void DX::GameResources::KillPlayer()
+{
+    SoundPlay(SFX_LAUGH, false);
 }
 
 void DX::GameResources::FinishCurrentRoom()

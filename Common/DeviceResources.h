@@ -94,7 +94,8 @@ namespace DX
         void OpenDoor(uint32_t index);
         void GenerateNewLevel();
         void SpawnPlayer();
-        void HitPlayer();
+        void HitPlayer(bool killer=false);
+        void KillPlayer();
         void FinishCurrentRoom();
         void OnEnterRoom(int roomEntering);
         void OnLeaveRoom(int roomLeaving);

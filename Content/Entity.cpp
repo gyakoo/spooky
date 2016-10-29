@@ -530,7 +530,7 @@ void EntityRoomChecker_AllDead::Update(float stepTime, const CameraFirstPerson& 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float speed, const XMFLOAT3& dir, bool receiveHit )
     : Entity(SPRITE3D | ANIMATION3D | (receiveHit?ACCEPT_RAYCAST:0)), m_firstTime(true), m_speed(speed)
-    , m_waitToCheck(-1.0f)
+    , m_waitToCheck(-1.0f), m_killer(false)
 {
     m_collidePlayer = true;
     m_pos = pos;
@@ -538,7 +538,7 @@ EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float spe
     m_timeOut = 10.0f; // max time out for projectiles (just in case)
     m_spriteIndex = spriteNdx;
     m_size = XMFLOAT2(0.5f, 0.5f);
-    //m_speed = 1.0f; // remove
+    m_killer = (spriteNdx == 9);
 }
 
 void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
@@ -566,7 +566,7 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
         float distToPl = XM3LenSq(toPl);
         wasHit = distToPl < camera.RadiusCollideSq();
         if (wasHit)
-            gameRes->HitPlayer();
+            gameRes->HitPlayer(m_killer);
 
     }
     else
@@ -588,7 +588,8 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
 
 void EntityProjectile::DoHit()
 {
-    Invalidate(KILLED);
+    if ( m_killer )
+        Invalidate(KILLED);
 }
 
 
@@ -1293,12 +1294,20 @@ void EntitySingleDecoration::DoHit()
 {
     switch (m_type)
     {
-    case BODYPILE:break;
-    case GRAVE:break;
-    case TREEBLACK:break;
-    case GREENHAND:break;
-    case BLACKHAND:break;
-    case SKULL: break;
+    case BODYPILE:
+        break;
+    case GRAVE:
+        break;
+    case TREEBLACK:
+        break;
+    case GREENHAND:
+        Invalidate(KILLED);
+        break;
+    case BLACKHAND:
+        break;
+    case SKULL: 
+        Invalidate(KILLED);
+        break;
     }
 }
 

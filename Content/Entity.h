@@ -149,6 +149,7 @@ namespace SpookyAdulthood
         XMFLOAT3 m_dir;
         float m_speed;
         float m_waitToCheck;
+        bool m_killer;
         bool m_firstTime;
         bool m_collidePlayer;
     };

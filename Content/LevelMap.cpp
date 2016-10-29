@@ -684,30 +684,30 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     auto context = m_device->GetD3DDeviceContext();
     if (GlobalFlags::DrawLevelGeometry)
     {
-        // single room and connected ones
-        //if (m_cameraCurLeaf && m_cameraCurLeaf->m_dx && m_cameraCurLeaf->m_dx->m_indexBuffer)
-        //{
-        //    auto dx = m_cameraCurLeaf->m_dx;
-        //    UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
-        //    UINT offset = 0;
-        //    context->IASetVertexBuffers(0, 1, dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
-        //    context->IASetIndexBuffer(dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-        //    context->DrawIndexed((UINT)dx->m_indexCount, 0, 0);
-        //}
-
-        // render all rooms 
-        // TODO: (c'mon, improve this with visibity bit*h, that's why you did BSP, duh!)
-        for (const auto& room : m_leaves)
+        // SINGLE room and connected ones
+        if (m_cameraCurLeaf && m_cameraCurLeaf->m_dx && m_cameraCurLeaf->m_dx->m_indexBuffer)
         {
-            if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
-                continue;
-            
+            auto dx = m_cameraCurLeaf->m_dx;
             UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
             UINT offset = 0;
-            context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
-            context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-            context->DrawIndexed((UINT)room->m_dx->m_indexCount, 0, 0);
+            context->IASetVertexBuffers(0, 1, dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
+            context->IASetIndexBuffer(dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+            context->DrawIndexed((UINT)dx->m_indexCount, 0, 0);
         }
+
+        // render ALL rooms 
+        // TODO: (c'mon, improve this with visibity bit*h, that's why you did BSP, duh!)
+        //for (const auto& room : m_leaves)
+        //{
+        //    if (!room->m_dx || !room->m_dx->m_indexBuffer)  // not ready
+        //        continue;
+        //    
+        //    UINT stride = sizeof(VertexPositionNormalColorTextureNdx);
+        //    UINT offset = 0;
+        //    context->IASetVertexBuffers(0, 1, room->m_dx->m_vertexBuffer.GetAddressOf(), &stride, &offset);
+        //    context->IASetIndexBuffer(room->m_dx->m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+        //    context->DrawIndexed((UINT)room->m_dx->m_indexCount, 0, 0);
+        //}
     }
 
 
@@ -739,11 +739,23 @@ void LevelMap::Render(const CameraFirstPerson& camera)
     spr.Begin3D(camera);
     XMFLOAT3 dp; 
     float rotY;
-    for (const auto& d : m_portals)
+    // current SINGLE coors
+    auto it = m_leafPortals.find(m_cameraCurLeaf.get());
+    while (it != m_leafPortals.end() && it->first == m_cameraCurLeaf.get())
     {
+        const auto& d = m_portals[it->second];
         d.GetTransform(dp, rotY);
         spr.Draw3D(d.m_open ? 31 : 24, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
+        ++it;
     }
+
+
+    // ALL door
+    //for (const auto& d : m_portals)
+    //{
+    //    d.GetTransform(dp, rotY);
+    //    spr.Draw3D(d.m_open ? 31 : 24, dp, XMFLOAT2(1, 1.5f), XMFLOAT4(1,1,1,1), false, false, false, rotY);
+    //}
     spr.End3D();
 }
 
