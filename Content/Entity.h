@@ -220,6 +220,7 @@ namespace SpookyAdulthood
         bool CanSeePlayer();
         void ModulateToColor(const XMFLOAT4& color, float duration);
         bool PlayerLookintAtMe(float range);
+        void PlaySoundDistance(uint32_t sound, float maxdist);
 
         XMFLOAT4 m_modulateTargetColor;
         float m_modulateTime;
@@ -274,6 +275,7 @@ namespace SpookyAdulthood
         virtual void DoHit();
 
         bool GetNextTargetPoint();
+        void Die();
 
         LevelMapBSPNode* m_roomNode;
         XMFLOAT3 m_nextTargetPoint;
@@ -317,6 +319,22 @@ namespace SpookyAdulthood
         int m_origN;
         std::vector<Hand> m_hands;
     };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyGhost : public EntityEnemyBase
+    {
+        EnemyGhost(const XMFLOAT3& pos);
+
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void DoHit();
+        virtual bool CanDie() { return true; }
+        void Die();
+        void JumpNextTargetPoint();
+        LevelMapBSPNode* m_roomNode;
+        float m_timeToJump;
+    };
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     enum DecorType {

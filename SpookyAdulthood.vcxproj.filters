@@ -297,5 +297,14 @@
     <Media Include="Assets\sounds\broken.wav">
       <Filter>Assets\snd</Filter>
     </Media>
+    <Media Include="Assets\sounds\ouch.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\die0.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\dash.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
   </ItemGroup>
 </Project>

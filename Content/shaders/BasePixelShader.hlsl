@@ -47,7 +47,7 @@ float4 main(PixelShaderInput input) : SV_TARGET
         const float2 xy = float2(input.sPos.x*aspect, input.sPos.y);
         const float levelTime = texAtlasSize.z;
         const float l = length(xy) * other.z;
-        float val = val = l*saturate(2 / dist); // origin and depth
+        float val = l*saturate(2 / dist); // origin and depth
         fogDensity *= val*other.y;
 
         // Fog 1/exp2

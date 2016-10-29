@@ -196,6 +196,14 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
         throw std::exception("No rooms in entity manager?");
     m_rooms.resize(roomCount);
 
+    {
+        auto r = DX::GameResources::instance->m_map.GetLeafAtIndex(0);
+        auto p = r->GetRandomXZ(XMFLOAT2(0.75f, 0.75f));
+        AddEntity(std::make_shared<EnemyGhost>(p), 0);
+        return;
+    }
+
+
     // will create the entities depending on the room profiles
     auto gameRes = m_device->GetGameResources();
     auto& rnd = gameRes->m_random;
@@ -891,12 +899,7 @@ EntityProjectile* EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, 
     gameRes->m_entityMgr.AddEntity(proj);
 
     // volume depending on distance
-    {
-        gameRes->SoundPlay(DX::GameResources::SFX_SHOOT0, false);
-        const float dtp = sqrt(DistSqToPlayer());
-        const float dv = gameRes->SoundGetDefaultVolume(DX::GameResources::SFX_SHOOT0);
-        gameRes->SoundVolume(DX::GameResources::SFX_SHOOT0, dv *(1.0f - std::min(1.0f,dtp / 5.0f)));
-    }
+    PlaySoundDistance(DX::GameResources::SFX_SHOOT0, 5.0f);    
     return proj.get();
 }
 
@@ -934,6 +937,16 @@ bool EntityEnemyBase::PlayerLookintAtMe(float range)
     const XMFLOAT3 toPl = XM3Normalize(XM3Sub(plPos, myPos));
     const float dot = XM3Dot(toPl, XM3Neg(cam.m_forward));
     return dot >= range;
+}
+
+void EntityEnemyBase::PlaySoundDistance(uint32_t sound, float maxdist)
+{
+    // volume depending on distance
+    auto gameRes = DX::GameResources::instance;
+    gameRes->SoundPlay(sound, false);
+    const float dtp = sqrt(DistSqToPlayer());
+    const float dv = gameRes->SoundGetDefaultVolume(sound);
+    gameRes->SoundVolume(sound, dv *(1.0f - std::min(1.0f, dtp / maxdist)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1203,14 +1216,18 @@ void EnemyGirl::DoHit()
     m_life -= t*MAXDAMAGE;
     if (m_life <= 0.0f)
     {
-        Invalidate(KILLED);
-        //gameRes->SoundPlay(DX::GameResources::SFX_EXPL0, false);
-        gameRes->SoundPlay(DX::GameResources::SFX_GIRLDIES, false);
+        Die();        
     }
     else
     {
         gameRes->SoundPlay(DX::GameResources::SFX_GIRL, false);
     }
+}
+
+void EnemyGirl::Die()
+{
+    Invalidate(KILLED); // stuck, she dies, poor little creature
+    PlaySoundDistance(DX::GameResources::SFX_GIRLDIES, 8.0f);
 }
 
 bool EnemyGirl::GetNextTargetPoint()
@@ -1240,7 +1257,7 @@ bool EnemyGirl::GetNextTargetPoint()
 
     if (c == 0)
     {
-        Invalidate(KILLED); // stuck, she dies, poor little creature
+        Die();
         return false;
     }
 
@@ -1471,6 +1488,106 @@ void EntitySingleDecoration::DoHit()
         Invalidate(KILLED);
         break;
     }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// GHOST
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EnemyGhost::EnemyGhost(const XMFLOAT3& pos)
+{
+    m_spriteIndex = 4;
+    m_pos = pos;
+    m_size = XMFLOAT2(0.5f, 1.0f);
+    m_pos.y = m_size.y*0.5f + 0.05f;
+    m_roomNode = DX::GameResources::instance->m_map.GetLeafAt(m_pos).get();
+    m_timeToJump = -1.0f;
+    m_life = 1.0f;
+}
+
+void EnemyGhost::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    EntityEnemyBase::Update(stepTime, camera);
+
+    m_timeToJump -= stepTime;
+
+    if (DistSqToPlayer() <= camera.RadiusCollideSq())
+    {
+        DX::GameResources::instance->HitPlayer();
+        JumpNextTargetPoint();
+    }
+
+    if (PlayerLookintAtMe(0.98f))
+    {
+        DX::GameResources::instance->m_curDensityMult = 2.0f;
+        JumpNextTargetPoint();
+    }
+}
+
+void EnemyGhost::DoHit()
+{
+    auto gameRes = DX::GameResources::instance;
+
+    float distToPl = DistSqToPlayer();
+    if (distToPl == 0.0f) distToPl = 1.0f;
+    distToPl = sqrt(distToPl);
+    const float t = std::max(1.0f - distToPl / gameRes->m_camera.m_shotgunRange, 0.0f);
+    const float MAXDAMAGE = 0.8f;
+    m_life -= t*MAXDAMAGE;
+    if (m_life <= 0.0f)
+    {
+        Die();
+    }
+    else
+    {
+        PlaySoundDistance(DX::GameResources::SFX_OUCH, 6.0f);       
+        gameRes->SoundPitch(DX::GameResources::SFX_OUCH, -1.0f);
+    }
+}
+
+void EnemyGhost::Die()
+{
+    Invalidate(KILLED);
+    PlaySoundDistance(DX::GameResources::SFX_DIE0, 8.0f);
+}
+
+void EnemyGhost::JumpNextTargetPoint()
+{
+    if (m_timeToJump >= 0.0f)
+        return;
+    m_timeToJump = 0.5f;
+
+    const uint32_t cx = (int)m_pos.x;
+    const uint32_t cy = (int)m_pos.y;
+
+    const auto& area = m_roomNode->m_area;
+
+    // clearance
+    XMUINT2 allowedMoves[8], p;
+    static const XMUINT2 offsets[8] = {
+        XMUINT2(-1,-1), XMUINT2(0,-1), XMUINT2(1,-1),
+        XMUINT2(-1,0), XMUINT2(1,0),
+        XMUINT2(-1,+1), XMUINT2(0,+1), XMUINT2(+1,+1) };
+    int c = 0;
+    for (int i = 0; i < 8; ++i)
+    {
+        p.x = cx + offsets[i].x;
+        p.y = cy + offsets[i].y;
+        if (m_roomNode->Clearance(p))
+            allowedMoves[c++] = p;
+    }
+
+    if (c == 0)
+    {
+        Die();
+        return;
+    }
+
+    const auto& selected = allowedMoves[RND.Get(0, c - 1)];
+    m_pos.x = selected.x + 0.5f;
+    m_pos.z = selected.y + 0.5f;
+    PlaySoundDistance(DX::GameResources::SFX_DASH, 5.0f);
+    DX::GameResources::instance->SoundPitch(DX::GameResources::SFX_DASH, RND.GetF(-0.9f, 0.9f));
 }
 
 #undef CAM

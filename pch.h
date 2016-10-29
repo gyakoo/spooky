@@ -200,3 +200,9 @@ inline const XMFLOAT3& XM3Up()
     static XMFLOAT3 g_up(0, 1, 0);
     return g_up;
 }
+
+inline const XMFLOAT4& XM4Zero()
+{
+    static XMFLOAT4 g_zero(0, 0, 0, 0);
+    return g_zero;
+}

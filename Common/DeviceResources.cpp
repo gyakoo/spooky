@@ -823,10 +823,13 @@ static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\cat.wav",          // 12
     L"assets\\sounds\\girl.wav",         // 13
     L"assets\\sounds\\shoot0.wav",       // 14
-    L"assets\\sounds\\broken.wav"       // 15
+    L"assets\\sounds\\broken.wav",       // 15
+    L"assets\\sounds\\ouch.wav",         // 16
+    L"assets\\sounds\\die0.wav",         // 17
+    L"assets\\sounds\\dash.wav"          // 18
 };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.1f, 0.0f, 0.0f, 0.0f, 0.2f, -0.1f, 0.0f, -0.2f, -1.0f };
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f, 0.8f, 0.7f, 0.4f };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.1f, 0.0f, 0.0f, 0.0f, 0.2f, -0.1f, 0.0f, -0.2f, -1.0f, -0.3f, -0.5f, -1.0f };
 float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
 
 DX::GameResources* DX::GameResources::instance = nullptr;

@@ -5,6 +5,9 @@ girldies.wav    - pablocandel       - http://freesound.org/people/pablocandel/so
 girl.wav        - tcrocker68        - http://freesound.org/people/tcrocker68/sounds/235592/
 cat.wav         - Noise Cuisine     - http://freesound.org/people/Noise%20Cuisine/sounds/67253/
 broken.wav      - Andre_Desartises  - http://freesound.org/people/Andre_Desartistes/sounds/331928/
+ouch.wav        - Under7dude        - http://freesound.org/people/Under7dude/sounds/163441/
+die0.wav        - josepharaoh99     - http://freesound.org/people/josepharaoh99/sounds/364929/
+dash.wav        - LloydEvans09      - http://freesound.org/people/LloydEvans09/sounds/221495/
 
 Rest of sounds were created using: http://www.bfxr.net/
 

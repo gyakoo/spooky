@@ -59,7 +59,10 @@ namespace DX
             SFX_CAT=12,
             SFX_GIRL = 13,
             SFX_SHOOT0 = 14,
-            SFX_BROKEN=15,
+            SFX_BROKEN = 15,
+            SFX_OUCH = 16,
+            SFX_DIE0 = 17,
+            SFX_DASH=18,
             SFX_MAX
         };
         GameResources(const std::shared_ptr<DX::DeviceResources>& device);
