@@ -270,5 +270,32 @@
     <Media Include="Assets\sounds\laugh.wav">
       <Filter>Assets\snd</Filter>
     </Media>
+    <Media Include="Assets\sounds\owl.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\explosion0.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\hit1.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\beep0.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\girldies.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\cat.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\girl.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\shoot0.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\broken.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
   </ItemGroup>
 </Project>

@@ -42,7 +42,26 @@ namespace DX
     //* ***************************************************************** *//
     struct GameResources // common
     {
-        enum { SFX_WALK=0, SFX_BREATH, SFX_PIANO, SFX_SHOTGUN, SFX_HEART, SFX_HIT0, SFX_LAUGH, SFX_MAX};
+        enum 
+        { 
+            SFX_WALK=0, 
+            SFX_BREATH=1, 
+            SFX_PIANO=2, 
+            SFX_SHOTGUN=3, 
+            SFX_HEART=4, 
+            SFX_HIT0=5, 
+            SFX_LAUGH=6, 
+            SFX_OWL=7, 
+            SFX_EXPL0=8,
+            SFX_HIT1 = 9,
+            SFX_BEEP0=10,
+            SFX_GIRLDIES = 11,
+            SFX_CAT=12,
+            SFX_GIRL = 13,
+            SFX_SHOOT0 = 14,
+            SFX_BROKEN=15,
+            SFX_MAX
+        };
         GameResources(const std::shared_ptr<DX::DeviceResources>& device);
         ~GameResources();
 
@@ -87,6 +106,7 @@ namespace DX
         void SoundResume(uint32_t index)const ;
         void SoundPitch(uint32_t index, float p);
         void SoundVolume(uint32_t index, float v);
+        float SoundGetDefaultVolume(uint32_t index);
         DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);

@@ -813,10 +813,20 @@ static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\shotgun.wav",     // 3
     L"assets\\sounds\\heartbeat.wav",   // 4
     L"assets\\sounds\\hit0.wav",        // 5
-    L"assets\\sounds\\laugh.wav"        // 6
+    L"assets\\sounds\\laugh.wav",       // 6
+    L"assets\\sounds\\owl.wav",         // 7
+    L"assets\\sounds\\explosion0.wav",  // 8
+    L"assets\\sounds\\hit1.wav",         // 9
+    L"assets\\sounds\\beep0.wav",        // 10
+    L"assets\\sounds\\girldies.wav",     // 11
+    L"assets\\sounds\\cat.wav",          // 12
+    L"assets\\sounds\\girl.wav",         // 13
+    L"assets\\sounds\\shoot0.wav",       // 14
+    L"assets\\sounds\\broken.wav"       // 15
 };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f };
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.9f, 0.0f, 0.0f, 0.0f, 0.2f, -0.9f, 0.0f, -0.8f, -0.7f };
+float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
 
 DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
@@ -1134,7 +1144,7 @@ void DX::GameResources::HitPlayer(bool killer)
         FlashScreen(1.0f, XMFLOAT4(1, 0, 0, 1));
         SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
         SoundPlay(DX::GameResources::SFX_HIT0, false);
-        m_invincibleTime += 0.7f;
+        m_invincibleTime += 1.0f;
         if (killer)
             KillPlayer();
     }
@@ -1159,7 +1169,7 @@ void DX::GameResources::OnEnterRoom(int roomEntering)
 
 void DX::GameResources::OnLeaveRoom(int roomLeaving)
 {
-
+    SoundStop(SFX_OWL);
 }
 
 

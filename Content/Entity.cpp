@@ -223,6 +223,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             CreateEntities_Girl(r.get(), rnd.Get(0, 2), 70);
             CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 40.0f,true), r->m_leafNdx);
             break;
         case LevelMap::RP_GRAVE:
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 3), 20);
@@ -235,6 +236,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 80);
             CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
             CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
             break;
         case LevelMap::RP_WOODS: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
@@ -245,6 +247,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
             CreateEntities_Girl(r.get(), rnd.Get(0, 5), 70);
             CreateEntities_Puky(r.get(), rnd.Get(0, 5), 60);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
             break;
         case LevelMap::RP_BODYPILES: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(4, 10), 60);
@@ -253,6 +256,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[SKULL] = XMUINT2(rnd.Get(4, 15), 80);
             CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
             CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 40.0f, true), r->m_leafNdx);
             break;
         case LevelMap::RP_GARGOYLES: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
@@ -261,6 +265,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Gargoyle(r.get(), rnd.Get(1, 10), 80);
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 70);
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 40.0f, true), r->m_leafNdx);
             break;
         case LevelMap::RP_HANDS: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
@@ -281,6 +286,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 50);
             CreateEntities_Pumpkin(r.get(), rnd.Get(5, 20), 80);
             CreateEntities_Puky(r.get(), rnd.Get(0, 5), 70);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
             break;
         }
 
@@ -813,6 +819,28 @@ void EntityAnimation::Update(float stepTime, const CameraFirstPerson& camera)
         m_size = m_sizes->at(boundIndex);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////// RANDOM SOUND
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityRandomSound::EntityRandomSound(uint32_t sound, float time0, float time1, bool endOnPlay)
+    : m_sound(sound), m_time0(time0), m_time1(time1), m_end(endOnPlay)
+{
+    m_waitTime = DX::GameResources::instance->m_random.GetF(m_time0, m_time1);
+}
+
+void EntityRandomSound::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    m_waitTime -= stepTime;
+    if (m_waitTime <= 0.0f)
+    {
+        DX::GameResources::instance->SoundPlay(m_sound, false);
+        if ( m_end )
+            Invalidate();
+        m_waitTime = m_waitTime = DX::GameResources::instance->m_random.GetF(m_time0, m_time1);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////// ENEMY BASE
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -861,6 +889,14 @@ EntityProjectile* EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, 
     proj->m_life = life;
     proj->m_waitToCheck = waitTime;
     gameRes->m_entityMgr.AddEntity(proj);
+
+    // volume depending on distance
+    {
+        gameRes->SoundPlay(DX::GameResources::SFX_SHOOT0, false);
+        const float dtp = sqrt(DistSqToPlayer());
+        const float dv = gameRes->SoundGetDefaultVolume(DX::GameResources::SFX_SHOOT0);
+        gameRes->SoundVolume(DX::GameResources::SFX_SHOOT0, dv *(1.0f - std::min(1.0f,dtp / 5.0f)));
+    }
     return proj.get();
 }
 
@@ -1094,6 +1130,10 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
             }
             else
             {
+                // catches the player
+                if (distToPlayerSq <= gameRes->m_camera.RadiusCollideSq())
+                    gameRes->HitPlayer();
+
                 // wandering, going to next target point
                 m_followingPlayer = -0.1f;
                 dir = XM3Sub(m_nextTargetPoint, m_pos);
@@ -1154,7 +1194,6 @@ void EnemyGirl::DoHit()
         m_hitTime = gameRes->m_random.GetF(1.0f, 3.5f);
     }
     ModulateToColor(XM4RED, 0.5f);
-
     
     float distToPl = DistSqToPlayer();
     if (distToPl == 0.0f) distToPl = 1.0f;
@@ -1165,6 +1204,12 @@ void EnemyGirl::DoHit()
     if (m_life <= 0.0f)
     {
         Invalidate(KILLED);
+        //gameRes->SoundPlay(DX::GameResources::SFX_EXPL0, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_GIRLDIES, false);
+    }
+    else
+    {
+        gameRes->SoundPlay(DX::GameResources::SFX_GIRL, false);
     }
 }
 
@@ -1326,6 +1371,7 @@ void EnemyPumpkin::Update(float stepTime, const CameraFirstPerson& camera)
             const float t = 0.1f + (1.0f - (distSqToPl - radiusInnerSq) / (radiusOuterSq - radiusInnerSq))*0.4f;
             const float s = 0.1f + (m_timeInOuter / maxTimeToExplode)*0.4f;
             ModulateToColor(XM4RED, std::min(t,s));
+            DX::GameResources::instance->SoundPlay(DX::GameResources::SFX_BEEP0, false);
         }
         m_timeInOuter += stepTime;
     }
@@ -1335,9 +1381,11 @@ void EnemyPumpkin::Update(float stepTime, const CameraFirstPerson& camera)
 
 void EnemyPumpkin::DoHit()
 {
+    using namespace DX;
+    GameResources::instance->SoundPlay(GameResources::SFX_EXPL0,false);
     Invalidate(KILLED);
     if ( DistSqToPlayer() <= radiusDamageSq )
-        DX::GameResources::instance->HitPlayer();
+        GameResources::instance->HitPlayer();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1399,20 +1447,27 @@ XMFLOAT2 EntitySingleDecoration::GetSizeOf(DecorType type)
 
 void EntitySingleDecoration::DoHit()
 {
+    using namespace DX;
     switch (m_type)
     {
     case BODYPILE:
+        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
         break;
     case GRAVE:
+        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
         break;
     case TREEBLACK:
+        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
         break;
     case GREENHAND:
+        GameResources::instance->SoundPlay(GameResources::SFX_BROKEN, false);
         Invalidate(KILLED);
         break;
     case BLACKHAND:
+        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
         break;
     case SKULL: 
+        GameResources::instance->SoundPlay(GameResources::SFX_BROKEN, false);
         Invalidate(KILLED);
         break;
     }

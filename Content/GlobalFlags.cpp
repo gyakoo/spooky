@@ -17,7 +17,7 @@ namespace SpookyAdulthood
     bool GlobalFlags::AllLit = false;
     bool GlobalFlags::SpawnProjectile = false;
     int GlobalFlags::ShootHits = 0;
-    bool GlobalFlags::DrawFlags = true;
+    bool GlobalFlags::DrawFlags = false;
     XMFLOAT2 GlobalFlags::DrawGlobalsPos(10, 10);
 
     template<typename T>

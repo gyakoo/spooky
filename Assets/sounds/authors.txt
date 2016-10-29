@@ -1,3 +1,10 @@
-freesound.org
+http://freesound.org
+laugh.wav       - undead505         - http://freesound.org/people/undead505/sounds/350679/
+owl.wav         - Johnc             - http://freesound.org/people/Johnc/sounds/20684/
+girldies.wav    - pablocandel       - http://freesound.org/people/pablocandel/sounds/219861/
+girl.wav        - tcrocker68        - http://freesound.org/people/tcrocker68/sounds/235592/
+cat.wav         - Noise Cuisine     - http://freesound.org/people/Noise%20Cuisine/sounds/67253/
+broken.wav      - Andre_Desartises  - http://freesound.org/people/Andre_Desartistes/sounds/331928/
 
-laugh.wav - undead505
+Rest of sounds were created using: http://www.bfxr.net/
+
