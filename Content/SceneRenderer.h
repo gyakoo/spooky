@@ -20,10 +20,10 @@ namespace SpookyAdulthood
 		void Render();
         void RenderUI();
 
+        bool	m_loadingComplete;
 	private:
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;
         float	m_degreesPerSecond;
-        bool	m_loadingComplete;        
 	};
 }
 

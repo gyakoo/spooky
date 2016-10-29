@@ -42,9 +42,9 @@ namespace SpookyAdulthood
         return u;
     }
 
-    // this is ugly af do I work at Havok? it does not seem so :S no time , scarejam!
-    // iterative (recursive actually) solving against walls.
-    // cast ray from center of circle, gets the closest hit, compute wall moving direction with closest segment and check next
+    // this is ugly af, do I work at Havok? it does not seem so :S no time , scarejam!
+    // iterative solving against walls. (recursive actually)
+    // cast ray from center/sides of circle, gets the closest hit, compute wall moving direction with closest segment and check next
     XMFLOAT2 CollisionAndSolving2D(const SegmentList* segs, const XMFLOAT2& curPos, const XMFLOAT2& nextPos, float radius, int iter)
     {
         using namespace DirectX::SimpleMath; // make life a bit easier
@@ -139,17 +139,12 @@ namespace SpookyAdulthood
         return true;
     }
 
-    static inline float DotProduct(const XMFLOAT3& a, const XMFLOAT3& b)
-    {
-        return a.x*b.x + a.y*b.y + a.z*b.z;
-    }
-
     bool IntersectRaySphere(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& center, float radius, XMFLOAT3& outHit, float& outFrac)
     {
         const XMFLOAT3 L(origin.x - center.x, origin.y - center.y, origin.z - center.z);
-        const float a = DotProduct(dir, dir);
-        const float b = 2.0f * DotProduct(dir, L);
-        const float c = DotProduct(L,L) - radius;
+        const float a = XM3Dot(dir, dir);
+        const float b = 2.0f * XM3Dot(dir, L);
+        const float c = XM3Dot(L,L) - radius;
         float t0, t1;
         if (!solveQuadratic(a, b, c, t0, t1))
             return false;
@@ -170,11 +165,11 @@ namespace SpookyAdulthood
 
     bool IntersectRayPlane(const XMFLOAT3& origin, const XMFLOAT3& dir, const XMFLOAT3& normal, const XMFLOAT3& p, XMFLOAT3& outHit, float& outFrac)
     {
-        const float den = DotProduct(normal, dir);
+        const float den = XM3Dot(normal, dir);
         if (den < -1e-6f )
         {
             const XMFLOAT3 po = XM3Normalize(XM3Sub(p, origin));
-            const float f = DotProduct(po, normal) / den;
+            const float f = XM3Dot(po, normal) / den;
             outHit.x = origin.x + dir.x*f;
             outHit.y = origin.y + dir.y*f;
             outHit.z = origin.z + dir.z*f;

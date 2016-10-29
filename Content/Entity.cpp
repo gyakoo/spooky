@@ -86,10 +86,13 @@ bool Entity::IsValid() const
     return !isInvalid;
 }
 
-void Entity::Invalidate(InvReason reason)
+void Entity::Invalidate(InvReason reason, float after)
 {
     m_invalidateReason = reason;
-    m_flags |= INVALID;
+    if (after >= 0.0f)
+        m_timeOut = after;
+    else
+        m_flags |= INVALID;
 }
 
 float Entity::GetBoundingRadius() const
@@ -332,7 +335,6 @@ void EntityManager::SetCurrentRoom(int roomIndex)
     }
     m_curRoomIndex = roomIndex; 
 }
-
 
 void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPerson& camera)
 {
@@ -854,6 +856,7 @@ void EntityRandomSound::Update(float stepTime, const CameraFirstPerson& camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EntityEnemyBase::EntityEnemyBase()
     : Entity(SPRITE3D | ACCEPT_RAYCAST), m_modulateTime(-1.0f)
+    , m_originColor(1, 1, 1, 1)
 {
 }
 
@@ -863,12 +866,12 @@ void EntityEnemyBase::Update(float stepTime, const CameraFirstPerson& camera)
     {
         const float s = (std::max(m_modulateTime, 0.0f) / m_modulateDuration);
         const float onemins = 1.0f - s;
-        m_modulate.x = s*m_modulateTargetColor.x + onemins;
-        m_modulate.y = s*m_modulateTargetColor.y + onemins;
-        m_modulate.z = s*m_modulateTargetColor.z + onemins;
-        m_modulate.w = s*m_modulateTargetColor.w + onemins;
+        m_modulate.x = s*m_modulateTargetColor.x + onemins*m_originColor.x;
+        m_modulate.y = s*m_modulateTargetColor.y + onemins*m_originColor.y;
+        m_modulate.z = s*m_modulateTargetColor.z + onemins*m_originColor.z;
+        m_modulate.w = s*m_modulateTargetColor.w + onemins*m_originColor.w;
+        m_modulateTime -= stepTime;
     }
-    m_modulateTime -= stepTime;
 }
 
 void EntityEnemyBase::ModulateToColor(const XMFLOAT4& color, float duration)
@@ -877,6 +880,13 @@ void EntityEnemyBase::ModulateToColor(const XMFLOAT4& color, float duration)
     m_modulateTargetColor = color;
 }
 
+void EntityEnemyBase::FadeOut(float duration, bool invAfter)
+{
+    m_originColor = XMFLOAT4(0, 0, 0, 0);
+    m_modulateTime = duration;
+    if ( invAfter )
+        Invalidate(KILLED, duration);
+}
 
 EntityProjectile* EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life, bool predict, float waitTime)
 {
@@ -929,14 +939,14 @@ bool EntityEnemyBase::CanSeePlayer()
     return !gameRes->m_map.RaycastSeg(m_pos, gameRes->m_camera.GetPosition(), hit);
 }
 
-bool EntityEnemyBase::PlayerLookintAtMe(float range)
+bool EntityEnemyBase::PlayerLookintAtMe(float range, bool checkLoS)
 {
     auto& cam = CAM;
     auto plPos = cam.GetPosition(); plPos.y = 0.0f;
     const XMFLOAT3 myPos(m_pos.x, 0.0f, m_pos.z);
     const XMFLOAT3 toPl = XM3Normalize(XM3Sub(plPos, myPos));
     const float dot = XM3Dot(toPl, XM3Neg(cam.m_forward));
-    return dot >= range;
+    return dot >= range && (checkLoS && CanSeePlayer() || !checkLoS);
 }
 
 void EntityEnemyBase::PlaySoundDistance(uint32_t sound, float maxdist)
@@ -1226,7 +1236,7 @@ void EnemyGirl::DoHit()
 
 void EnemyGirl::Die()
 {
-    Invalidate(KILLED); // stuck, she dies, poor little creature
+    FadeOut(0.8f, true);
     PlaySoundDistance(DX::GameResources::SFX_GIRLDIES, 8.0f);
 }
 
@@ -1242,10 +1252,10 @@ bool EnemyGirl::GetNextTargetPoint()
     
     // clearance
     XMUINT2 allowedMoves[8], p;
-    static const XMUINT2 offsets[8] = {
-        XMUINT2(-1,-1), XMUINT2(0,-1), XMUINT2(1,-1),
-        XMUINT2(-1,0), XMUINT2(1,0),
-        XMUINT2(-1,+1), XMUINT2(0,+1), XMUINT2(+1,+1) };
+    static const XMINT2 offsets[8] = {
+        XMINT2(-1,-1), XMINT2(0,-1), XMINT2(1,-1),
+        XMINT2(-1,0), XMINT2(1,0),
+        XMINT2(-1,+1), XMINT2(0,+1), XMINT2(+1,+1) };
     int c = 0;
     for (int i = 0; i < 8; ++i)
     {
@@ -1471,8 +1481,10 @@ void EntitySingleDecoration::DoHit()
         GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
         break;
     case GRAVE:
+        {
+
         GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
-        break;
+        }break;
     case TREEBLACK:
         GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
         break;
@@ -1499,25 +1511,29 @@ EnemyGhost::EnemyGhost(const XMFLOAT3& pos)
     m_spriteIndex = 4;
     m_pos = pos;
     m_size = XMFLOAT2(0.5f, 1.0f);
-    m_pos.y = m_size.y*0.5f + 0.05f;
+    m_pos.y = m_size.y*0.5f + 0.1f;
     m_roomNode = DX::GameResources::instance->m_map.GetLeafAt(m_pos).get();
     m_timeToJump = -1.0f;
     m_life = 1.0f;
 }
 
+const float FBIGVAL = 1e10;
 void EnemyGhost::Update(float stepTime, const CameraFirstPerson& camera)
 {
     EntityEnemyBase::Update(stepTime, camera);
 
-    m_timeToJump -= stepTime;
+    if (m_timeOut < FBIGVAL) return;
 
-    if (DistSqToPlayer() <= camera.RadiusCollideSq())
+    m_timeToJump -= stepTime;
+    m_pos.y = (m_size.y*0.5f + 0.1f)+sin(m_totalTime*2.0f)*0.15f;
+    const float distSq = DistSqToPlayer();
+    if ( distSq <= camera.RadiusCollideSq())
     {
         DX::GameResources::instance->HitPlayer();
         JumpNextTargetPoint();
     }
 
-    if (PlayerLookintAtMe(0.98f))
+    if (PlayerLookintAtMe(0.98f) && distSq < 8.0f*8.0f)
     {
         DX::GameResources::instance->m_curDensityMult = 2.0f;
         JumpNextTargetPoint();
@@ -1526,6 +1542,7 @@ void EnemyGhost::Update(float stepTime, const CameraFirstPerson& camera)
 
 void EnemyGhost::DoHit()
 {
+    if (m_timeOut < FBIGVAL) return;
     auto gameRes = DX::GameResources::instance;
 
     float distToPl = DistSqToPlayer();
@@ -1547,7 +1564,7 @@ void EnemyGhost::DoHit()
 
 void EnemyGhost::Die()
 {
-    Invalidate(KILLED);
+    FadeOut(0.8f, true);
     PlaySoundDistance(DX::GameResources::SFX_DIE0, 8.0f);
 }
 
@@ -1562,12 +1579,13 @@ void EnemyGhost::JumpNextTargetPoint()
 
     const auto& area = m_roomNode->m_area;
 
-    // clearance
-    XMUINT2 allowedMoves[8], p;
-    static const XMUINT2 offsets[8] = {
-        XMUINT2(-1,-1), XMUINT2(0,-1), XMUINT2(1,-1),
-        XMUINT2(-1,0), XMUINT2(1,0),
-        XMUINT2(-1,+1), XMUINT2(0,+1), XMUINT2(+1,+1) };
+    // clearance    
+    XMUINT2 allowedMoves[8];
+    XMUINT2 p;
+    static const XMINT2 offsets[8] = {
+        XMINT2(-1,-1), XMINT2(0,-1), XMINT2(1,-1),
+        XMINT2(-1,0), XMINT2(1,0),
+        XMINT2(-1,+1), XMINT2(0,+1), XMINT2(+1,+1) };
     int c = 0;
     for (int i = 0; i < 8; ++i)
     {
@@ -1586,7 +1604,7 @@ void EnemyGhost::JumpNextTargetPoint()
     const auto& selected = allowedMoves[RND.Get(0, c - 1)];
     m_pos.x = selected.x + 0.5f;
     m_pos.z = selected.y + 0.5f;
-    PlaySoundDistance(DX::GameResources::SFX_DASH, 5.0f);
+    PlaySoundDistance(DX::GameResources::SFX_DASH, 8.0f);
     DX::GameResources::instance->SoundPitch(DX::GameResources::SFX_DASH, RND.GetF(-0.9f, 0.9f));
 }
 

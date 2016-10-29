@@ -53,7 +53,7 @@ namespace SpookyAdulthood
         bool SupportRaycast() const;
         bool IsActive() const;
         bool IsValid() const;
-        void Invalidate(InvReason reason=NONE_i);
+        void Invalidate(InvReason reason=NONE_i, float after=-1.0f);
 
         friend class EntityManager;
         XMFLOAT3 m_pos;
@@ -219,10 +219,12 @@ namespace SpookyAdulthood
         float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();
         void ModulateToColor(const XMFLOAT4& color, float duration);
-        bool PlayerLookintAtMe(float range);
+        void FadeOut(float duration, bool invAfter=false);
+        bool PlayerLookintAtMe(float range, bool checkLoS=true);
         void PlaySoundDistance(uint32_t sound, float maxdist);
 
         XMFLOAT4 m_modulateTargetColor;
+        XMFLOAT4 m_originColor;
         float m_modulateTime;
         float m_modulateDuration;
     };

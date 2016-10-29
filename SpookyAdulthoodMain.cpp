@@ -95,9 +95,12 @@ bool SpookyAdulthoodMain::Draw3D()
 	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     // Render the scene objects to RT
-	m_sceneRenderer->Render();
-    gameRes->m_entityMgr.RenderSprites3D(cam);
-    gameRes->m_entityMgr.RenderSprites2D(cam); // should it be two passes for 2d? (before and after screen quad?)
+    if (m_sceneRenderer->m_loadingComplete)
+    {
+        m_sceneRenderer->Render();
+        gameRes->m_entityMgr.RenderSprites3D(cam);
+        gameRes->m_entityMgr.RenderSprites2D(cam); // should it be two passes for 2d? (before and after screen quad?)
+    }
 
     // Render quad on screen
     {
