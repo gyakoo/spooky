@@ -1175,34 +1175,8 @@ void DX::GameResources::GenerateNewLevel()
     m_entityMgr.Clear();
     m_entityMgr.ReserveAndCreateEntities((int)m_map.GetRooms().size());
     m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
+
     m_entityMgr.AddEntity(std::make_shared<EntityGun>(), EntityManager::ALL_ROOMS); // GUN
-
-
-    // // TEST
-    //AddEntity(std::make_shared<EnemyTreeBlack>(XMFLOAT3(7.0f, 0, 5.0f)));
-    auto room = m_map.GetLeafAtIndex(1).get();
-    if (room)
-    {
-        for (int i = 0; i < 3; ++i)
-        {
-            m_entityMgr.AddEntity(std::make_shared<EnemyPumpkin>(room->GetRandomXZ(XMFLOAT2(0.5f, 0.5f))),1);
-        }
-    }
-
-    for (int i = 0; i < 3; ++i)
-    {
-        m_entityMgr.AddEntity(std::make_shared<EnemyPuky>());
-    }
-
-
-
-//     m_entityMgr.AddEntity(std::make_shared<EnemyGargoyle>(XMFLOAT3(5, 0, 4)));
-//     m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(7, 0, 5)));
-//     m_entityMgr.AddEntity(std::make_shared<EnemyGirl>(XMFLOAT3(3, 0, 2)));
-     m_entityMgr.AddEntity(std::make_shared<EnemyBlackHands>(XMUINT2(5,5)));
-
-     m_entityMgr.AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 0); // all dead for room 0
-     m_entityMgr.AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 1); // all dead for room 1
 }
 
 void DX::GameResources::SpawnPlayer()

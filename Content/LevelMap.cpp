@@ -211,7 +211,7 @@ void LevelMap::RecursiveGenerate(LevelMapBSPNodePtr& node, LevelMapBSPTileArea& 
 }
 
 static const uint32_t RPDENSITY[LevelMap::RP_MAX] = {
-    30, 40, 50, 60, 70, 80, 90, 100
+    10, 30, 40, 50, 60, 70, 80, 90, 100
 };
 
 void LevelMap::GenerateDetailsForRoom(LevelMapBSPNodePtr& node, const LevelMapGenerationSettings& settings)
@@ -221,8 +221,11 @@ void LevelMap::GenerateDetailsForRoom(LevelMapBSPNodePtr& node, const LevelMapGe
 
     switch (node->m_profile)
     {
-        case RP_NORMAL:
+        case RP_NORMAL0:
             GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.01f, 0.3f));
+            break;
+        case RP_NORMAL1:
+            GeneratePillarsForRoom(node, settings.m_minForPillars, XMFLOAT2(0.2f, 0.5f));
             break;
         case RP_GRAVE: break;
         case RP_WOODS: break;
@@ -1112,8 +1115,8 @@ void LevelMapBSPNode::CreateDeviceDependentResources(const LevelMap& lmap, const
                     float h0 = 0.0f, h1 = 0.0f;
                     if (m_profile == LevelMap::RP_GRAVE || m_profile == LevelMap::RP_WOODS || m_profile == LevelMap::RP_PUMPKINFIELD)
                     {
-                        h0 = fabs(sin(x)*0.1f);
-                        h1 = fabs(sin(x + 1)*0.1f);
+                        h0 = std::max(0.0f,sin(x)*0.15f);
+                        h1 = std::max(0.0f,sin(x + 1)*0.15f);
                     }
                     quadVerts[0].position = XMFLOAT3(x, h0, z);
                     quadVerts[1].position = XMFLOAT3(x + EP, h1, z);
@@ -1446,11 +1449,25 @@ bool LevelMapBSPNode::IsPillar(const XMUINT2& ppos)const
 XMFLOAT3 LevelMapBSPNode::GetRandomXZ(const XMFLOAT2& shrink) const
 {
     auto& r = DX::GameResources::instance->m_random;
+    float a, b;
     XMFLOAT3 xz;
-    xz.x = r.GetF((float)m_area.m_x0+shrink.x, (float)m_area.m_x1-shrink.x);
-    xz.y = 0.0f,
-    xz.z = r.GetF((float)m_area.m_y0+shrink.y, (float)m_area.m_y1-shrink.y);
+    a = (float)m_area.m_x0 + shrink.x;
+    b = (float)m_area.m_x1 - shrink.x;
+    xz.x = r.GetF( std::min(a,b), std::max(a,b) );
+    a = (float)m_area.m_y0 + shrink.y;
+    b = (float)m_area.m_y1 - shrink.y;
+    xz.z = r.GetF(std::min(a, b), std::max(a, b));
+    xz.y = 0.0f;
     return xz;
+}
+
+XMUINT2 LevelMapBSPNode::GetRandomTile() const
+{
+    auto& r = DX::GameResources::instance->m_random;
+    XMUINT2 t;
+    t.x = r.Get(m_area.m_x0, m_area.m_x1);
+    t.y = r.Get(m_area.m_y0, m_area.m_y1);
+    return t;
 }
 
 

@@ -116,6 +116,80 @@ EntityManager::EntityManager(const std::shared_ptr<DX::DeviceResources>& device)
     EntityManager::s_instance = this;
 }
 
+void EntityManager::CreateEntities_Puky(LevelMapBSPNode* r, int n, uint32_t prob)
+{
+    auto& rnd = m_device->GetGameResources()->instance->m_random;
+    XMFLOAT3 p;
+    for (int i = 0; i < n; ++i)
+    {
+        if (rnd.Get(0, 99) < prob)
+        {
+            p = r->GetRandomXZ(XMFLOAT2(0.15f, 0.15f));
+            p.y = rnd.GetF(0.2f, 0.8f);
+            AddEntity(std::make_shared<EnemyPuky>(p), r->m_leafNdx);
+        }
+    }
+}
+
+void EntityManager::CreateEntities_Pumpkin(LevelMapBSPNode* r, int n, uint32_t prob)
+{
+    auto& rnd = m_device->GetGameResources()->instance->m_random;
+    XMFLOAT3 p;
+    for (int i = 0; i < n; ++i)
+    {
+        if (rnd.Get(0, 99) < prob)
+        {
+            p = r->GetRandomXZ(XMFLOAT2(0.15f, 0.15f));
+            if ( r->Clearance(p))
+                AddEntity(std::make_shared<EnemyPumpkin>(p), r->m_leafNdx);
+        }
+    }
+}
+
+void EntityManager::CreateEntities_Girl(LevelMapBSPNode* r, int n, uint32_t prob)
+{
+    auto& rnd = m_device->GetGameResources()->instance->m_random;
+    XMFLOAT3 p;
+    for (int i = 0; i < n; ++i)
+    {
+        if (rnd.Get(0, 99) < prob)
+        {
+            p = r->GetRandomXZ(XMFLOAT2(0.5f, 0.5f));
+            AddEntity(std::make_shared<EnemyGirl>(p), r->m_leafNdx);
+        }
+    }
+}
+
+void EntityManager::CreateEntities_Gargoyle(LevelMapBSPNode* r, int n, uint32_t prob)
+{
+    auto& rnd = m_device->GetGameResources()->instance->m_random;
+    XMFLOAT3 p;
+    for (int i = 0; i < n; ++i)
+    {
+        if (rnd.Get(0, 99) < prob)
+        {
+            p = r->GetRandomXZ(XMFLOAT2(0.75f, 0.75f));
+            if (r->Clearance(p))
+                AddEntity(std::make_shared<EnemyGargoyle>(p, rnd.GetF(1.0f,3.5f)), r->m_leafNdx);
+        }
+    }
+}
+
+void EntityManager::CreateEntities_BlackHands(LevelMapBSPNode* r, int n, uint32_t prob)
+{
+    auto& rnd = m_device->GetGameResources()->instance->m_random;
+    XMUINT2 p;
+    for (int i = 0; i < n; ++i)
+    {
+        if (rnd.Get(0, 99) < prob)
+        {
+            p = r->GetRandomTile();
+            if (r->Clearance(p))
+                AddEntity(std::make_shared<EnemyBlackHands>(p, rnd.Get(6,16)), r->m_leafNdx);
+        }
+    }
+}
+
 void EntityManager::ReserveAndCreateEntities(int roomCount)
 {
     if (roomCount <= 0)
@@ -126,13 +200,29 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
     auto gameRes = m_device->GetGameResources();
     auto& rnd = gameRes->m_random;
     auto& rooms = gameRes->m_map.GetRooms();
-    XMUINT2 decoProbs[DECORMAX]; 
+    XMUINT2 decoProbs[DECORMAX];     
     for (auto& r : rooms)
     {
         ZeroMemory(decoProbs, sizeof(XMUINT2)*DECORMAX);
         switch (r->m_profile)
         {
-        case LevelMap::RP_NORMAL:
+        case LevelMap::RP_NORMAL0:
+            decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 30);
+            decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 4), 50);
+            decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 4), 50);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(0, 10), 80);
+            CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
+            CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 3), 80);
+            CreateEntities_BlackHands(r.get(), rnd.Get(0, 3), 80);
+            break;
+        case LevelMap::RP_NORMAL1:
+            decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 50);
+            decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 8), 70);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(0, 15), 80);
+            CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 2), 70);
+            CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
             break;
         case LevelMap::RP_GRAVE:
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 3), 20);
@@ -141,7 +231,11 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 4), 50);
             decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 4), 50);
             decoProbs[SKULL] = XMUINT2(rnd.Get(2, 10), 80);
-        break;
+            CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 80);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 3), 80);
+            CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
+            CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
+            break;
         case LevelMap::RP_WOODS: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
             decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 60);
@@ -149,20 +243,44 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 4), 50);
             decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 4), 50);
             decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 5), 70);
+            CreateEntities_Puky(r.get(), rnd.Get(0, 5), 60);
             break;
         case LevelMap::RP_BODYPILES: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(4, 10), 60);
             decoProbs[GREENHAND] = XMUINT2(rnd.Get(4, 10), 40);
             decoProbs[BLACKHAND] = XMUINT2(rnd.Get(4, 10), 40);
             decoProbs[SKULL] = XMUINT2(rnd.Get(4, 15), 80);
+            CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
+            CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
             break;
         case LevelMap::RP_GARGOYLES: 
+            decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
+            decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 60);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
+            CreateEntities_Gargoyle(r.get(), rnd.Get(1, 10), 80);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 3), 70);
+            CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             break;
         case LevelMap::RP_HANDS: 
+            decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
+            decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 10), 50);
+            decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 10), 50);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 3), 50);
+            CreateEntities_BlackHands(r.get(), rnd.Get(1, 8), 60);
             break;
         case LevelMap::RP_SCARYMESSAGES: 
+            decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 60);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
             break;
         case LevelMap::RP_PUMPKINFIELD: 
+            decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 3), 70);
+            decoProbs[TREEBLACK] = XMUINT2(rnd.Get(5, 10), 80);
+            decoProbs[SKULL] = XMUINT2(rnd.Get(2, 8), 80);
+            CreateEntities_Girl(r.get(), rnd.Get(0, 3), 50);
+            CreateEntities_Pumpkin(r.get(), rnd.Get(5, 20), 80);
+            CreateEntities_Puky(r.get(), rnd.Get(0, 5), 70);
             break;
         }
 
@@ -177,7 +295,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
                 if (rnd.Get(0, 99) < p.y)
                 {
                     s = EntitySingleDecoration::GetSizeOf((DecorType)i);
-                    shrink.x = shrink.y = std::max(s.x, s.y);
+                    shrink.x = shrink.y = s.x*0.5f; 
                     auto decopos = r->GetRandomXZ(shrink);
                     if ( r->Clearance( XMUINT2((UINT)decopos.x, (UINT)decopos.z) ) )
                         AddEntity(std::make_shared<EntitySingleDecoration>((DecorType)i, decopos), r->m_leafNdx);
@@ -786,17 +904,6 @@ bool EntityEnemyBase::PlayerLookintAtMe(float range)
 /////////////////////////////////////////////////////// PUKY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma region PUKY
-EnemyPuky::EnemyPuky()
-{
-    m_pos = XMFLOAT3(3, 1, 3);
-    auto room = GetCurrentRoom();
-    if (!room) 
-        throw std::exception("no room for puky");
-    XMFLOAT3 p = room->GetRandomXZ();
-    p.y = RND.GetF(0.3f, 0.8f);
-    Init(p);
-}
-
 EnemyPuky::EnemyPuky(const XMFLOAT3& pos)
 {
     Init(pos);    
@@ -1229,7 +1336,7 @@ void EnemyPumpkin::Update(float stepTime, const CameraFirstPerson& camera)
 void EnemyPumpkin::DoHit()
 {
     Invalidate(KILLED);
-    if ( DistSqToPlayer() <= radiusInnerSq )
+    if ( DistSqToPlayer() <= radiusDamageSq )
         DX::GameResources::instance->HitPlayer();
 }
 

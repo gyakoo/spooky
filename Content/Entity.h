@@ -103,6 +103,11 @@ namespace SpookyAdulthood
 
     protected:
         bool RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac);
+        void CreateEntities_Puky(LevelMapBSPNode* room, int n, uint32_t prob);
+        void CreateEntities_Pumpkin(LevelMapBSPNode* room, int n, uint32_t prob);
+        void CreateEntities_Girl(LevelMapBSPNode* room, int n, uint32_t prob);
+        void CreateEntities_Gargoyle(LevelMapBSPNode* room, int n, uint32_t prob);
+        void CreateEntities_BlackHands(LevelMapBSPNode* room, int n, uint32_t prob);
 
         friend class Entity;
         typedef std::vector<std::shared_ptr<Entity>> EntitiesCollection;
@@ -122,8 +127,7 @@ namespace SpookyAdulthood
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
 
     };
-
-
+    
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // OMNI
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -173,6 +177,8 @@ namespace SpookyAdulthood
         int m_dir;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityAnimation : public Entity
     {
         EntityAnimation(const XMFLOAT3& pos, const XMFLOAT2& size, const std::vector<int>& indices, float fps, 
@@ -211,7 +217,6 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyPuky : public EntityEnemyBase
     {
-        EnemyPuky();
         EnemyPuky(const XMFLOAT3& pos);
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
@@ -231,9 +236,10 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyPumpkin : public EntityEnemyBase
     {
-        const float radiusOuterSq = 1.5f*1.5f;
+        const float radiusOuterSq = 2.0f*2.0f;
         const float radiusInnerSq = 0.8f*0.8f;
-        const float maxTimeToExplode = 5.0f;
+        const float maxTimeToExplode = 3.0f;
+        const float radiusDamageSq = 1.5f*1.5f;
 
         EnemyPumpkin(const XMFLOAT3& pos);
         virtual bool CanDie() { return true; }

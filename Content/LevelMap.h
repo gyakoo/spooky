@@ -58,8 +58,10 @@ namespace SpookyAdulthood
         PortalDir GetPortalDirAt(const LevelMap& lmap, uint32_t x, uint32_t y);
         void GenerateCollisionSegments(const LevelMap& lmap);
         bool IsPillar(const XMUINT2& ppos)const;
-        XMFLOAT3 GetRandomXZ(const XMFLOAT2& shrink=XMFLOAT2(0,0)) const;
+        XMFLOAT3 GetRandomXZ(const XMFLOAT2& shrink = XMFLOAT2(0, 0)) const;
+        XMUINT2 GetRandomTile() const;
         inline bool Clearance(const XMUINT2& pos) const { return m_area.Contains(pos) && !IsPillar(pos); };
+        inline bool Clearance(const XMFLOAT3& pos) const { return Clearance(XMUINT2((UINT)pos.x, (UINT)pos.z)); }
 
         LevelMapBSPTileArea m_area;
         NodeType m_type;
@@ -155,7 +157,8 @@ namespace SpookyAdulthood
 	public:
         enum RoomProfile
         {
-            RP_NORMAL = 0,
+            RP_NORMAL0 = 0,
+            RP_NORMAL1,
             RP_GRAVE,
             RP_WOODS,
             RP_BODYPILES,

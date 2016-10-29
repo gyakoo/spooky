@@ -171,18 +171,19 @@ namespace SpookyAdulthood
         DX::ThrowIfFalse(m_rendering[R3D]);
         m_rendering[R3D] = false;
 
-        if (m_spritesToRender[R3D].size() > 1)
+        auto dxCommon = m_device->GetGameResources();
+        // todo: if we keep cached m_spritesToRender rather than clear every frame, we'd skip sorting every frame
+        if (m_spritesToRender[R3D].size() > 1 /*&& (dxCommon->m_frameCount % 2) == 1*/) 
         {
             // sort sprites by distance to camera (for alpha blending to work)
             std::sort(m_spritesToRender[R3D].begin(), m_spritesToRender[R3D].end(), [this](const SpriteRender& a, const SpriteRender& b) -> bool
             {
                 const auto& sa = m_sprites[a.m_index];
                 const auto& sb = m_sprites[b.m_index];
-                return a.m_distSqOrRot > b.m_distSqOrRot;
+                return  a.m_distSqOrRot > b.m_distSqOrRot;
             });
         }
 
-        auto dxCommon = m_device->GetGameResources();
         if (!dxCommon->m_readyToRender) return;
         auto context = m_device->GetD3DDeviceContext();
 
