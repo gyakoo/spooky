@@ -882,6 +882,7 @@ static const float g_sndPitches[] =
     0.0f        // 21
 };
 float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
+float DX::GameResources::SoundGetDefaultPitch(uint32_t index) { return g_sndPitches[index]; }
 
 DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
@@ -907,7 +908,6 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     aeflags = aeflags | AudioEngine_Debug;
 #endif
     m_audioEngine = std::make_unique<DirectX::AudioEngine>(aeflags);
-
     DX::ThrowIfFailed(
         DirectX::CreateWICTextureFromFile(
             device->GetD3DDevice(), L"assets\\textures\\white.png",
@@ -919,12 +919,12 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     m_sounds.resize(SFX_MAX);
     for (int i = 0; i < SFX_MAX; ++i)
     {
-        concurrency::create_task([this,i] {
+        //concurrency::create_task([this,i] {
             m_soundEffects[i] = std::move(std::make_unique<SoundEffect>(m_audioEngine.get(), g_sndNames[i]));
             m_sounds[i] = std::move(m_soundEffects[i]->CreateInstance());
             m_sounds[i]->SetVolume(g_sndVolumes[i]);
             m_sounds[i]->SetPitch(g_sndPitches[i]);
-        });
+        //});
     }
 
     // BASE VS constant buffer
@@ -1122,6 +1122,8 @@ void DX::GameResources::SoundPitch(uint32_t index, float p)
     if (index >= m_sounds.size()) return;
     auto s = m_sounds[index].get();
     if (!s) return;
+    if (p < 0.0f)
+        p = g_sndPitches[index];
     s->SetPitch(p);
 }
 
@@ -1211,6 +1213,12 @@ bool DX::GameResources::HitPlayer(float amount, bool killer)
     m_invincibleTime = 1.0f;
     m_camera.m_life -= amount;
 
+    const float hv = SoundGetDefaultVolume(SFX_HEART);
+    const float hp = SoundGetDefaultPitch(SFX_HEART);
+    const float pitch = hp + (1.0f - hp)*(1 - m_camera.m_life);
+    SoundVolume(SFX_HEART, hv + (1.0f - hv)*(1 - m_camera.m_life));
+    SoundPitch(SFX_HEART, Clamp(pitch,-1.0f,0.7f));
+
     if (killer || m_camera.m_life <= 0.0f)
         KillPlayer();
     else
@@ -1225,6 +1233,8 @@ void DX::GameResources::KillPlayer()
 
     m_entityMgr.SetPause(true);
     FlashScreen(100.0f, XMFLOAT4(0.01f, 0.0f, 0.0f, 0.0f));
+    SoundStop(SFX_HEART);
+    SoundStop(SFX_BREATH);
     m_camera.m_timeToNextShoot = 1.0f;
 }
 
@@ -1269,8 +1279,8 @@ void DX::GameResources::GenerateNewLevel()
     m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
     m_map.Generate(m_mapSettings);
     m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
-    SpawnPlayer();
     SoundAllStop();
+    SpawnPlayer();
 
     m_entityMgr.Clear();
     m_entityMgr.ReserveAndCreateEntities((int)m_map.GetRooms().size());
@@ -1287,10 +1297,13 @@ void DX::GameResources::SpawnPlayer()
 
     m_camera.SetPosition(p);
     m_camera.m_life = 1.0f;
+    m_invincibleTime = 2.0f;
     FlashScreen(0.8f, XMFLOAT4(0.7f, 0.7f, 1, 1));
     SoundPlay(SFX_PORT, false);
     SoundPlay(SFX_BREATH);
     SoundPlay(SFX_HEART);
+    SoundVolume(SFX_HEART, -1);
+    SoundPitch(SFX_HEART, -1);
 }
 
 void DX::GameResources::BossIsReady()

@@ -116,6 +116,7 @@ namespace DX
         void SoundPitch(uint32_t index, float p);
         void SoundVolume(uint32_t index, float v);
         float SoundGetDefaultVolume(uint32_t index);
+        float SoundGetDefaultPitch(uint32_t index);
         DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);

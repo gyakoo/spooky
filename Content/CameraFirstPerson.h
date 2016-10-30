@@ -95,8 +95,8 @@ namespace SpookyAdulthood
 
         // rotation input
         const int isPaused = (int)(DX::GameResources::instance->IsPaused());
-        const float yrotvel[2] = { 0.8f,0.01f };
-        const float xrotvel[2] = { 0.5f,0.05f };
+        const float yrotvel[2] = { 0.8f,0.05f };
+        const float xrotvel[2] = { 0.5f,0.10f };
         m_pitchYaw.y += rotDelta*yrotvel[int(isPaused)]*ms.x;
         m_pitchYaw.x += rotDelta*xrotvel[int(isPaused)]*ms.y;
         m_pitchYaw.x = Clamp(m_pitchYaw.x, -0.3f, 0.3f);

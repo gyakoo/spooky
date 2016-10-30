@@ -273,9 +273,6 @@
     <Media Include="Assets\sounds\breathing.wav">
       <Filter>Assets\snd</Filter>
     </Media>
-    <Media Include="Assets\sounds\heartbeat.wav">
-      <Filter>Assets\snd</Filter>
-    </Media>
     <Media Include="Assets\sounds\piano.wav">
       <Filter>Assets\snd</Filter>
     </Media>
@@ -334,6 +331,9 @@
       <Filter>Assets\snd</Filter>
     </Media>
     <Media Include="Assets\sounds\roomopen.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\heartbeat.wav">
       <Filter>Assets\snd</Filter>
     </Media>
   </ItemGroup>

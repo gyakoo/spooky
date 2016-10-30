@@ -1515,7 +1515,7 @@ XMFLOAT3 LevelMapBSPNode::GetRandomXZWithClearance() const
     if (freeTiles.empty())
         throw std::exception("No free tiles in this room");
 
-    t = freeTiles[DX::GameResources::instance->m_random.Get(0, freeTiles.size() - 1)];
+    t = freeTiles[DX::GameResources::instance->m_random.Get(0, (int)freeTiles.size() - 1)];
     return XMFLOAT3(t.x + 0.5f, 0.0f, t.y + 0.5f);
 }
 
