@@ -826,17 +826,21 @@ static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\broken.wav",       // 15
     L"assets\\sounds\\ouch.wav",         // 16
     L"assets\\sounds\\die0.wav",         // 17
-    L"assets\\sounds\\dash.wav"          // 18
+    L"assets\\sounds\\dash.wav",         // 18
+    L"assets\\sounds\\buzz.wav",         // 19
+    L"assets\\sounds\\port.wav",          // 20
+    L"assets\\sounds\\roomopen.wav"          // 21
 };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f, 0.8f, 0.7f, 0.4f };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.1f, 0.0f, 0.0f, 0.0f, 0.2f, -0.1f, 0.0f, -0.2f, -1.0f, -0.3f, -0.5f, -1.0f };
+static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f, 0.8f, 0.7f, 0.4f, 0.2f, 0.8f, 1.0f, };
+static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.1f, 0.0f, 0.0f, 0.0f, 0.2f, -0.1f, 0.0f, -0.2f, -1.0f, -0.3f, -0.5f, -1.0f, -1.0f, -1.0f, 0.0f };
 float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
 
 DX::GameResources* DX::GameResources::instance = nullptr;
 DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& device)
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
-    , m_invincibleTime(-1.0f), m_curDensityMult(0.45f)
+    , m_invincibleTime(-1.0f), m_curDensityMult(0.45f), m_curRoomIndex(-1)
+    , m_bossIsReady(false)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -978,6 +982,7 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
     {
         m_curDensityMult = room->m_finished ? 0.15f : 0.45f;
         m_entityMgr.SetCurrentRoom(room->m_leafNdx);
+        m_curRoomIndex = room->m_leafNdx;
     }
     m_entityMgr.Update(timer, camera);
 
@@ -1019,9 +1024,15 @@ void DX::GameResources::SoundPlay(uint32_t index, bool loop) const
     if (index >= m_sounds.size()) return;
     auto s = m_sounds[index].get();
     if (!s) return;
-    if (s->GetState() == DirectX::PLAYING)
+    if (s->GetState() == DirectX::PLAYING )
         s->Stop();
     s->Play(loop);
+}
+
+void DX::GameResources::SoundAllStop() const
+{
+    for (uint32_t i = 0; i < SFX_MAX; ++i)
+        SoundStop(i);
 }
 
 void DX::GameResources::SoundStop(uint32_t index) const
@@ -1135,12 +1146,6 @@ void DX::GameResources::PlayerShoot()
 }
 
 
-void DX::GameResources::OpenDoor(uint32_t index)
-{
-
-}
-
-
 void DX::GameResources::HitPlayer(bool killer)
 {
     if (m_invincibleTime <= 0.0f)
@@ -1159,21 +1164,36 @@ void DX::GameResources::KillPlayer()
     SoundPlay(SFX_LAUGH, false);
 }
 
-void DX::GameResources::FinishCurrentRoom()
+void DX::GameResources::OpenCurrentRoom()
 {
     // open the doors 
-    SoundPlay(SFX_LAUGH, false);
-    m_map.ToggleRoomDoors();    
+    SoundPlay(SFX_ROOMOPEN, false);
+    m_map.ToggleRoomDoors();
 }
+
+void DX::GameResources::TeleportToRoom(int targetRoom)
+{
+    auto room = m_map.GetLeafAtIndex(targetRoom);
+    if (room->m_teleportNdx != -1)
+    {
+        SoundPlay(SFX_PORT, false);
+        auto& tp = m_map.GetTeleport(room->m_teleportNdx);
+        XMUINT2 p = tp.GetPosition(room);
+        m_camera.SetPosition(XMFLOAT3(p.x + 0.5f, 0, p.y + 0.5f));
+        m_entityMgr.SetCurrentRoom(targetRoom);
+        FlashScreen(0.8f, XMFLOAT4(0.7f, 0.7f, 1, 1));
+    }
+}
+
 
 void DX::GameResources::OnEnterRoom(int roomEntering)
 {
-
+    m_entityMgr.PlayerEntersRoom(roomEntering);
 }
 
 void DX::GameResources::OnLeaveRoom(int roomLeaving)
 {
-    SoundStop(SFX_OWL);
+    m_entityMgr.PlayerLeavesRoom(roomLeaving);
 }
 
 
@@ -1185,12 +1205,14 @@ void DX::GameResources::GenerateNewLevel()
     m_map.Generate(m_mapSettings);
     m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
     SpawnPlayer();
+    SoundAllStop();
 
     m_entityMgr.Clear();
     m_entityMgr.ReserveAndCreateEntities((int)m_map.GetRooms().size());
     m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
 
     m_entityMgr.AddEntity(std::make_shared<EntityGun>(), EntityManager::ALL_ROOMS); // GUN
+    m_entityMgr.AddEntity(std::make_shared<EntityCheckBossReady>(), EntityManager::ALL_ROOMS); // Is boss ready?
 }
 
 void DX::GameResources::SpawnPlayer()
@@ -1201,8 +1223,18 @@ void DX::GameResources::SpawnPlayer()
     m_camera.SetPosition(p);
     if (m_audioEngine)
     {
-        SoundPlay(DX::GameResources::SFX_BREATH);
+        SoundPlay(SFX_BREATH);
         //gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
-        SoundPlay(DX::GameResources::SFX_HEART);
+        SoundPlay(SFX_HEART);
     }
+}
+
+void DX::GameResources::BossIsReady()
+{
+    m_bossIsReady = true;
+    SoundPlay(SFX_LAUGH, false);
+    // get the biggest room
+    auto& biggestRoom = m_map.GetBiggestRoom();
+    const XMFLOAT3 pos = biggestRoom->GetRandomXZWithClearance();
+    m_entityMgr.AddEntity(std::make_shared<EnemyBoss>(pos), biggestRoom->m_leafNdx);
 }

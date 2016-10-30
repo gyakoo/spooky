@@ -59,6 +59,7 @@ namespace SpookyAdulthood
         void GenerateCollisionSegments(const LevelMap& lmap);
         bool IsPillar(const XMUINT2& ppos)const;
         XMFLOAT3 GetRandomXZ(const XMFLOAT2& shrink = XMFLOAT2(0, 0)) const;
+        XMFLOAT3 GetRandomXZWithClearance() const;
         XMUINT2 GetRandomTile() const;
         inline bool Clearance(const XMUINT2& pos) const { return m_area.Contains(pos) && !IsPillar(pos); };
         inline bool Clearance(const XMFLOAT3& pos) const { return Clearance(XMUINT2((UINT)pos.x, (UINT)pos.z)); }
@@ -106,6 +107,22 @@ namespace SpookyAdulthood
     {
         LevelMapBSPNodePtr m_leaves[2];
         XMUINT2 m_positions[2];
+        bool m_open;
+
+        inline XMUINT2 GetPosition(const LevelMapBSPNodePtr& l)
+        {
+            return l == m_leaves[0] ? m_positions[0] : m_positions[1];
+        }
+
+        inline XMUINT2 GetOtherPosition(const LevelMapBSPNodePtr& l)
+        {
+            return l == m_leaves[0] ? m_positions[1] : m_positions[0];
+        }
+
+        LevelMapBSPNodePtr& GetOtherLeaf(const LevelMapBSPNodePtr& l)
+        {
+            return l == m_leaves[0] ? m_leaves[1] : m_leaves[0];
+        }
     };
 
     //* ***************************************************************** *//
@@ -183,10 +200,12 @@ namespace SpookyAdulthood
         LevelMapBSPNodePtr GetLeafAt(const XMFLOAT3& pos) const;
         LevelMapBSPNodePtr GetLeafAtIndex(int index) const;
         int GetLeafIndexAt(const XMFLOAT3& pos) const;
+        LevelMapBSPTeleport& GetTeleport(int ndx) { return m_teleports[ndx]; }
         const SegmentList* GetCurrentCollisionSegments(); // return current leaf segments
         const std::vector<LevelMapBSPPortal>& GetPortals()const { return m_portals; }
         const std::vector<LevelMapBSPNodePtr>& GetRooms() const { return m_leaves; }
         void ToggleRoomDoors(int roomIndex=-1, bool open=true);
+        LevelMapBSPNodePtr GetBiggestRoom() const;
 
         bool RaycastDir(const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit);
         bool RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, float offsHit=0.0f);

@@ -46,6 +46,8 @@ namespace SpookyAdulthood
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
         virtual void DoHit() {}
         virtual bool CanDie() { return false; }
+        virtual void PlayerEntersRoom(int roomIndex) {}
+        virtual void PlayerLeavesRoom(int roomIndex) {}
 
         void PerformHit();
         float GetBoundingRadius() const;
@@ -54,6 +56,10 @@ namespace SpookyAdulthood
         bool IsActive() const;
         bool IsValid() const;
         void Invalidate(InvReason reason=NONE_i, float after=-1.0f);
+
+        float DistSqToPlayer(XMFLOAT3* dir = nullptr);
+        void PlaySoundDistance(uint32_t sound, float maxdist, bool loop=false);
+        void UpdateSoundDistance(uint32_t sound, float maxdist);
 
         friend class EntityManager;
         XMFLOAT3 m_pos;
@@ -96,6 +102,8 @@ namespace SpookyAdulthood
         bool RaycastDir( const XMFLOAT3& origin, const XMFLOAT3& dir, XMFLOAT3& outHit, uint32_t* sprNdx=nullptr);
         bool RaycastSeg( const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3& outHit, float optRad=-1.0f, uint32_t* sprNdx=nullptr);
         void DoHitOnEntity(uint32_t ndx);
+        void PlayerEntersRoom(int roomIndex);
+        void PlayerLeavesRoom(int roomIndex);
         int CountAliveEnemies(int roomIndex= CURRENT_ROOM);
 
         static EntityManager* s_instance;
@@ -120,12 +128,11 @@ namespace SpookyAdulthood
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // OMNI
+    // 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityRoomChecker_AllDead: public Entity
     {
-        virtual void Update(float stepTime, const CameraFirstPerson& camera);
-
+        virtual void Update(float s, const CameraFirstPerson& camera);
     };
     
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,6 +148,11 @@ namespace SpookyAdulthood
         int m_animIndex;
     };
 
+    struct EntityCheckBossReady: public Entity
+    {
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+    };
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityProjectile : public Entity
@@ -150,7 +162,7 @@ namespace SpookyAdulthood
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void DoHit();
         
-        XMFLOAT3 m_dir;
+        XMFLOAT3 m_animDir;
         float m_speed;
         float m_waitToCheck;
         bool m_killer;
@@ -172,9 +184,13 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityTeleport : public Entity
     {
-        EntityTeleport(const XMFLOAT3& pos);
+        EntityTeleport(const XMUINT2& tile, int targetRoom);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        int m_dir;
+        virtual void PlayerEntersRoom(int ri);
+        virtual void PlayerLeavesRoom(int ri);
+
+        int m_animDir;
+        int m_targetRoom;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,6 +214,7 @@ namespace SpookyAdulthood
     {
         EntityRandomSound(uint32_t sound, float time0, float time1, bool endOnPlay=false);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void PlayerLeavesRoom(int ri);
 
         uint32_t m_sound;
         float m_time0, m_time1;
@@ -216,12 +233,10 @@ namespace SpookyAdulthood
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         EntityProjectile* ShootToPlayer(int projSprIndex, float speed, const XMFLOAT3& offs, const XMFLOAT2& size, float life=-1.0f, bool predict=false, float waitTime=-1.0f);
         LevelMapBSPNode* GetCurrentRoom();
-        float DistSqToPlayer(XMFLOAT3* dir=nullptr);
         bool CanSeePlayer();
         void ModulateToColor(const XMFLOAT4& color, float duration);
         void FadeOut(float duration, bool invAfter=false);
-        bool PlayerLookintAtMe(float range, bool checkLoS=true);
-        void PlaySoundDistance(uint32_t sound, float maxdist);
+        bool PlayerLookintAtMe(float range, bool checkLoS=true);        
 
         XMFLOAT4 m_modulateTargetColor;
         XMFLOAT4 m_originColor;
@@ -337,6 +352,17 @@ namespace SpookyAdulthood
         float m_timeToJump;
     };
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    struct EnemyBoss : public EntityEnemyBase
+    {
+        EnemyBoss(const XMFLOAT3& pos);
+
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void DoHit();
+
+        LevelMapBSPNode* m_roomNode;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     enum DecorType {

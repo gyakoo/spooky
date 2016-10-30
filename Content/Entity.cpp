@@ -108,6 +108,35 @@ bool Entity::SupportRaycast() const
     const bool isInvalid = (m_flags & (Entity::INACTIVE | Entity::INVALID)) != 0;
     return acceptRaycast && is3D && !isInvalid;
 }
+
+float Entity::DistSqToPlayer(XMFLOAT3* dir)
+{
+    auto plPos = CAM.GetPosition();
+    plPos.y = 0.0f;
+    const XMFLOAT3 myPos(m_pos.x, 0.0f, m_pos.z);
+    const XMFLOAT3 toPl = XM3Sub(plPos, myPos);
+    const float lenSq = XM3LenSq(toPl);
+    if (dir && lenSq != 0)
+        *dir = XM3Mul(toPl, 1.0f / sqrt(lenSq));
+    return lenSq;
+}
+
+void Entity::PlaySoundDistance(uint32_t sound, float maxdist, bool loop)
+{
+    // volume depending on distance
+    auto gameRes = DX::GameResources::instance;
+    gameRes->SoundPlay(sound, loop);
+    UpdateSoundDistance(sound, maxdist);
+}
+
+void Entity::UpdateSoundDistance(uint32_t sound, float maxdist)
+{
+    auto gameRes = DX::GameResources::instance;
+    const float dtp = sqrt(DistSqToPlayer());
+    const float dv = gameRes->SoundGetDefaultVolume(sound);
+    gameRes->SoundVolume(sound, dv *(1.0f - std::min(1.0f, dtp / maxdist)));
+}
+
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // /////////////////////////////////////////////////// ENTITY MANAGER
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,10 +228,12 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
         throw std::exception("No rooms in entity manager?");
     m_rooms.resize(roomCount);
 
+    // TEST: DELETE
     {
         auto r = DX::GameResources::instance->m_map.GetLeafAtIndex(0);
         auto p = r->GetRandomXZ(XMFLOAT2(0.75f, 0.75f));
         AddEntity(std::make_shared<EnemyGhost>(p), 0);
+        AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 0);
         return;
     }
 
@@ -611,6 +642,36 @@ int EntityManager::CountAliveEnemies(int roomIndex)
     return count;
 }
 
+void EntityManager::PlayerEntersRoom(int roomIndex)
+{
+    if (roomIndex < 0 || roomIndex >= (int)m_rooms.size()) return;
+    
+    for (int pass = 0; pass < 2; ++pass)
+    {
+        auto& entities = !pass ? m_rooms[roomIndex] : m_omniEntities;
+        for (auto& e : entities)
+        {
+            if (e->IsValid())
+                e->PlayerEntersRoom(roomIndex);
+        }
+    }
+}
+
+void EntityManager::PlayerLeavesRoom(int roomIndex)
+{
+    if (roomIndex < 0 || roomIndex >= (int)m_rooms.size()) return;
+
+    for (int pass = 0; pass < 2; ++pass)
+    {
+        auto& entities = !pass ? m_rooms[roomIndex] : m_omniEntities;
+        for (auto& e : entities)
+        {
+            if (e->IsValid())
+                e->PlayerLeavesRoom(roomIndex);
+        }
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////// GUN
@@ -654,7 +715,7 @@ void EntityRoomChecker_AllDead::Update(float stepTime, const CameraFirstPerson& 
     const int count = entityMgr.CountAliveEnemies();    
     if (!count)
     {
-        gameRes->FinishCurrentRoom();
+        gameRes->OpenCurrentRoom();
         Invalidate();
     }
 }
@@ -668,7 +729,7 @@ EntityProjectile::EntityProjectile(const XMFLOAT3& pos, int spriteNdx, float spe
 {
     m_collidePlayer = true;
     m_pos = pos;
-    m_dir = dir;
+    m_animDir = dir;
     m_timeOut = 10.0f; // max time out for projectiles (just in case)
     m_spriteIndex = spriteNdx;
     m_size = XMFLOAT2(0.5f, 0.5f);
@@ -679,7 +740,7 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
 {
     m_firstTime = false;
 
-    XMFLOAT3 newPos = XM3Mad(m_pos, m_dir, m_speed*stepTime);
+    XMFLOAT3 newPos = XM3Mad(m_pos, m_animDir, m_speed*stepTime);
 
     // collides?
     auto gameRes = DX::GameResources::instance;
@@ -760,31 +821,57 @@ void EntityShootHit::Update(float stepTime, const CameraFirstPerson& camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////// TELEPORT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityTeleport::EntityTeleport(const XMFLOAT3& pos) // 25 26 27
-    : Entity(SPRITE3D), m_dir(1)
+EntityTeleport::EntityTeleport(const XMUINT2& pos, int targetRoom) // 25 26 27
+    : Entity(SPRITE3D), m_animDir(1), m_targetRoom(targetRoom)
 {
     m_spriteIndex = 25;
     m_size = XMFLOAT2(0.5f, 0.75f);
-    m_pos = pos;
+    m_pos.x = (float)pos.x + 0.5f;
+    m_pos.z = (float)pos.y + 0.5f;
+    m_pos.y = m_size.y*0.5f + 0.05f;
+    PlaySoundDistance(DX::GameResources::SFX_BUZZ, 8.0f, true);
 }
 
 void EntityTeleport::Update(float stepTime, const CameraFirstPerson& camera)
 {
-    if (m_totalTime >= 0.4f)
+    auto gameRes = DX::GameResources::instance;
+
+    if (m_totalTime >= 0.1f)
     {
-        m_spriteIndex += m_dir;
+        m_spriteIndex += m_animDir;
         if (m_spriteIndex > 27)
         {
             m_spriteIndex = 26;
-            m_dir = -1;
+            m_animDir = -1;
         }
         else if (m_spriteIndex < 25)
         {
             m_spriteIndex = 26;
-            m_dir = +1;
+            m_animDir = +1;
         }
         m_totalTime = 0.0f;
     }
+
+    if (gameRes->m_frameCount % 4 == 0)
+        UpdateSoundDistance(DX::GameResources::SFX_BUZZ, 8.0f);
+
+    const float distToPlSq = DistSqToPlayer();
+    if (m_totalTime >= 0.0f && distToPlSq < camera.RadiusCollideSq())
+        gameRes->TeleportToRoom(m_targetRoom);
+    else if (m_totalTime < 0.0f && distToPlSq > camera.RadiusCollideSq())
+        m_totalTime = 0.0f;
+}
+
+void EntityTeleport::PlayerEntersRoom(int ri)
+{
+    PlaySoundDistance(DX::GameResources::SFX_BUZZ, 8.0f, true);
+    m_totalTime = -FLT_MAX;
+}
+
+void EntityTeleport::PlayerLeavesRoom(int ri)
+{
+    DX::GameResources::instance->SoundStop(DX::GameResources::SFX_BUZZ);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -849,6 +936,11 @@ void EntityRandomSound::Update(float stepTime, const CameraFirstPerson& camera)
             Invalidate();
         m_waitTime = m_waitTime = DX::GameResources::instance->m_random.GetF(m_time0, m_time1);
     }
+}
+
+void EntityRandomSound::PlayerLeavesRoom(int ri)
+{
+    DX::GameResources::instance->SoundStop(m_sound);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -920,18 +1012,6 @@ LevelMapBSPNode* EntityEnemyBase::GetCurrentRoom()
     return l ? l.get() : nullptr;
 }
 
-float EntityEnemyBase::DistSqToPlayer(XMFLOAT3* dir)
-{
-    auto plPos = CAM.GetPosition();
-    plPos.y = 0.0f;
-    const XMFLOAT3 myPos(m_pos.x, 0.0f, m_pos.z);
-    const XMFLOAT3 toPl = XM3Sub(plPos, myPos);
-    const float lenSq = XM3LenSq(toPl);
-    if (dir && lenSq!=0)
-        *dir = XM3Mul(toPl, 1.0f / sqrt(lenSq));
-    return lenSq;
-}
-
 bool EntityEnemyBase::CanSeePlayer()
 {
     auto gameRes = DX::GameResources::instance;
@@ -947,16 +1027,6 @@ bool EntityEnemyBase::PlayerLookintAtMe(float range, bool checkLoS)
     const XMFLOAT3 toPl = XM3Normalize(XM3Sub(plPos, myPos));
     const float dot = XM3Dot(toPl, XM3Neg(cam.m_forward));
     return dot >= range && (checkLoS && CanSeePlayer() || !checkLoS);
-}
-
-void EntityEnemyBase::PlaySoundDistance(uint32_t sound, float maxdist)
-{
-    // volume depending on distance
-    auto gameRes = DX::GameResources::instance;
-    gameRes->SoundPlay(sound, false);
-    const float dtp = sqrt(DistSqToPlayer());
-    const float dv = gameRes->SoundGetDefaultVolume(sound);
-    gameRes->SoundVolume(sound, dv *(1.0f - std::min(1.0f, dtp / maxdist)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1606,6 +1676,54 @@ void EnemyGhost::JumpNextTargetPoint()
     m_pos.z = selected.y + 0.5f;
     PlaySoundDistance(DX::GameResources::SFX_DASH, 8.0f);
     DX::GameResources::instance->SoundPitch(DX::GameResources::SFX_DASH, RND.GetF(-0.9f, 0.9f));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// BOSS CHECK READY
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void EntityCheckBossReady::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    auto gameRes = DX::GameResources::instance;
+    if (gameRes->m_frameCount % 10 == 3)
+    {
+        const auto& rooms = gameRes->m_map.GetRooms();
+        for (size_t i = 0; i < rooms.size(); ++i)
+        {
+            if (!rooms[i]->m_finished)
+                return;
+        }
+
+        // boss is ready
+        gameRes->BossIsReady();
+        Invalidate();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// BOSS
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EnemyBoss::EnemyBoss(const XMFLOAT3& pos)
+{
+    m_pos = pos;
+    m_size = XMFLOAT2(0.7f, 1.9f);
+    m_pos.y = m_size.y*0.5f + 0.05f;
+    m_spriteIndex = 5;
+    m_roomNode = DX::GameResources::instance->m_map.GetLeafAt(m_pos).get();
+    if (!m_roomNode)
+        throw std::exception("No room for boss");
+    else
+        m_roomNode->m_tag = 0x55000033;
+}
+
+void EnemyBoss::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    EntityEnemyBase::Update(stepTime, camera);
+    if (!m_roomNode) return;
+}
+
+void EnemyBoss::DoHit()
+{
+
 }
 
 #undef CAM

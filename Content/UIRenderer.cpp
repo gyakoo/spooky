@@ -48,8 +48,8 @@ void UIRenderer::Update(DX::StepTimer const& timer)
 {
 	// Update display text.
 	uint32 fps = timer.GetFramesPerSecond();
-
-	m_text = (fps > 0) ? std::to_wstring(fps) + L" FPS" : L" - FPS";
+    int ri = DX::GameResources::instance->m_curRoomIndex;
+	m_text = (fps > 0) ? std::to_wstring(fps) + L" / " + std::to_wstring(ri) : L" - FPS";
 
 	ComPtr<IDWriteTextLayout> textLayout;
 	DX::ThrowIfFailed(

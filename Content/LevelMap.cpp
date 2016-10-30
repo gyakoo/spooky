@@ -360,20 +360,23 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     // teleports
     for (const auto& tp : m_teleports)
     {
-        const uint32_t argb = 0xff0000ff;
-        for (int i = 0; i < 2; ++i)
+        if (tp.m_open)
         {
-            m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
+            const uint32_t argb = 0xff0000ff;
+            for (int i = 0; i < 2; ++i)
+            {
+                m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
+            }
         }
     }
 
-    // portals
+    // portals    
     for (const auto& p : m_portals)
     {
         XMUINT2 pos = p.GetPortalPosition();
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex.SetAt(pos.x, pos.y, 0xff00ff00);
+            m_thumbTex.SetAt(pos.x, pos.y, 0x0);
             switch (p.m_wallNode->m_type)
             {
             case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
@@ -384,7 +387,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 
     // character
     if ( playerPos)
-        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0xff00ffff);
+        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0x00ff00ff);
 
     // create DX resources for rendering
     m_thumbTex.CreateDeviceDependentResources(m_device);
@@ -520,6 +523,7 @@ void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelM
         {
             {roomA, roomB},
             {GetRandomInArea(roomA->m_area), GetRandomInArea(roomB->m_area) },
+            false
         };
     const int ndx = (int)m_teleports.size();
     m_teleports.push_back(tport);
@@ -985,6 +989,22 @@ bool LevelMap::RaycastSeg(const XMFLOAT3& origin, const XMFLOAT3& end, XMFLOAT3&
     return wasHit;
 }
 
+LevelMapBSPNodePtr LevelMap::GetBiggestRoom() const
+{
+    LevelMapBSPNodePtr maxRoom;
+    int maxArea = -1;
+    for (auto& r: m_leaves)
+    {
+        const int area = (int)(r->m_area.CountTiles());
+        if (area > maxArea)
+        {
+            maxRoom = r;
+            maxArea = area;
+        }
+    }
+    return maxRoom;
+}
+
 void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
 {
     if (roomIndex == -1 && !m_cameraCurLeaf)
@@ -1031,6 +1051,18 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
             ++it;
         }
     }
+
+    // any teleport
+    if (m_cameraCurLeaf->m_teleportNdx != -1)
+    {
+        auto& tp = m_teleports[m_cameraCurLeaf->m_teleportNdx];
+        tp.m_open = true;
+        auto gameRes = DX::GameResources::instance;
+        auto& otherLeaf = tp.GetOtherLeaf(m_cameraCurLeaf);
+        gameRes->m_entityMgr.AddEntity(std::make_shared<EntityTeleport>(tp.GetPosition(m_cameraCurLeaf), otherLeaf->m_leafNdx), m_cameraCurLeaf->m_leafNdx);
+        gameRes->m_entityMgr.AddEntity(std::make_shared<EntityTeleport>(tp.GetOtherPosition(m_cameraCurLeaf), m_cameraCurLeaf->m_leafNdx), otherLeaf->m_leafNdx);
+    }
+
     m_cameraCurLeaf->m_finished = true;
 }
 
@@ -1460,6 +1492,28 @@ XMFLOAT3 LevelMapBSPNode::GetRandomXZ(const XMFLOAT2& shrink) const
     xz.y = 0.0f;
     return xz;
 }
+
+XMFLOAT3 LevelMapBSPNode::GetRandomXZWithClearance() const
+{
+    // get free tiles
+    std::vector<XMUINT2> freeTiles; freeTiles.reserve(m_area.CountTiles());
+    XMUINT2 t;
+    for (uint32_t y = m_area.m_y0; y <= m_area.m_y1; ++y)
+    {
+        for (uint32_t x = m_area.m_x0; x <= m_area.m_x1; ++x)
+        {
+            t.x = x; t.y = y;
+            if (!IsPillar(t))
+                freeTiles.push_back(t);
+        }
+    }
+    if (freeTiles.empty())
+        throw std::exception("No free tiles in this room");
+
+    t = freeTiles[DX::GameResources::instance->m_random.Get(0, freeTiles.size() - 1)];
+    return XMFLOAT3(t.x + 0.5f, 0.0f, t.y + 0.5f);
+}
+
 
 XMUINT2 LevelMapBSPNode::GetRandomTile() const
 {

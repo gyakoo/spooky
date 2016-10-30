@@ -63,6 +63,9 @@ namespace DX
             SFX_OUCH = 16,
             SFX_DIE0 = 17,
             SFX_DASH=18,
+            SFX_BUZZ = 19,
+            SFX_PORT = 20,
+            SFX_ROOMOPEN =21,
             SFX_MAX
         };
         GameResources(const std::shared_ptr<DX::DeviceResources>& device);
@@ -102,8 +105,11 @@ namespace DX
         uint32_t m_frameCount;
         float m_invincibleTime;
         float m_curDensityMult;
+        int m_curRoomIndex;
+        bool m_bossIsReady;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
+        void SoundAllStop()const;
         void SoundStop(uint32_t index)const;
         void SoundPause(uint32_t index)const;
         void SoundResume(uint32_t index)const ;
@@ -114,14 +120,15 @@ namespace DX
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);
         void PlayerShoot();
-        void OpenDoor(uint32_t index);
         void GenerateNewLevel();
         void SpawnPlayer();
         void HitPlayer(bool killer=false);
         void KillPlayer();
-        void FinishCurrentRoom();
+        void OpenCurrentRoom();
+        void TeleportToRoom(int targetRoom);
         void OnEnterRoom(int roomEntering);
         void OnLeaveRoom(int roomLeaving);
+        void BossIsReady();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

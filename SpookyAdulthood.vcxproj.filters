@@ -306,5 +306,14 @@
     <Media Include="Assets\sounds\dash.wav">
       <Filter>Assets\snd</Filter>
     </Media>
+    <Media Include="Assets\sounds\buzz.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\port.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\roomopen.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
   </ItemGroup>
 </Project>

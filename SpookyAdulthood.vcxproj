@@ -345,6 +345,7 @@
     <Media Include="Assets\sounds\beep0.wav" />
     <Media Include="Assets\sounds\breathing.wav" />
     <Media Include="Assets\sounds\broken.wav" />
+    <Media Include="Assets\sounds\buzz.wav" />
     <Media Include="Assets\sounds\cat.wav" />
     <Media Include="Assets\sounds\dash.wav" />
     <Media Include="Assets\sounds\die0.wav" />
@@ -358,6 +359,8 @@
     <Media Include="Assets\sounds\ouch.wav" />
     <Media Include="Assets\sounds\owl.wav" />
     <Media Include="Assets\sounds\piano.wav" />
+    <Media Include="Assets\sounds\port.wav" />
+    <Media Include="Assets\sounds\roomopen.wav" />
     <Media Include="Assets\sounds\shoot0.wav" />
     <Media Include="Assets\sounds\shotgun.wav" />
     <Media Include="Assets\sounds\walk.wav" />
