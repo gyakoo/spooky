@@ -242,6 +242,12 @@
     <Image Include="Assets\textures\white.png">
       <Filter>Assets\img\textures</Filter>
     </Image>
+    <Image Include="Assets\textures\red.png">
+      <Filter>Assets\img\textures</Filter>
+    </Image>
+    <Image Include="Assets\sprites\itemcandy.png">
+      <Filter>Assets\img\props</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />
@@ -334,6 +340,9 @@
       <Filter>Assets\snd</Filter>
     </Media>
     <Media Include="Assets\sounds\heartbeat.wav">
+      <Filter>Assets\snd</Filter>
+    </Media>
+    <Media Include="Assets\sounds\itempick.wav">
       <Filter>Assets\snd</Filter>
     </Media>
   </ItemGroup>

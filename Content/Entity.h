@@ -367,6 +367,8 @@ namespace SpookyAdulthood
         EnemyBoss(const XMFLOAT3& pos);
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
+
         virtual void DoHit();
 
         LevelMapBSPNode* m_roomNode;
@@ -390,6 +392,22 @@ namespace SpookyAdulthood
         static XMFLOAT2 GetSizeOf(DecorType type);
 
         DecorType m_type;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    enum ItemType
+    {
+        ITEM_CANDY=0,
+        ITEM_LIFE
+    };
+    struct EntityItem : public Entity
+    {
+        EntityItem(ItemType type, const XMFLOAT3& pos, float amount);
+        virtual void Update(float stepTime, const CameraFirstPerson& camera);
+        void Pickup();
+
+        ItemType m_type;
+        float m_amount;
     };
 
 };

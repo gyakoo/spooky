@@ -44,6 +44,7 @@ namespace SpookyAdulthood
         float m_rightDownTime;
         float m_shotgunRange;
         float m_life;
+        int m_bullets;
         bool m_leftDown;
         bool m_running;
         bool m_moving;

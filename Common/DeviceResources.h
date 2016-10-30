@@ -66,6 +66,8 @@ namespace DX
             SFX_BUZZ = 19,
             SFX_PORT = 20,
             SFX_ROOMOPEN =21,
+            SFX_ITEMPICK = 22,
+            SFX_EMPTY = 23,
             SFX_MAX
         };
         GameResources(const std::shared_ptr<DX::DeviceResources>& device);
@@ -132,6 +134,7 @@ namespace DX
         void BossIsReady();
         void SetPause(bool pause);
         inline bool IsPaused() { return m_entityMgr.IsPaused(); }
+        void ConsiderSpawnItem(const XMFLOAT3& pos);
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

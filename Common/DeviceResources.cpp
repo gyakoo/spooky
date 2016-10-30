@@ -243,7 +243,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 	// The width and height of the swap chain must be based on the window's
 	// natively-oriented width and height. If the window is not in the native
 	// orientation, the dimensions must be reversed.
-	DXGI_MODE_ROTATION displayRotation = ComputeDisplayRotation();
+	playRotation = ComputeDisplayRotation();
 
 	bool swapDimensions = displayRotation == DXGI_MODE_ROTATION_ROTATE90 || displayRotation == DXGI_MODE_ROTATION_ROTATE270;
 	m_d3dRenderTargetSize.Width = swapDimensions ? m_outputSize.Height : m_outputSize.Width;
@@ -829,7 +829,9 @@ static const wchar_t* g_sndNames[] = {
     L"assets\\sounds\\dash.wav",            // 18
     L"assets\\sounds\\buzz.wav",            // 19
     L"assets\\sounds\\port.wav",            // 20
-    L"assets\\sounds\\roomopen.wav"         // 21
+    L"assets\\sounds\\roomopen.wav",        // 21
+    L"assets\\sounds\\itempick.wav",        // 22
+    L"assets\\sounds\\empty.wav"            // 23
 };
 static const float g_sndVolumes[] = 
 { 
@@ -855,6 +857,8 @@ static const float g_sndVolumes[] =
     0.2f,      // 19
     0.8f,      // 20
     1.0f,      // 21
+    0.8f,      // 22
+    1.0f,       // 23
 };
 static const float g_sndPitches[] = 
 { 
@@ -879,7 +883,9 @@ static const float g_sndPitches[] =
     -1.0f,      // 18
     -1.0f,      // 19
     -1.0f,      // 20
-    0.0f        // 21
+    0.0f,       // 21
+    0.0f,       // 22
+    0.0f,       // 23
 };
 float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
 float DX::GameResources::SoundGetDefaultPitch(uint32_t index) { return g_sndPitches[index]; }
@@ -1146,6 +1152,14 @@ void DX::GameResources::PlayerShoot()
         return;
     }
 
+    if (m_camera.m_bullets == 0)
+    {
+        SoundPlay(SFX_EMPTY,false);
+        return;
+    }
+
+    --m_camera.m_bullets;
+
     // sound play, animation, flash screen
     SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
     m_sprite.CreateAnimationInstance(0,0);
@@ -1320,4 +1334,10 @@ void DX::GameResources::BossIsReady()
 void DX::GameResources::SetPause(bool p)
 {
     m_entityMgr.SetPause(p);
+}
+
+void DX::GameResources::ConsiderSpawnItem(const XMFLOAT3& pos)
+{
+    const float life = m_camera.m_life;
+    
 }

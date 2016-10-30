@@ -11,4 +11,4 @@ dash.wav        - LloydEvans09      - http://freesound.org/people/LloydEvans09/s
 buzz.wav        - PotatoHamburger   - http://freesound.org/people/PotatoHamburger/sounds/202229/
 
 Rest of sounds were created using: http://www.bfxr.net/
-
+Sound editing: https://twistedwave.com/online/

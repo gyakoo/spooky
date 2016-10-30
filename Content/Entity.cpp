@@ -648,6 +648,8 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\door1.png"); // 31
     sprite.CreateSprite(L"assets\\sprites\\skull.png"); // 32
     sprite.CreateSprite(L"assets\\textures\\blue.png"); // 33
+    sprite.CreateSprite(L"assets\\textures\\red.png"); // 34
+    sprite.CreateSprite(L"assets\\sprites\\itemcandy.png"); // 35
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 }
@@ -1639,29 +1641,29 @@ XMFLOAT2 EntitySingleDecoration::GetSizeOf(DecorType type)
 
 void EntitySingleDecoration::DoHit()
 {
-    using namespace DX;
+    auto gameRes = DX::GameResources::instance;    
     switch (m_type)
     {
     case BODYPILE:
-        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_HIT1, false);
         break;
     case GRAVE:
         {
-
-        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_HIT1, false);
         }break;
     case TREEBLACK:
-        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_HIT1, false);
         break;
     case GREENHAND:
-        GameResources::instance->SoundPlay(GameResources::SFX_BROKEN, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_BROKEN, false);
         Invalidate(KILLED);
         break;
     case BLACKHAND:
-        GameResources::instance->SoundPlay(GameResources::SFX_HIT1, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_HIT1, false);
         break;
     case SKULL: 
-        GameResources::instance->SoundPlay(GameResources::SFX_BROKEN, false);
+        gameRes->SoundPlay(DX::GameResources::SFX_BROKEN, false);
+        gameRes->ConsiderSpawnItem(m_pos);
         Invalidate(KILLED);
         break;
     }
@@ -1802,10 +1804,12 @@ void EntityCheckBossReady::Update(float stepTime, const CameraFirstPerson& camer
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EnemyBoss::EnemyBoss(const XMFLOAT3& pos)
 {
+    m_flags = SPRITE3D | SPRITE2D | ACCEPT_RAYCAST;
     m_pos = pos;
     m_size = XMFLOAT2(0.7f, 1.9f);
     m_pos.y = m_size.y*0.5f + 0.05f;
     m_spriteIndex = 5;
+    m_life = 1.0f;
     m_roomNode = DX::GameResources::instance->m_map.GetLeafAt(m_pos).get();
     if (!m_roomNode)
         throw std::exception("No room for boss");
@@ -1819,9 +1823,57 @@ void EnemyBoss::Update(float stepTime, const CameraFirstPerson& camera)
     if (!m_roomNode) return;
 }
 
+void EnemyBoss::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
+{
+    if (pass == PASS_SPRITE2D)
+    {
+        bool draw = true;
+        const float life = std::max(0.0f, std::min(1.0f, m_life));
+        const XMFLOAT2 barSize(life, 0.04f);
+        const XMFLOAT2 pos(-1.0f + barSize.x*0.5f, 1.0f + barSize.y*0.5f + 0.1f);
+        sprite.Draw2D(34, pos, barSize, 0);
+    }
+    else
+        EntityEnemyBase::Render(pass, camera, sprite);
+}
+
 void EnemyBoss::DoHit()
 {
 
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////// ITEM
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+EntityItem::EntityItem(ItemType type, const XMFLOAT3& pos, float amount)
+    : Entity(SPRITE3D)
+{
+    switch (type)
+    {
+    case ITEM_LIFE: 
+    case ITEM_CANDY: 
+        m_size = XMFLOAT2(0.2f, 0.2f); 
+        m_spriteIndex = 35;
+        break;
+    }
+    m_pos = pos;
+    m_pos.y = m_size.y*0.5f + 0.01f;
+    m_type = type;
+    m_amount = amount;
+}
+
+void EntityItem::Update(float stepTime, const CameraFirstPerson& camera)
+{
+    if ( DistSqToPlayer() < camera.RadiusCollideSq() )
+    {
+        Pickup();
+        Invalidate();
+    }
+}
+
+void EntityItem::Pickup()
+{
+    DX::GameResources::instance->SoundPlay(DX::GameResources::SFX_ITEMPICK,false);
 }
 
 #undef CAM
