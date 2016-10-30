@@ -24,6 +24,7 @@ namespace SpookyAdulthood
         static bool GenerateNewLevel; // def 0 (auto)
         static bool SpawnPlayer; // def 0 (auto)
         static bool SpawnProjectile; // def 0 (auto)
+        static bool KillRoom; // def 0 (auto)
 
         static DirectX::XMFLOAT2 DrawGlobalsPos; // def 10,10
         static int ShootHits; // def 0

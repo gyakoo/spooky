@@ -779,11 +779,11 @@ float DX::RandomProvider::GetF(float minN, float maxN)
     return std::uniform_real_distribution<float>(minN, maxN)(*m_gen);
 }
 
-uint32_t DX::RandomProvider::Get01()
+uint32_t DX::RandomProvider::Get01(float p)
 {
     if (!m_gen)
         SetSeed(RANDOM_DEFAULT_SEED);
-    return std::bernoulli_distribution(0.5)(*m_gen);
+    return std::bernoulli_distribution(p)(*m_gen);
 }
 
 uint32_t DX::RandomProvider::GetWithDensity(const uint32_t* func, int count)
@@ -1168,6 +1168,7 @@ void DX::GameResources::OpenCurrentRoom()
 {
     // open the doors 
     SoundPlay(SFX_ROOMOPEN, false);
+    m_entityMgr.PlayerFinishesRoom();
     m_map.ToggleRoomDoors();
 }
 

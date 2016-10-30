@@ -34,7 +34,7 @@ App::App() :
 	m_windowVisible(true)
 {
     //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
-    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchViewSize= Windows::Foundation::Size(800,600);
+    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchViewSize= Windows::Foundation::Size(1024,768);
     Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::PreferredLaunchViewSize;
 }
 

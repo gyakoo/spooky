@@ -10,6 +10,7 @@ using namespace SpookyAdulthood;
 static const XMFLOAT4 XM4RED(1, 0, 0, 1);
 #define RND (DX::GameResources::instance->m_random)
 #define CAM (DX::GameResources::instance->m_camera)
+const float FBIGVAL = 1e10;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////// BASE ENTITY
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,13 +230,14 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
     m_rooms.resize(roomCount);
 
     // TEST: DELETE
-    {
+    /*{
         auto r = DX::GameResources::instance->m_map.GetLeafAtIndex(0);
         auto p = r->GetRandomXZ(XMFLOAT2(0.75f, 0.75f));
         AddEntity(std::make_shared<EnemyGhost>(p), 0);
         AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 0);
         return;
     }
+    */
 
 
     // will create the entities depending on the room profiles
@@ -257,6 +259,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 80);
             CreateEntities_BlackHands(r.get(), rnd.Get(0, 3), 80);
+            if (rnd.Get01(0.7f))
+                AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
+
             break;
         case LevelMap::RP_NORMAL1:
             decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 50);
@@ -265,7 +270,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             CreateEntities_Girl(r.get(), rnd.Get(0, 2), 70);
             CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
-            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 40.0f,true), r->m_leafNdx);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f,true), r->m_leafNdx);
+            if (rnd.Get01(0.4f))
+                AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_GRAVE:
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 3), 20);
@@ -279,6 +286,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
             CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
             AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
+            for ( int i = rnd.Get(0,3); i>0; --i )
+                if (rnd.Get01())
+                    AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_WOODS: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
@@ -290,6 +300,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Girl(r.get(), rnd.Get(0, 5), 70);
             CreateEntities_Puky(r.get(), rnd.Get(0, 5), 60);
             AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
+            for (int i = rnd.Get(0, 3); i>0; --i)
+                if (rnd.Get01())
+                    AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_BODYPILES: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(4, 10), 60);
@@ -298,7 +311,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[SKULL] = XMUINT2(rnd.Get(4, 15), 80);
             CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
             CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
-            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 40.0f, true), r->m_leafNdx);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f, true), r->m_leafNdx);
+            if (rnd.Get01(0.3f))
+                AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_GARGOYLES: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
@@ -307,7 +322,10 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Gargoyle(r.get(), rnd.Get(1, 10), 80);
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 70);
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
-            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 40.0f, true), r->m_leafNdx);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f, true), r->m_leafNdx);
+            for (int i = rnd.Get(0, 3); i>0; --i)
+                if (rnd.Get01())
+                    AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_HANDS: 
             decoProbs[BODYPILE] = XMUINT2(rnd.Get(0, 2), 20);
@@ -316,10 +334,17 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 50);
             CreateEntities_BlackHands(r.get(), rnd.Get(1, 8), 60);
+            for (int i = rnd.Get(0, 3); i>0; --i)
+                if (rnd.Get01())
+                    AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_SCARYMESSAGES: 
             decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 5), 60);
             decoProbs[SKULL] = XMUINT2(rnd.Get(0, 8), 70);
+            CreateEntities_Gargoyle(r.get(), rnd.Get(1, 5), 80);
+            for (int i = rnd.Get(0, 3); i>0; --i)
+                if (rnd.Get01())
+                    AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         case LevelMap::RP_PUMPKINFIELD: 
             decoProbs[GRAVE] = XMUINT2(rnd.Get(0, 3), 70);
@@ -329,6 +354,8 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(5, 20), 80);
             CreateEntities_Puky(r.get(), rnd.Get(0, 5), 70);
             AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
+            if (rnd.Get01())
+                AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
         }
 
@@ -350,6 +377,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
                 }
             }
         }
+
+        // checking end of room
+        AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), r->m_leafNdx);
     }
 }
 
@@ -405,8 +435,6 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
             }
         }
     }
-    m_duringUpdate = false;
-
     // add buffered
     if ( !m_entitiesToAdd.empty() )
     {
@@ -417,6 +445,21 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
         }
         m_entitiesToAdd.clear();
     }
+
+#ifdef _DEBUG
+    if (GlobalFlags::KillRoom)
+    {
+        GlobalFlags::KillRoom = false;
+        for (auto& e : m_rooms[m_curRoomIndex])
+        {
+            e->m_life = -1.0f;
+            EntityEnemyBase* eb = dynamic_cast<EntityEnemyBase*>(e.get());
+            if (eb)
+                eb->DoHit();
+        }
+    }
+#endif
+    m_duringUpdate = false;
 }
 
 void EntityManager::RenderSprites3D(const CameraFirstPerson& camera)
@@ -672,6 +715,19 @@ void EntityManager::PlayerLeavesRoom(int roomIndex)
     }
 }
 
+void EntityManager::PlayerFinishesRoom()
+{
+    for (int pass = 0; pass < 2; ++pass)
+    {
+        auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
+        for (auto& e : entities)
+        {
+            if (e->IsValid())
+                e->PlayerFinishesRoom();
+        }
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ////////////////////////////////////////////////////// GUN
@@ -711,12 +767,15 @@ void EntityRoomChecker_AllDead::Update(float stepTime, const CameraFirstPerson& 
 {
     // check there's no enemy entity
     auto gameRes = DX::GameResources::instance;
-    auto& entityMgr = gameRes->m_entityMgr;
-    const int count = entityMgr.CountAliveEnemies();    
-    if (!count)
+    if (gameRes->m_frameCount % 10 == 5)
     {
-        gameRes->OpenCurrentRoom();
-        Invalidate();
+        auto& entityMgr = gameRes->m_entityMgr;
+        const int count = entityMgr.CountAliveEnemies();
+        if (!count)
+        {
+            gameRes->OpenCurrentRoom();
+            Invalidate();
+        }
     }
 }
 
@@ -1168,7 +1227,7 @@ EnemyGirl::EnemyGirl(const XMFLOAT3& pos)
 void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
 {
     EntityEnemyBase::Update(stepTime, camera);
-
+    if (m_timeOut < FBIGVAL) return; // is dying
     m_waitingForNextTarget -= stepTime;
     auto gameRes = DX::GameResources::instance;
     auto& rnd = gameRes->m_random;
@@ -1316,7 +1375,7 @@ bool EnemyGirl::GetNextTargetPoint()
         return false;
 
     const uint32_t cx = (int)m_pos.x;
-    const uint32_t cy = (int)m_pos.y;
+    const uint32_t cy = (int)m_pos.z;
 
     const auto& area = m_roomNode->m_area;
     
@@ -1418,7 +1477,9 @@ void EnemyBlackHands::DoHit()
     ShootToPlayer(1, RND.GetF(3.0f,4.5f), XMFLOAT3(0,CAM.m_height,0), m_hands.back().size, 0.1f, true, 0.2f);
     m_hands.pop_back();
     if (m_hands.empty())
+    {
         Invalidate(KILLED);
+    }
     m_life = float(m_hands.size()) / m_origN;
 }
 
@@ -1479,10 +1540,13 @@ void EnemyPumpkin::Update(float stepTime, const CameraFirstPerson& camera)
 void EnemyPumpkin::DoHit()
 {
     using namespace DX;
-    GameResources::instance->SoundPlay(GameResources::SFX_EXPL0,false);
+    auto gameRes = GameResources::instance;
+    gameRes->SoundPlay(GameResources::SFX_EXPL0,false);
     Invalidate(KILLED);
-    if ( DistSqToPlayer() <= radiusDamageSq )
-        GameResources::instance->HitPlayer();
+    if (DistSqToPlayer() <= radiusDamageSq)
+        gameRes->HitPlayer();
+    else
+        gameRes->FlashScreen(0.5f, XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1587,7 +1651,6 @@ EnemyGhost::EnemyGhost(const XMFLOAT3& pos)
     m_life = 1.0f;
 }
 
-const float FBIGVAL = 1e10;
 void EnemyGhost::Update(float stepTime, const CameraFirstPerson& camera)
 {
     EntityEnemyBase::Update(stepTime, camera);
@@ -1621,6 +1684,7 @@ void EnemyGhost::DoHit()
     const float t = std::max(1.0f - distToPl / gameRes->m_camera.m_shotgunRange, 0.0f);
     const float MAXDAMAGE = 0.8f;
     m_life -= t*MAXDAMAGE;
+    ModulateToColor(XM4RED, 0.5f);
     if (m_life <= 0.0f)
     {
         Die();
@@ -1642,10 +1706,10 @@ void EnemyGhost::JumpNextTargetPoint()
 {
     if (m_timeToJump >= 0.0f)
         return;
-    m_timeToJump = 0.5f;
+    m_timeToJump = 0.65f;
 
     const uint32_t cx = (int)m_pos.x;
-    const uint32_t cy = (int)m_pos.y;
+    const uint32_t cy = (int)m_pos.z;
 
     const auto& area = m_roomNode->m_area;
 

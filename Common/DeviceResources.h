@@ -27,7 +27,7 @@ namespace DX
 
         void SetSeed(uint32_t seed);
         uint32_t Get(uint32_t minN, uint32_t maxN);
-        uint32_t Get01();
+        uint32_t Get01(float p=0.5f);
         float GetF(float minN, float maxN);
         uint32_t GetWithDensity(const uint32_t* func, int count);
 

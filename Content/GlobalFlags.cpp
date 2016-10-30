@@ -17,6 +17,7 @@ namespace SpookyAdulthood
     bool GlobalFlags::AllLit = false;
     bool GlobalFlags::SpawnProjectile = false;
     int GlobalFlags::ShootHits = 0;
+    bool GlobalFlags::KillRoom = false;
     bool GlobalFlags::DrawFlags = false;
     XMFLOAT2 GlobalFlags::DrawGlobalsPos(10, 10);
 
@@ -126,7 +127,10 @@ namespace SpookyAdulthood
                 AllLit = !AllLit;
             break;
             case VirtualKey::Number8:
-                SpawnProjectile = true;;
+                SpawnProjectile = true;
+            break;
+            case VirtualKey::Number9:
+                KillRoom = true;
             break;
         }
     }

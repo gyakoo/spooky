@@ -21,7 +21,7 @@ using namespace Windows::Globalization::DateTimeFormatting;
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-#pragma region This cpp types and functions
+#pragma region Types and functions
 struct SpookyAdulthood::VisMatrix
 {
     std::vector<bool> matrix;
@@ -348,6 +348,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
             for (uint32_t x = room->m_area.m_x0; x <= room->m_area.m_x1; ++x)
                 m_thumbTex.SetAt(x, y, room->m_tag);
 
+        /*
         if (room->m_pillars)
         {
             for (auto& p : *room->m_pillars)
@@ -355,6 +356,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
                 m_thumbTex.SetAt(p.x, p.y, 0xff000000);
             }
         }
+        */
     }
 
     // teleports
@@ -362,10 +364,10 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     {
         if (tp.m_open)
         {
-            const uint32_t argb = 0xff0000ff;
+            const uint32_t abgr = 0xff00ff00;
             for (int i = 0; i < 2; ++i)
             {
-                m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, argb);
+                m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, abgr);
             }
         }
     }
@@ -376,7 +378,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
         XMUINT2 pos = p.GetPortalPosition();
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex.SetAt(pos.x, pos.y, 0x0);
+            m_thumbTex.SetAt(pos.x, pos.y, 0xff000000);
             switch (p.m_wallNode->m_type)
             {
             case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
@@ -673,8 +675,8 @@ void LevelMap::Update(const DX::StepTimer& timer, const CameraFirstPerson& camer
 {
     auto pos = camera.GetPosition();
     m_cameraCurLeaf = GetLeafAt(pos);
-    if (m_cameraCurLeaf)
-        m_cameraCurLeaf->m_tag = 0xffffffaa;
+//    if (m_cameraCurLeaf)
+//        m_cameraCurLeaf->m_tag = 0xffffffaa;
 
     if (m_device && m_device->GetGameResources())
         m_device->GetGameResources()->m_levelTime += (float)timer.GetElapsedSeconds();
@@ -1010,11 +1012,15 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
     if (roomIndex == -1 && !m_cameraCurLeaf)
         return;
     
+    m_cameraCurLeaf->m_finished = true;
+    m_cameraCurLeaf->m_tag = 0xffffffaa;
+
     // disable collision segments for this leaf
     std::vector<CollSegment> portalSegments; 
     portalSegments.reserve(4);
     auto leaf = roomIndex < 0 ? m_cameraCurLeaf : m_leaves[roomIndex];
-    if (!leaf) return;
+    if (!leaf) 
+        return;
     if (leaf->m_collisionSegments)
     {
         for (auto& collseg : *leaf->m_collisionSegments)
@@ -1063,7 +1069,6 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
         gameRes->m_entityMgr.AddEntity(std::make_shared<EntityTeleport>(tp.GetOtherPosition(m_cameraCurLeaf), m_cameraCurLeaf->m_leafNdx), otherLeaf->m_leafNdx);
     }
 
-    m_cameraCurLeaf->m_finished = true;
 }
 
 #pragma endregion

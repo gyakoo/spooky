@@ -48,6 +48,7 @@ namespace SpookyAdulthood
         virtual bool CanDie() { return false; }
         virtual void PlayerEntersRoom(int roomIndex) {}
         virtual void PlayerLeavesRoom(int roomIndex) {}
+        virtual void PlayerFinishesRoom() {}
 
         void PerformHit();
         float GetBoundingRadius() const;
@@ -104,6 +105,7 @@ namespace SpookyAdulthood
         void DoHitOnEntity(uint32_t ndx);
         void PlayerEntersRoom(int roomIndex);
         void PlayerLeavesRoom(int roomIndex);
+        void PlayerFinishesRoom();
         int CountAliveEnemies(int roomIndex= CURRENT_ROOM);
 
         static EntityManager* s_instance;
@@ -161,7 +163,8 @@ namespace SpookyAdulthood
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void DoHit();
-        
+        virtual void PlayerLeavesRoom(int roomIndex) { Invalidate(); }
+
         XMFLOAT3 m_animDir;
         float m_speed;
         float m_waitToCheck;
@@ -309,7 +312,8 @@ namespace SpookyAdulthood
     {
         EnemyGargoyle(const XMFLOAT3& pos, float minDist=2.5f);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        virtual void DoHit();
+        virtual void DoHit();        
+        virtual void PlayerFinishesRoom() { m_spriteIndex = 10; m_totalTime = -FLT_MAX;  m_timeToNextShoot = FLT_MAX; }
 
         float m_timeToNextShoot;
         float m_minDistSq;
