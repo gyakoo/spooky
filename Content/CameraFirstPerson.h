@@ -9,6 +9,8 @@ namespace SpookyAdulthood
 #define CAM_DEFAULT_HEIGHT 0.45f
 #define CAM_DEFAULT_FOVY 70.0f
 #define CAM_DEFAULT_RADIUS 0.25f
+#define CAM_DEFAULT_BULLETS 30
+#define CAM_DEFAULT_MAXBULLETS 50
     struct CameraFirstPerson
     {
         enum eAction{ AC_NONE, AC_SHOOT };
@@ -23,6 +25,8 @@ namespace SpookyAdulthood
         void SetPosition(const XMFLOAT3& p);
         float ComputeHeightAtHit(const XMFLOAT3& hit);
         inline float RadiusCollideSq() const { return m_radiusCollide*m_radiusCollide; }
+        inline void AddBullets(int n) { m_bullets = std::min(m_bullets + n, CAM_DEFAULT_MAXBULLETS); }
+        inline void AddLife(float a) { m_life = std::min(m_life + a, 1.0f); }
 
         XMFLOAT4X4 m_projection;
         XMFLOAT4X4 m_orientMatrix;
@@ -66,9 +70,11 @@ namespace SpookyAdulthood
                 if (!m_leftDown)
                 {
                     m_leftDown = true;
-                    actionFun(AC_SHOOT);
-                    m_timeShoot = 0.5f;
-                    m_timeToNextShoot = 0.70f;
+                    if (actionFun(AC_SHOOT))
+                    {
+                        m_timeShoot = 0.5f;
+                        m_timeToNextShoot = 0.70f;
+                    }
                 }
             }
             else

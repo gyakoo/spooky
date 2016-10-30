@@ -1,3 +1,6 @@
+Sound editing: 
+https://twistedwave.com/online/
+
 http://freesound.org
 laugh.wav       - undead505         - http://freesound.org/people/undead505/sounds/350679/
 owl.wav         - Johnc             - http://freesound.org/people/Johnc/sounds/20684/
@@ -10,5 +13,5 @@ die0.wav        - josepharaoh99     - http://freesound.org/people/josepharaoh99/
 dash.wav        - LloydEvans09      - http://freesound.org/people/LloydEvans09/sounds/221495/
 buzz.wav        - PotatoHamburger   - http://freesound.org/people/PotatoHamburger/sounds/202229/
 
-Rest of sounds were created using: http://www.bfxr.net/
-Sound editing: https://twistedwave.com/online/
+Rest of sounds were created using: 
+http://www.bfxr.net/

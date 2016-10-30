@@ -61,16 +61,18 @@ void SceneRenderer::Update(DX::StepTimer const& timer)
         else 
             return nextPos;
     },
-    [this](CameraFirstPerson::eAction ac) // CALLED WHEN ACTION (shoot)
+    [this](CameraFirstPerson::eAction ac) -> bool // CALLED WHEN ACTION (shoot)
     {
         auto gameRes = m_deviceResources->GetGameResources();
-        if (!gameRes) return;
+        if (!gameRes) return false;
+        bool r = true;
         switch (ac)
         {
             case CameraFirstPerson::AC_SHOOT:
-                gameRes->PlayerShoot();
+                r = gameRes->PlayerShoot();
             break;
         }
+        return r;
     });
 
     if (GlobalFlags::GenerateNewLevel)

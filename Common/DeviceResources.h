@@ -122,7 +122,7 @@ namespace DX
         DirectX::SoundEffectInstance* SoundGet(uint32_t index) const;
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);
-        void PlayerShoot();
+        bool PlayerShoot();
         void GenerateNewLevel();
         void SpawnPlayer();
         bool HitPlayer(float amount, bool killer=false);
@@ -134,7 +134,8 @@ namespace DX
         void BossIsReady();
         void SetPause(bool pause);
         inline bool IsPaused() { return m_entityMgr.IsPaused(); }
-        void ConsiderSpawnItem(const XMFLOAT3& pos);
+        void ConsiderSpawnItem(const XMFLOAT3& pos, float p=0.5f);
+        void UpdateHeartVolumeAndPitch();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

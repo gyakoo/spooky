@@ -208,6 +208,7 @@
     <Image Include="Assets\sprites\gunshoot0.png" />
     <Image Include="Assets\sprites\gunshoot1.png" />
     <Image Include="Assets\sprites\gunshoot2.png" />
+    <Image Include="Assets\sprites\heart.png" />
     <Image Include="Assets\sprites\hit00.png" />
     <Image Include="Assets\sprites\hit01.png" />
     <Image Include="Assets\sprites\hit10.png" />
@@ -352,6 +353,7 @@
     <Media Include="Assets\sounds\cat.wav" />
     <Media Include="Assets\sounds\dash.wav" />
     <Media Include="Assets\sounds\die0.wav" />
+    <Media Include="Assets\sounds\empty.wav" />
     <Media Include="Assets\sounds\explosion0.wav" />
     <Media Include="Assets\sounds\girl.wav" />
     <Media Include="Assets\sounds\girldies.wav" />

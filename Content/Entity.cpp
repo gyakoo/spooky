@@ -650,6 +650,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\textures\\blue.png"); // 33
     sprite.CreateSprite(L"assets\\textures\\red.png"); // 34
     sprite.CreateSprite(L"assets\\sprites\\itemcandy.png"); // 35
+    sprite.CreateSprite(L"assets\\sprites\\heart.png"); // 36
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 }
@@ -1354,7 +1355,7 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
     // check if it should shoot player
     if (m_timeToNextShoot <= 0.0f)
     {
-        ShootToPlayer(rnd.Get01()?9:19, rnd.GetF(3.0f, 5.0f), XMFLOAT3(-0.3f, 0, 0), XMFLOAT2(0.4f,0.2f));
+        ShootToPlayer(rnd.Get01(0.3f)?9:19, rnd.GetF(3.0f, 5.0f), XMFLOAT3(-0.3f, 0, 0), XMFLOAT2(0.4f,0.2f));
         m_timeToNextShoot = rnd.GetF(1.0f, std::max(m_life*10.0f, 2.5f));
     }
     m_timeToNextShoot -= stepTime;
@@ -1579,7 +1580,10 @@ void EnemyPumpkin::DoHit()
     if (DistSqToPlayer() <= radiusDamageSq)
         gameRes->HitPlayer(0.35f);
     else
+    {
         gameRes->FlashScreen(0.5f, XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
+        gameRes->ConsiderSpawnItem(m_pos,0.4f);
+    }    
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1663,7 +1667,7 @@ void EntitySingleDecoration::DoHit()
         break;
     case SKULL: 
         gameRes->SoundPlay(DX::GameResources::SFX_BROKEN, false);
-        gameRes->ConsiderSpawnItem(m_pos);
+        gameRes->ConsiderSpawnItem(m_pos, 0.9f);
         Invalidate(KILLED);
         break;
     }
@@ -1851,19 +1855,23 @@ EntityItem::EntityItem(ItemType type, const XMFLOAT3& pos, float amount)
     switch (type)
     {
     case ITEM_LIFE: 
+        m_size = XMFLOAT2(0.2f, 0.3f);
+        m_spriteIndex = 36;
+        break;
     case ITEM_CANDY: 
-        m_size = XMFLOAT2(0.2f, 0.2f); 
+        m_size = XMFLOAT2(0.3f, 0.2f); 
         m_spriteIndex = 35;
         break;
     }
     m_pos = pos;
-    m_pos.y = m_size.y*0.5f + 0.01f;
+    m_pos.y = m_size.y*0.5f + 0.05f;
     m_type = type;
     m_amount = amount;
 }
 
 void EntityItem::Update(float stepTime, const CameraFirstPerson& camera)
 {
+    m_pos.y = m_size.y*0.5f + 0.1f + sin(m_totalTime*4.0f)*0.02f;
     if ( DistSqToPlayer() < camera.RadiusCollideSq() )
     {
         Pickup();
@@ -1873,7 +1881,21 @@ void EntityItem::Update(float stepTime, const CameraFirstPerson& camera)
 
 void EntityItem::Pickup()
 {
-    DX::GameResources::instance->SoundPlay(DX::GameResources::SFX_ITEMPICK,false);
+    auto gameRes = DX::GameResources::instance;
+    gameRes->SoundPlay(DX::GameResources::SFX_ITEMPICK,false);
+    gameRes->FlashScreen(0.5f, XMFLOAT4(0.7f, 0.7f, 1, 1));
+    gameRes->UpdateHeartVolumeAndPitch();
+    switch (m_type)
+    {
+    case ITEM_LIFE:
+        gameRes->m_camera.AddLife(m_amount);
+        gameRes->SoundPitch(DX::GameResources::SFX_ITEMPICK, -2.0f);
+        break;
+    case ITEM_CANDY:
+        gameRes->m_camera.AddBullets((int)m_amount);
+        gameRes->SoundPitch(DX::GameResources::SFX_ITEMPICK, -1.0f);
+        break;
+    }
 }
 
 #undef CAM

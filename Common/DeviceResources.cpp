@@ -243,7 +243,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 	// The width and height of the swap chain must be based on the window's
 	// natively-oriented width and height. If the window is not in the native
 	// orientation, the dimensions must be reversed.
-	playRotation = ComputeDisplayRotation();
+	auto displayRotation = ComputeDisplayRotation();
 
 	bool swapDimensions = displayRotation == DXGI_MODE_ROTATION_ROTATE90 || displayRotation == DXGI_MODE_ROTATION_ROTATE270;
 	m_d3dRenderTargetSize.Width = swapDimensions ? m_outputSize.Height : m_outputSize.Width;
@@ -1128,7 +1128,7 @@ void DX::GameResources::SoundPitch(uint32_t index, float p)
     if (index >= m_sounds.size()) return;
     auto s = m_sounds[index].get();
     if (!s) return;
-    if (p < 0.0f)
+    if (p < -1.0f)
         p = g_sndPitches[index];
     s->SetPitch(p);
 }
@@ -1143,19 +1143,19 @@ void DX::GameResources::SoundVolume(uint32_t index, float v)
     s->SetVolume(v);
 }
 
-void DX::GameResources::PlayerShoot()
+bool DX::GameResources::PlayerShoot()
 {
     if (m_entityMgr.IsPaused() && m_camera.m_timeToNextShoot < 0.0f)
     {
         GenerateNewLevel();
         m_entityMgr.SetPause(false);
-        return;
+        return false;
     }
 
     if (m_camera.m_bullets == 0)
     {
         SoundPlay(SFX_EMPTY,false);
-        return;
+        return false;
     }
 
     --m_camera.m_bullets;
@@ -1214,8 +1214,17 @@ void DX::GameResources::PlayerShoot()
             m_entityMgr.AddEntity(std::make_shared<EntityShootHit>(hitM));
         }
     }
+    return true;
 }
 
+void DX::GameResources::UpdateHeartVolumeAndPitch()
+{
+    const float hv = SoundGetDefaultVolume(SFX_HEART);
+    const float hp = SoundGetDefaultPitch(SFX_HEART);
+    const float pitch = hp + (1.0f - hp)*(1 - m_camera.m_life);
+    SoundVolume(SFX_HEART, hv + (1.0f - hv)*(1 - m_camera.m_life));
+    SoundPitch(SFX_HEART, Clamp(pitch, -1.0f, 0.7f));
+}
 
 bool DX::GameResources::HitPlayer(float amount, bool killer)
 {
@@ -1227,11 +1236,7 @@ bool DX::GameResources::HitPlayer(float amount, bool killer)
     m_invincibleTime = 1.0f;
     m_camera.m_life -= amount;
 
-    const float hv = SoundGetDefaultVolume(SFX_HEART);
-    const float hp = SoundGetDefaultPitch(SFX_HEART);
-    const float pitch = hp + (1.0f - hp)*(1 - m_camera.m_life);
-    SoundVolume(SFX_HEART, hv + (1.0f - hv)*(1 - m_camera.m_life));
-    SoundPitch(SFX_HEART, Clamp(pitch,-1.0f,0.7f));
+    UpdateHeartVolumeAndPitch();    
 
     if (killer || m_camera.m_life <= 0.0f)
         KillPlayer();
@@ -1278,6 +1283,7 @@ void DX::GameResources::TeleportToRoom(int targetRoom)
 void DX::GameResources::OnEnterRoom(int roomEntering)
 {
     m_entityMgr.PlayerEntersRoom(roomEntering);
+    m_invincibleTime = 2.0f;
 }
 
 void DX::GameResources::OnLeaveRoom(int roomLeaving)
@@ -1311,6 +1317,7 @@ void DX::GameResources::SpawnPlayer()
 
     m_camera.SetPosition(p);
     m_camera.m_life = 1.0f;
+    m_camera.m_bullets = CAM_DEFAULT_BULLETS;
     m_invincibleTime = 2.0f;
     FlashScreen(0.8f, XMFLOAT4(0.7f, 0.7f, 1, 1));
     SoundPlay(SFX_PORT, false);
@@ -1328,7 +1335,7 @@ void DX::GameResources::BossIsReady()
     auto& biggestRoom = m_map.GetBiggestRoom();
     const XMFLOAT3 pos = biggestRoom->GetRandomXZWithClearance();
     m_entityMgr.AddEntity(std::make_shared<EnemyBoss>(pos), biggestRoom->m_leafNdx);
-    m_entityMgr.AddEntity(std::make_shared<EntityRandomSound>(SFX_PIANO, 5, 30,false,true), biggestRoom->m_leafNdx);
+    m_entityMgr.AddEntity(std::make_shared<EntityRandomSound>(SFX_PIANO, 5.0f, 30.0f,false,true), biggestRoom->m_leafNdx);
 }
 
 void DX::GameResources::SetPause(bool p)
@@ -1336,8 +1343,22 @@ void DX::GameResources::SetPause(bool p)
     m_entityMgr.SetPause(p);
 }
 
-void DX::GameResources::ConsiderSpawnItem(const XMFLOAT3& pos)
+void DX::GameResources::ConsiderSpawnItem(const XMFLOAT3& pos, float p)
 {
     const float life = m_camera.m_life;
+    const int bullets = m_camera.m_bullets;
+    if (m_random.Get01(p))
+    {
+        if (m_random.Get01(0.5f))
+        {
+            // life
+            m_entityMgr.AddEntity(std::make_shared<EntityItem>(ITEM_LIFE, pos, m_random.GetF(0.15f,0.8f)));
+        }
+        else
+        {
+            // bullets
+            m_entityMgr.AddEntity(std::make_shared<EntityItem>(ITEM_CANDY, pos, (float)m_random.Get(5, 20)));
+        }
+    }
     
 }
