@@ -808,31 +808,79 @@ uint32_t DX::RandomProvider::GetWithDensity(const uint32_t* func, int count)
 
 // default values for SOUNDS
 static const wchar_t* g_sndNames[] = {
-    L"assets\\sounds\\walk.wav",        // 0
-    L"assets\\sounds\\breathing.wav",   // 1
-    L"assets\\sounds\\piano.wav",       // 2
-    L"assets\\sounds\\shotgun.wav",     // 3
-    L"assets\\sounds\\heartbeat.wav",   // 4
-    L"assets\\sounds\\hit0.wav",        // 5
-    L"assets\\sounds\\laugh.wav",       // 6
-    L"assets\\sounds\\owl.wav",         // 7
-    L"assets\\sounds\\explosion0.wav",  // 8
-    L"assets\\sounds\\hit1.wav",         // 9
-    L"assets\\sounds\\beep0.wav",        // 10
-    L"assets\\sounds\\girldies.wav",     // 11
-    L"assets\\sounds\\cat.wav",          // 12
-    L"assets\\sounds\\girl.wav",         // 13
-    L"assets\\sounds\\shoot0.wav",       // 14
-    L"assets\\sounds\\broken.wav",       // 15
-    L"assets\\sounds\\ouch.wav",         // 16
-    L"assets\\sounds\\die0.wav",         // 17
-    L"assets\\sounds\\dash.wav",         // 18
-    L"assets\\sounds\\buzz.wav",         // 19
-    L"assets\\sounds\\port.wav",          // 20
-    L"assets\\sounds\\roomopen.wav"          // 21
+    L"assets\\sounds\\walk.wav",            // 0
+    L"assets\\sounds\\breathing.wav",       // 1
+    L"assets\\sounds\\piano.wav",           // 2
+    L"assets\\sounds\\shotgun.wav",         // 3
+    L"assets\\sounds\\heartbeat.wav",       // 4
+    L"assets\\sounds\\hit0.wav",            // 5
+    L"assets\\sounds\\laugh.wav",           // 6
+    L"assets\\sounds\\owl.wav",             // 7
+    L"assets\\sounds\\explosion0.wav",      // 8
+    L"assets\\sounds\\hit1.wav",            // 9
+    L"assets\\sounds\\beep0.wav",           // 10
+    L"assets\\sounds\\girldies.wav",        // 11
+    L"assets\\sounds\\cat.wav",             // 12
+    L"assets\\sounds\\girl.wav",            // 13
+    L"assets\\sounds\\shoot0.wav",          // 14
+    L"assets\\sounds\\broken.wav",          // 15
+    L"assets\\sounds\\ouch.wav",            // 16
+    L"assets\\sounds\\die0.wav",            // 17
+    L"assets\\sounds\\dash.wav",            // 18
+    L"assets\\sounds\\buzz.wav",            // 19
+    L"assets\\sounds\\port.wav",            // 20
+    L"assets\\sounds\\roomopen.wav"         // 21
 };
-static const float g_sndVolumes[] = { 1.0f, 0.4f, 0.05f, 0.15f, 0.25f, 1.0f, 1.0f, 0.6f, 0.9f, 1.0f, 0.6f, 0.9f, 0.7f, 0.7f, 0.7f, 0.7f, 0.8f, 0.7f, 0.4f, 0.2f, 0.8f, 1.0f, };
-static const float g_sndPitches[] = { 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.0f, 0.1f, -0.1f, 0.0f, 0.0f, 0.0f, 0.2f, -0.1f, 0.0f, -0.2f, -1.0f, -0.3f, -0.5f, -1.0f, -1.0f, -1.0f, 0.0f };
+static const float g_sndVolumes[] = 
+{ 
+    1.0f,      // 0
+    0.4f,      // 1
+    0.05f,     // 2
+    0.15f,     // 3
+    0.25f,     // 4
+    1.0f,      // 5
+    1.0f,      // 6
+    0.6f,      // 7
+    0.9f,      // 8
+    1.0f,      // 9
+    0.6f,      // 10
+    0.9f,      // 11
+    0.7f,      // 12
+    0.7f,      // 13
+    0.7f,      // 14
+    0.7f,      // 15
+    0.8f,      // 16
+    0.7f,      // 17
+    0.4f,      // 18
+    0.2f,      // 19
+    0.8f,      // 20
+    1.0f,      // 21
+};
+static const float g_sndPitches[] = 
+{ 
+    0.0f,       // 0
+    0.0f,       // 1
+    0.0f,       // 2
+    0.0f,       // 3
+    -0.5f,      // 4
+    0.0f,       // 5
+    0.1f,       // 6
+    -0.1f,      // 7
+    0.0f,       // 8
+    0.0f,       // 9
+    0.0f,       // 10
+    0.2f,       // 11
+    -0.1f,      // 12
+    0.0f,       // 13
+    -0.2f,      // 14
+    -1.0f,      // 15
+    -0.3f,      // 16
+    -0.5f,      // 17
+    -1.0f,      // 18
+    -1.0f,      // 19
+    -1.0f,      // 20
+    0.0f        // 21
+};
 float DX::GameResources::SoundGetDefaultVolume(uint32_t index) { return g_sndVolumes[index]; }
 
 DX::GameResources* DX::GameResources::instance = nullptr;
@@ -1089,6 +1137,13 @@ void DX::GameResources::SoundVolume(uint32_t index, float v)
 
 void DX::GameResources::PlayerShoot()
 {
+    if (m_entityMgr.IsPaused() && m_camera.m_timeToNextShoot < 0.0f)
+    {
+        GenerateNewLevel();
+        m_entityMgr.SetPause(false);
+        return;
+    }
+
     // sound play, animation, flash screen
     SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
     m_sprite.CreateAnimationInstance(0,0);
@@ -1146,22 +1201,31 @@ void DX::GameResources::PlayerShoot()
 }
 
 
-void DX::GameResources::HitPlayer(bool killer)
+bool DX::GameResources::HitPlayer(float amount, bool killer)
 {
-    if (m_invincibleTime <= 0.0f)
-    {
+    if (m_invincibleTime > 0.0f || IsPaused() )
+        return false;
+
+    SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
+    SoundPlay(DX::GameResources::SFX_HIT0, false);
+    m_invincibleTime = 1.0f;
+    m_camera.m_life -= amount;
+
+    if (killer || m_camera.m_life <= 0.0f)
+        KillPlayer();
+    else
         FlashScreen(1.0f, XMFLOAT4(1, 0, 0, 1));
-        SoundVolume(DX::GameResources::SFX_HIT0, -1.0f);//def.
-        SoundPlay(DX::GameResources::SFX_HIT0, false);
-        m_invincibleTime += 1.0f;
-        if (killer)
-            KillPlayer();
-    }
+
+    return true;
 }
 
 void DX::GameResources::KillPlayer()
 {
     SoundPlay(SFX_LAUGH, false);
+
+    m_entityMgr.SetPause(true);
+    FlashScreen(100.0f, XMFLOAT4(0.01f, 0.0f, 0.0f, 0.0f));
+    m_camera.m_timeToNextShoot = 1.0f;
 }
 
 void DX::GameResources::OpenCurrentRoom()
@@ -1174,7 +1238,7 @@ void DX::GameResources::OpenCurrentRoom()
 
 void DX::GameResources::TeleportToRoom(int targetRoom)
 {
-    auto room = m_map.GetLeafAtIndex(targetRoom);
+    auto room = m_map.GetLeafAtIndex(targetRoom);    
     if (room->m_teleportNdx != -1)
     {
         SoundPlay(SFX_PORT, false);
@@ -1222,12 +1286,11 @@ void DX::GameResources::SpawnPlayer()
     XMFLOAT3 p(mapPos.x + 0.5f, 0, mapPos.y + 0.5f);
 
     m_camera.SetPosition(p);
-    if (m_audioEngine)
-    {
-        SoundPlay(SFX_BREATH);
-        //gameRes->SoundPlay(DX::GameResources::SFX_PIANO);
-        SoundPlay(SFX_HEART);
-    }
+    m_camera.m_life = 1.0f;
+    FlashScreen(0.8f, XMFLOAT4(0.7f, 0.7f, 1, 1));
+    SoundPlay(SFX_PORT, false);
+    SoundPlay(SFX_BREATH);
+    SoundPlay(SFX_HEART);
 }
 
 void DX::GameResources::BossIsReady()
@@ -1238,4 +1301,10 @@ void DX::GameResources::BossIsReady()
     auto& biggestRoom = m_map.GetBiggestRoom();
     const XMFLOAT3 pos = biggestRoom->GetRandomXZWithClearance();
     m_entityMgr.AddEntity(std::make_shared<EnemyBoss>(pos), biggestRoom->m_leafNdx);
+    m_entityMgr.AddEntity(std::make_shared<EntityRandomSound>(SFX_PIANO, 5, 30,false,true), biggestRoom->m_leafNdx);
+}
+
+void DX::GameResources::SetPause(bool p)
+{
+    m_entityMgr.SetPause(p);
 }

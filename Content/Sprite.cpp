@@ -337,7 +337,6 @@ namespace SpookyAdulthood
         sprR.m_disableDepth = false;
         sprR.m_constraintY = false;
         sprR.m_fullBillboard = false;
-        sprR.m_modulate = XMFLOAT4(1, 1, 1, 1);
         m_spritesToRender[R2D].push_back(sprR);
     }
 

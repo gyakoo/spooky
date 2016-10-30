@@ -49,6 +49,7 @@ namespace SpookyAdulthood
         virtual void PlayerEntersRoom(int roomIndex) {}
         virtual void PlayerLeavesRoom(int roomIndex) {}
         virtual void PlayerFinishesRoom() {}
+        virtual bool UpdateOnPaused() { return false; }
 
         void PerformHit();
         float GetBoundingRadius() const;
@@ -107,6 +108,8 @@ namespace SpookyAdulthood
         void PlayerLeavesRoom(int roomIndex);
         void PlayerFinishesRoom();
         int CountAliveEnemies(int roomIndex= CURRENT_ROOM);
+        void SetPause(bool p);
+        inline bool IsPaused() { return m_paused; }
 
         static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
@@ -127,6 +130,7 @@ namespace SpookyAdulthood
         EntitiesCollection m_entitiesToAdd;
         int m_curRoomIndex;
         bool m_duringUpdate;
+        bool m_paused;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,7 +219,7 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EntityRandomSound : public Entity
     {
-        EntityRandomSound(uint32_t sound, float time0, float time1, bool endOnPlay=false);
+        EntityRandomSound(uint32_t sound, float time0, float time1, bool endOnPlay=false, bool playOnFirst=false);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void PlayerLeavesRoom(int ri);
 

@@ -43,6 +43,7 @@ namespace SpookyAdulthood
         float m_timeToNextShoot;
         float m_rightDownTime;
         float m_shotgunRange;
+        float m_life;
         bool m_leftDown;
         bool m_running;
         bool m_moving;
@@ -93,20 +94,26 @@ namespace SpookyAdulthood
         float hvel = 5.0f;
 
         // rotation input
-        m_pitchYaw.y += rotDelta*0.8f*ms.x;
-        m_pitchYaw.x += rotDelta*0.5f*ms.y;
+        const int isPaused = (int)(DX::GameResources::instance->IsPaused());
+        const float yrotvel[2] = { 0.8f,0.01f };
+        const float xrotvel[2] = { 0.5f,0.05f };
+        m_pitchYaw.y += rotDelta*yrotvel[int(isPaused)]*ms.x;
+        m_pitchYaw.x += rotDelta*xrotvel[int(isPaused)]*ms.y;
         m_pitchYaw.x = Clamp(m_pitchYaw.x, -0.3f, 0.3f);
 
         // movement input
         float movFw = 0.0f;
         float movSt = 0.0f;
-        if (kb.Up || kb.W) movFw = 1.0f;
-        else if (kb.Down || kb.S) movFw = -1.0f;
-        if (kb.A || kb.Left) movSt = -1.0f;
-        else if (kb.D || kb.Right) movSt = 1.0f;
+        if (!isPaused)
+        {
+            if (kb.Up || kb.W) movFw = 1.0f;
+            else if (kb.Down || kb.S) movFw = -1.0f;
+            if (kb.A || kb.Left) movSt = -1.0f;
+            else if (kb.D || kb.Right) movSt = 1.0f;
+        }
 
-        if (kb.Q) m_height += movDelta;
-        else if (kb.E) m_height -= movDelta;
+        //if (kb.Q) m_height += movDelta;
+        //else if (kb.E) m_height -= movDelta;
 
         m_timeShoot -= dt;
         m_timeToNextShoot -= dt;

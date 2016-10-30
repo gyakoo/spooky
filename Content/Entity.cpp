@@ -144,7 +144,7 @@ void Entity::UpdateSoundDistance(uint32_t sound, float maxdist)
 EntityManager* EntityManager::s_instance = nullptr;
 
 EntityManager::EntityManager(const std::shared_ptr<DX::DeviceResources>& device)
-    : m_device(device), m_duringUpdate(false), m_curRoomIndex(-1)
+    : m_device(device), m_duringUpdate(false), m_curRoomIndex(-1), m_paused(true)
 {
     EntityManager::s_instance = this;
 }
@@ -270,7 +270,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             CreateEntities_Girl(r.get(), rnd.Get(0, 2), 70);
             CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
-            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f,true), r->m_leafNdx);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f), r->m_leafNdx);
             if (rnd.Get01(0.4f))
                 AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
@@ -311,7 +311,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[SKULL] = XMUINT2(rnd.Get(4, 15), 80);
             CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
             CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
-            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f, true), r->m_leafNdx);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f), r->m_leafNdx);
             if (rnd.Get01(0.3f))
                 AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             break;
@@ -322,7 +322,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Gargoyle(r.get(), rnd.Get(1, 10), 80);
             CreateEntities_Girl(r.get(), rnd.Get(0, 3), 70);
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
-            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f, true), r->m_leafNdx);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f), r->m_leafNdx);
             for (int i = rnd.Get(0, 3); i>0; --i)
                 if (rnd.Get01())
                     AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
@@ -403,12 +403,13 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
     for (int pass = 0; pass < 2; ++pass)
     {
         auto& entities = !pass ? m_rooms[m_curRoomIndex] : m_omniEntities;
-        const float dt = (float)stepTimer.GetElapsedSeconds();
+        float dt = (float)stepTimer.GetElapsedSeconds();
+        if (m_paused) dt *= 0.1f;
         for (auto it = entities.begin(); it < entities.end(); )
         {
             auto& e = *it;
             bool toDel = false;
-            if (e->IsActive())
+            if (e->IsActive() /* && (!m_paused || e->UpdateOnPaused()) */ )
             {
                 e->Update(dt, camera);
                 e->m_timeOut -= dt;
@@ -646,6 +647,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\pumpkin.png"); // 30
     sprite.CreateSprite(L"assets\\sprites\\door1.png"); // 31
     sprite.CreateSprite(L"assets\\sprites\\skull.png"); // 32
+    sprite.CreateSprite(L"assets\\textures\\blue.png"); // 33
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 }
@@ -683,6 +685,10 @@ int EntityManager::CountAliveEnemies(int roomIndex)
         }
     }
     return count;
+}
+void EntityManager::SetPause(bool p)
+{
+    m_paused = p;
 }
 
 void EntityManager::PlayerEntersRoom(int roomIndex)
@@ -744,7 +750,10 @@ EntityGun::EntityGun()
 
 void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
 {
-    if (!SupportPass(pass)) return;
+    auto gameRes = DX::GameResources::instance;
+    if (!SupportPass(pass) ||gameRes->IsPaused()) 
+        return;
+
     // don't call super
     float rvel = (camera.m_moving && camera.m_running) ? 1.0f : 0.5f;
     float t = std::max(0.0f, camera.m_timeShoot);
@@ -758,6 +767,20 @@ void EntityGun::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     sprite.Draw2D(m_spriteIndices[FLASHLIGHT], XMFLOAT2(offsx, ypos + offsy - t*0.25f), size, 0.0f); // flashlight
     sprite.Draw2DAnimation(m_animIndex, XMFLOAT2(offsx, ypos + offsy-t*0.25f), size, 0.0f);
     sprite.Draw2D(7, XMFLOAT2(0, 0), XMFLOAT2(0.01f, 0.01f), 0);
+
+    // we draw the life here
+    {
+        bool draw = true;
+        const float life = std::max(0.0f, std::min(1.0f,camera.m_life));
+        if (life < 0.5f )
+            draw = (gameRes->m_frameCount % 50) < 25; // blinking when little left
+        if (draw)
+        {
+            const XMFLOAT2 barSize(0.5f*life, 0.035f);
+            const XMFLOAT2 pos(-1.0f + barSize.x*0.5f, -1.0f + barSize.y*0.5f + 0.1f);
+            sprite.Draw2D(33, pos, barSize, 0);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -820,7 +843,7 @@ void EntityProjectile::Update(float stepTime, const CameraFirstPerson& camera)
         float distToPl = XM3LenSq(toPl);
         wasHit = distToPl < camera.RadiusCollideSq();
         if (wasHit)
-            gameRes->HitPlayer(m_killer);
+            gameRes->HitPlayer(0.15f, m_killer);
 
     }
     else
@@ -979,10 +1002,13 @@ void EntityAnimation::Update(float stepTime, const CameraFirstPerson& camera)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////// RANDOM SOUND
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-EntityRandomSound::EntityRandomSound(uint32_t sound, float time0, float time1, bool endOnPlay)
+EntityRandomSound::EntityRandomSound(uint32_t sound, float time0, float time1, bool endOnPlay, bool playOnFirst)
     : m_sound(sound), m_time0(time0), m_time1(time1), m_end(endOnPlay)
 {
-    m_waitTime = DX::GameResources::instance->m_random.GetF(m_time0, m_time1);
+    if (playOnFirst)
+        DX::GameResources::instance->SoundPlay(m_sound, false);
+    else
+        m_waitTime = DX::GameResources::instance->m_random.GetF(m_time0, m_time1);
 }
 
 void EntityRandomSound::Update(float stepTime, const CameraFirstPerson& camera)
@@ -1127,7 +1153,7 @@ void EnemyPuky::Update(float stepTime, const CameraFirstPerson& camera)
     //
     if (DistSqToPlayer() <= camera.RadiusCollideSq())
     {
-        DX::GameResources::instance->HitPlayer();
+        DX::GameResources::instance->HitPlayer(0.15f);
         GetNextTarget();
     }
     else if (XM3LenSq(m_pos, m_nextTarget) < 0.50f*0.50f || OutOfBounds())
@@ -1268,7 +1294,8 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
                     if (distToPlayerSq <= gameRes->m_camera.RadiusCollideSq())
                     {
                         // catches the player
-                        gameRes->HitPlayer();
+                        if (gameRes->HitPlayer(0.25f))
+                            gameRes->SoundPlay(DX::GameResources::SFX_GIRL, false);
                         move = false;
                     }
                     else
@@ -1284,7 +1311,10 @@ void EnemyGirl::Update(float stepTime, const CameraFirstPerson& camera)
             {
                 // catches the player
                 if (distToPlayerSq <= gameRes->m_camera.RadiusCollideSq())
-                    gameRes->HitPlayer();
+                {
+                    if ( gameRes->HitPlayer(0.25f) )
+                        gameRes->SoundPlay(DX::GameResources::SFX_GIRL, false);
+                }
 
                 // wandering, going to next target point
                 m_followingPlayer = -0.1f;
@@ -1366,6 +1396,7 @@ void EnemyGirl::DoHit()
 void EnemyGirl::Die()
 {
     FadeOut(0.8f, true);
+    DX::GameResources::instance->SoundStop(DX::GameResources::SFX_GIRL);
     PlaySoundDistance(DX::GameResources::SFX_GIRLDIES, 8.0f);
 }
 
@@ -1544,7 +1575,7 @@ void EnemyPumpkin::DoHit()
     gameRes->SoundPlay(GameResources::SFX_EXPL0,false);
     Invalidate(KILLED);
     if (DistSqToPlayer() <= radiusDamageSq)
-        gameRes->HitPlayer();
+        gameRes->HitPlayer(0.35f);
     else
         gameRes->FlashScreen(0.5f, XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f));
 }
@@ -1658,11 +1689,14 @@ void EnemyGhost::Update(float stepTime, const CameraFirstPerson& camera)
     if (m_timeOut < FBIGVAL) return;
 
     m_timeToJump -= stepTime;
+    if (m_timeToJump < -5.0f)
+        JumpNextTargetPoint();
+
     m_pos.y = (m_size.y*0.5f + 0.1f)+sin(m_totalTime*2.0f)*0.15f;
     const float distSq = DistSqToPlayer();
     if ( distSq <= camera.RadiusCollideSq())
     {
-        DX::GameResources::instance->HitPlayer();
+        DX::GameResources::instance->HitPlayer(0.25f);
         JumpNextTargetPoint();
     }
 

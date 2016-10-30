@@ -106,7 +106,7 @@ namespace DX
         float m_invincibleTime;
         float m_curDensityMult;
         int m_curRoomIndex;
-        bool m_bossIsReady;
+        bool m_bossIsReady;        
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundAllStop()const;
@@ -122,13 +122,15 @@ namespace DX
         void PlayerShoot();
         void GenerateNewLevel();
         void SpawnPlayer();
-        void HitPlayer(bool killer=false);
+        bool HitPlayer(float amount, bool killer=false);
         void KillPlayer();
         void OpenCurrentRoom();
         void TeleportToRoom(int targetRoom);
         void OnEnterRoom(int roomEntering);
         void OnLeaveRoom(int roomLeaving);
         void BossIsReady();
+        void SetPause(bool pause);
+        inline bool IsPaused() { return m_entityMgr.IsPaused(); }
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 
