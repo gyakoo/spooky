@@ -70,10 +70,13 @@ What was wrong:
 
 KNOWN ISSUES
 ============
-- Bad performance on Fullscreen on huge target sizes (4K)
-	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized
 - Some rooms can be generated disconnected. It's a major issue, but happens few times. Restart then.
 	- Algorithm to find disconnected clusters has some bug.
+	
+- Bad performance on Fullscreen on huge target sizes (4K)
+	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized	
+	
+	UPDATE: This is solved last minute fix (clamping to 1920x1080) but haven't been tested much :()
 
 	
 mmrom@microsoft.com
