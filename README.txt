@@ -16,6 +16,12 @@ GAME
 * When the room opens, you can hear a sound and the doors turns green, you can pass thru.
 * When all rooms are open, a boss will appear (see the dark red room in the minimap) and 
 	you'll have to defeat it.
+	
+ASSETS
+======
+- Code, design, sprites, texture, effects made by me.
+- Sounds created with Bfxr 
+- Other sounds from Freesounds.org (see authors.txt in Assets/Sounds/ folder)
 
 
 CONTROLS
@@ -39,7 +45,9 @@ TOOLS
 =====
 * Microsoft Visual Studio 2015 Community Edition
 * C++ / DirectX11 / DirectXTK (I started from scratch using the DX Sample)
-* The code does not use any lib or code from any other library, all was created from scratch.
+* The code does not use any lib or code from any other library, all was created from scratch
+* GraphicsGale + Paint.net for sprites
+* https://twistedwave.com/online/# for sound editing
 
 POSTMORTEM
 ==========
@@ -47,17 +55,15 @@ Technical:
 - It randomly generates all rooms using BSP trees. Randomly generate room-profiles.
 - Only renders/update the room you are
 - BSP Portals were generated but does not make use of it.
-- Technically it is 2D (for collision/intersection against level).
-- Entities move in 3D
+- Technically it is 2D (for collision/intersection against level). 3D for shotgun bullets. 
 - Spotlight effect achieved tweaking exp fog density depending on where pixel is
 - 3 Pixel Shaders / 2 Vertex Shaders
-- Sounds created with Bfxr + Freesounds.org (see authors.txt in Assets/Sounds/ folder)
 - Uses DirectXTK lib for Audio, Input.
 
 What was right:
 - Reducing scope at right time
 - Not overengineering
-- Not making an engine but a game. Forgetting about internal code quality.
+- Not making an engine but a game. Forgetting about internal code quality (ugly code).
 - Not data driven, all hardcoded. Iteration times were fast enough.
 
 What was wrong:
@@ -74,8 +80,7 @@ KNOWN ISSUES
 	- Algorithm to find disconnected clusters has some bug.
 	
 - Bad performance on Fullscreen on huge target sizes (4K)
-	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized	
-	
+	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized		
 	UPDATE: This is solved last minute fix (clamping to 1920x1080) but haven't been tested much :()
 
 	

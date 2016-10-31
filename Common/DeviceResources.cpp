@@ -493,8 +493,13 @@ void DX::DeviceResources::UpdateRenderTargetSize()
     {
         // Setup the render target texture description.
         D3D11_TEXTURE2D_DESC textureDesc = { 0 };
-        textureDesc.Width = std::max((UINT)m_outputSize.Width, 1920u);
-        textureDesc.Height = std::max((UINT)m_outputSize.Height, 1080u);
+        textureDesc.Width =(UINT)m_outputSize.Width;
+        textureDesc.Height = (UINT)m_outputSize.Height;
+        if (textureDesc.Width*textureDesc.Height > (1920 * 1080))
+        {
+            textureDesc.Width = 1920u;
+            textureDesc.Height= 1080u;
+        }
         textureDesc.MipLevels = 1;
         textureDesc.ArraySize = 1;
         textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
