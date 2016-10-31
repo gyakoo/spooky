@@ -266,6 +266,9 @@
     <Image Include="Assets\sprites\leftclick.png">
       <Filter>Assets\img\logos</Filter>
     </Image>
+    <Image Include="Assets\sprites\help.png">
+      <Filter>Assets\img\logos</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

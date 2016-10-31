@@ -230,14 +230,13 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
     m_rooms.resize(roomCount);
 
     // TEST: DELETE
-    /*{
-        auto r = DX::GameResources::instance->m_map.GetLeafAtIndex(0);
-        auto p = r->GetRandomXZ(XMFLOAT2(0.75f, 0.75f));
-        AddEntity(std::make_shared<EnemyGhost>(p), 0);
-        AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 0);
-        return;
-    }
-    */
+    //{
+    //    auto r = DX::GameResources::instance->m_map.GetLeafAtIndex(0);
+    //    auto p = r->GetRandomXZWithClearance();
+    //    AddEntity(std::make_shared<EnemyBoss>(p), 0);
+    //    AddEntity(std::make_shared<EntityRoomChecker_AllDead>(), 0);
+    //    return;
+    //}
 
 
     // will create the entities depending on the room profiles
@@ -677,6 +676,7 @@ void EntityManager::CreateDeviceDependentResources()
     sprite.CreateSprite(L"assets\\sprites\\micro.png"); // 39
     sprite.CreateSprite(L"assets\\sprites\\scarejam.png"); // 40
     sprite.CreateSprite(L"assets\\sprites\\leftclick.png"); // 41
+    sprite.CreateSprite(L"assets\\sprites\\help.png"); // 42
 
     sprite.CreateAnimation(std::vector<int>{13, 14}, 20.0f); // 0
 }
@@ -1121,7 +1121,7 @@ EntityProjectile* EntityEnemyBase::ShootToPlayer(int projSprIndex, float speed, 
     gameRes->m_entityMgr.AddEntity(proj);
 
     // volume depending on distance
-    PlaySoundDistance(DX::GameResources::SFX_SHOOT0, 5.0f);    
+    PlaySoundDistance(DX::GameResources::SFX_SHOOT0, 8.0f);    
     return proj.get();
 }
 
@@ -1607,6 +1607,7 @@ void EnemyPumpkin::DoHit()
 {
     using namespace DX;
     auto gameRes = GameResources::instance;
+    if (gameRes->IsPaused()) return;
     gameRes->SoundPlay(GameResources::SFX_EXPL0,false);
     Invalidate(KILLED);
     if (DistSqToPlayer() <= radiusDamageSq)
@@ -1839,6 +1840,8 @@ void EntityCheckBossReady::Update(float stepTime, const CameraFirstPerson& camer
 // //////////////////////////////////////// BOSS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 EnemyBoss::EnemyBoss(const XMFLOAT3& pos)
+    : m_timeUntilShoot(-1.0f), m_state(MOVING), m_timeUntilNextState(-1.0f)
+    , m_timeToNextJump(-1.0f), m_movingSpeed(4.0f)
 {
     m_flags = SPRITE3D | SPRITE2D | ACCEPT_RAYCAST;
     m_pos = pos;
@@ -1846,17 +1849,98 @@ EnemyBoss::EnemyBoss(const XMFLOAT3& pos)
     m_pos.y = m_size.y*0.5f + 0.05f;
     m_spriteIndex = 5;
     m_life = 1.0f;
-    m_roomNode = DX::GameResources::instance->m_map.GetLeafAt(m_pos).get();
+    auto gameRes = DX::GameResources::instance;
+    m_roomNode = gameRes->m_map.GetLeafAt(m_pos).get();
     if (!m_roomNode)
         throw std::exception("No room for boss");
-    else
-        m_roomNode->m_tag = 0x55000033;
+    m_roomNode->m_tag = 0x55000033;
+    m_roomNode->m_finished = false;
+    auto& rnd = gameRes->m_random;
+    const int n = rnd.Get(4, 10);
+    for (int i = 0; i < n; ++i)
+    {
+        auto decopos = m_roomNode->GetRandomXZWithClearance();
+        gameRes->m_entityMgr.AddEntity(std::make_shared<EntitySingleDecoration>(SKULL, decopos), m_roomNode->m_leafNdx);
+    }
+    gameRes->m_entityMgr.CreateEntities_Pumpkin(m_roomNode, rnd.Get(2, 10), 90);
+    SelectNextMovingPoint();
 }
 
 void EnemyBoss::Update(float stepTime, const CameraFirstPerson& camera)
 {
     EntityEnemyBase::Update(stepTime, camera);
     if (!m_roomNode) return;
+    auto gameRes = DX::GameResources::instance;
+    auto& rnd = RND;
+
+    m_timeUntilShoot -= stepTime;
+    m_timeUntilNextState -= stepTime;
+
+    switch (m_state) 
+    {
+    case JUMPINGBLACK:
+    case JUMPING:
+        m_timeToNextJump -= stepTime;
+        if (m_timeToNextJump <= 0.0f)
+        {
+            Jump();
+        }
+        if (m_state == JUMPINGBLACK)
+        {
+            DX::GameResources::instance->m_curDensityMult = 3.0f;
+            if (m_timeUntilNextState <= 0.0f)
+                m_state = JUMPING;
+        }
+        break;
+    case MOVING:
+        {
+            XMFLOAT3 toTarget = XM3Sub(m_nextTargetPoint, m_pos);
+            const float toTargetSq = XM3LenSq(toTarget);
+            if (toTargetSq < 0.25f*0.25f)
+            {
+                SelectNextMovingPoint();
+            }
+            else
+            {
+                XM3Mul_inplace(toTarget, 1.0f / sqrt(toTargetSq));
+                XM3Mad_inplace(m_pos, toTarget, m_movingSpeed*stepTime);
+            }
+        }break;
+    }
+
+    float probDie = 0.1f;
+    float projSpeed = 3.0f;
+    float rngNS = 3.0f;
+    float oscSpeed = 4.0f;
+    const float distToPlSq = this->DistSqToPlayer();
+    if (m_life <= 0.5f)
+    {
+        probDie = 0.25f;
+        projSpeed = 4.5f;
+        rngNS = 2.0f;
+        oscSpeed = 8.0f;
+        m_movingSpeed = 6.0f;
+    }
+
+    if (distToPlSq < camera.RadiusCollideSq())
+    {
+        gameRes->HitPlayer(0.40f);
+    } 
+    else if (distToPlSq < 2.5f*2.5f)
+    {
+        rngNS = 1.0f;
+        m_timeUntilShoot -= stepTime*2.0f;
+    }
+    else if (distToPlSq < 4.0f*4.0f)
+    {
+        m_timeUntilShoot -= stepTime;
+    }
+    m_pos.y = m_size.y*0.5f + 0.05f + fabs(sin(m_totalTime*oscSpeed)*0.05f);
+    if (m_timeUntilShoot <= 0.0f)
+    {
+        ShootToPlayer(rnd.Get01(probDie) ? 9 : 19, projSpeed, XMFLOAT3(0, 0.5f, 0), XMFLOAT2(0.5f, 0.5f));
+        m_timeUntilShoot = rnd.GetF(0.5f, rngNS);
+    }
 }
 
 void EnemyBoss::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite)
@@ -1864,7 +1948,7 @@ void EnemyBoss::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
     if (pass == PASS_SPRITE2D)
     {
         bool draw = true;
-        const float life = std::max(0.0f, std::min(1.0f, m_life));
+        const float life = Clamp(m_life, 0.0f, 1.0f);
         const XMFLOAT2 barSize(life, 0.04f);
         const XMFLOAT2 pos(-1.0f + barSize.x*0.5f, 1.0f - barSize.y*0.5f - 0.1f);
         sprite.Draw2D(34, pos, barSize, 0);
@@ -1873,9 +1957,92 @@ void EnemyBoss::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
         EntityEnemyBase::Render(pass, camera, sprite);
 }
 
+void EnemyBoss::Die()
+{
+    FadeOut(0.8f, true);
+}
+
 void EnemyBoss::DoHit()
 {
+    auto gameRes = DX::GameResources::instance;
+    ModulateToColor(XM4RED, 0.5f);
 
+    float distToPl = DistSqToPlayer();
+    if (distToPl == 0.0f) distToPl = 1.0f;
+    distToPl = sqrt(distToPl);
+    const float t = std::max(1.0f - distToPl / gameRes->m_camera.m_shotgunRange, 0.0f);
+    const float MAXDAMAGE = 0.4f;
+    m_life -= t*MAXDAMAGE;
+    if (m_life <= 0.0f)
+    {
+        Die();
+    }
+    else
+    {
+        PlaySoundDistance(DX::GameResources::SFX_LAUGH, 8.0f, false);
+        ShootToPlayer(9, 5.0f, XMFLOAT3(0, 0.5f, 0), XMFLOAT2(0.5f, 0.4f));
+        if ( gameRes->m_random.Get01() )
+            JumpRandom();
+    }
+
+    static const uint32_t densfunc[STATEMAX] = { 40,80,100 };
+    m_state = (eState)gameRes->m_random.GetWithDensity(densfunc, STATEMAX);
+    m_timeUntilNextState = 5.0f;
+    SelectNextMovingPoint();
+}
+
+void EnemyBoss::JumpRandom()
+{
+    m_pos = m_roomNode->GetRandomXZWithClearance();
+    DX::GameResources::instance->SoundPitch(DX::GameResources::SFX_DASH, -0.5f);
+    PlaySoundDistance(DX::GameResources::SFX_DASH, 8.0f);
+}
+
+void EnemyBoss::Jump()
+{
+    auto& rnd = RND;
+    m_pos = GetRandomAdjacent();
+    DX::GameResources::instance->SoundPitch(DX::GameResources::SFX_DASH, rnd.GetF(-0.9f, 0.9f));
+    PlaySoundDistance(DX::GameResources::SFX_DASH, 8.0f);
+    m_timeToNextJump = rnd.GetF(0.4f, 1.0f);
+}
+
+void EnemyBoss::SelectNextMovingPoint()
+{
+    m_nextTargetPoint = GetRandomAdjacent();
+}
+
+XMFLOAT3 EnemyBoss::GetRandomAdjacent()
+{
+    const uint32_t cx = (int)m_pos.x;
+    const uint32_t cy = (int)m_pos.z;
+
+    const auto& area = m_roomNode->m_area;
+
+    // clearance    
+    XMUINT2 allowedMoves[8];
+    XMUINT2 p;
+    static const XMINT2 offsets[8] = {
+        XMINT2(-1,-1), XMINT2(0,-1), XMINT2(1,-1),
+        XMINT2(-1,0), XMINT2(1,0),
+        XMINT2(-1,+1), XMINT2(0,+1), XMINT2(+1,+1) };
+    int c = 0;
+    for (int i = 0; i < 8; ++i)
+    {
+        p.x = cx + offsets[i].x;
+        p.y = cy + offsets[i].y;
+        if (m_roomNode->Clearance(p))
+            allowedMoves[c++] = p;
+    }
+
+    if (c == 0)
+    {
+        Die();
+        return m_pos;
+    }
+    auto& rnd = RND;
+    const auto& selected = allowedMoves[rnd.Get(0, c - 1)];
+    return XMFLOAT3(selected.x + 0.5f, 0, selected.y + 0.5f);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1914,6 +2081,7 @@ void EntityItem::Update(float stepTime, const CameraFirstPerson& camera)
 void EntityItem::Pickup()
 {
     auto gameRes = DX::GameResources::instance;
+    if (gameRes->IsPaused()) return;
     gameRes->SoundPlay(DX::GameResources::SFX_ITEMPICK,false);
     gameRes->FlashScreen(0.5f, XMFLOAT4(0.7f, 0.7f, 1, 1));
     gameRes->UpdateHeartVolumeAndPitch();

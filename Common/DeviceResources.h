@@ -108,6 +108,7 @@ namespace DX
         float m_invincibleTime;
         float m_curDensityMult;
         int m_curRoomIndex;
+        int m_deathMessage;
         bool m_bossIsReady;
         bool m_inMenu;
 
@@ -138,6 +139,7 @@ namespace DX
         void ConsiderSpawnItem(const XMFLOAT3& pos, float p=0.5f);
         void UpdateHeartVolumeAndPitch();
         void GoBackMenu();
+        void CreateAmmoRandomly();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

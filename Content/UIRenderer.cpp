@@ -52,7 +52,7 @@ void UIRenderer::Update(DX::StepTimer const& timer)
     auto gameRes = DX::GameResources::instance;
     int ri = gameRes->m_curRoomIndex;
 	//m_text = (fps > 0) ? std::to_wstring(fps) + L" / " + std::to_wstring(ri) : L" - FPS";
-    m_text = std::to_wstring(gameRes->m_camera.m_bullets);
+    m_text = std::wstring(L"Treats " ) + std::to_wstring(gameRes->m_camera.m_bullets);
 
 	ComPtr<IDWriteTextLayout> textLayout;
 	DX::ThrowIfFailed(
@@ -99,6 +99,31 @@ void UIRenderer::Render()
         context->SetTransform(screenTranslation * m_deviceResources->GetOrientationTransform2D());
         DX::ThrowIfFailed(m_textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
         context->DrawTextLayout(D2D1::Point2F(0.f, 0.f),m_textLayout.Get(),m_whiteBrush.Get());
+
+        if (gameRes->m_deathMessage)
+        {
+            auto s = gameRes->m_sprites.get();
+            auto f = gameRes->m_fontConsole.get();            
+           
+            const wchar_t* text = gameRes->m_deathMessage == 1
+                ? L"YOU DIE! <No more bullets>"
+                : L"YOU DIE!";
+
+            s->Begin();
+            auto measure = f->MeasureString(text);
+            const float padY = XMVectorGetY(measure);
+            float padX = XMVectorGetX(measure);
+            XMFLOAT2 p(logicalSize.Width*0.5f - padX*0.5f, logicalSize.Height*0.5f - padY);
+            f->DrawString(s, text, p, DirectX::Colors::Black);
+            p.y += padY;
+
+            const wchar_t* text2 = L"[Left-Click] try again / (ESC) Menu";
+            measure = f->MeasureString(text2);
+            padX = XMVectorGetX(measure);
+            p.x = logicalSize.Width*0.5f - padX*0.5f;
+            f->DrawString(s, text2, p, DirectX::Colors::Black);
+            s->End();
+        }
     } 
     else
     {
@@ -124,7 +149,6 @@ void UIRenderer::Render()
 
         // MENU        
         {
-            static wchar_t buff[256];
             auto s = gameRes->m_sprites.get();
             auto f = gameRes->m_fontConsole.get();
             const wchar_t* text = L"(F1) Help / (ESC) Exit";
@@ -140,8 +164,16 @@ void UIRenderer::Render()
             p.y += padY;
             f->DrawString(s, L"(F1) Help / (ESC) Exit", p, DirectX::Colors::White);
             s->End();
-        }
-        
+        }        
+    }
+
+    auto kb = DirectX::Keyboard::Get().GetState();
+    if (kb.F1)
+    {
+        auto& spr = gameRes->m_sprite;
+        spr.Begin2D(gameRes->m_camera);
+        spr.Draw2D(42, XMFLOAT2(0, 0), XMFLOAT2(2.2f, 1.2f), 0); // f1 help screen
+        spr.End2D();
     }
 
 	// Ignore D2DERR_RECREATE_TARGET here. This error indicates that the device

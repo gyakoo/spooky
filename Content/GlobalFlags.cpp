@@ -100,13 +100,15 @@ namespace SpookyAdulthood
             case VirtualKey::Tab: 
                 DrawThumbMap = (DrawThumbMap + 1) % 3;
             break;
+
+            case VirtualKey::R:
+                GenerateNewLevel = true;
+            break;
+
 #if defined(_DEBUG)
             case VirtualKey::Number0:
                 DrawFlags = !DrawFlags;
-            break;
-            case VirtualKey::Number1:
-                GenerateNewLevel = true;
-            break;
+            break;            
             case VirtualKey::Number2:
                 SpawnPlayer = true;
             break;

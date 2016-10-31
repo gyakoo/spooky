@@ -113,11 +113,11 @@ namespace SpookyAdulthood
 
         static EntityManager* s_instance;
         std::shared_ptr<DX::DeviceResources> m_device;
+        void CreateEntities_Pumpkin(LevelMapBSPNode* room, int n, uint32_t prob);
 
     protected:
         bool RaycastEntity(const Entity& e, const XMFLOAT3& raypos, const XMFLOAT3& dir, XMFLOAT3& outhit, float& frac);
         void CreateEntities_Puky(LevelMapBSPNode* room, int n, uint32_t prob);
-        void CreateEntities_Pumpkin(LevelMapBSPNode* room, int n, uint32_t prob);
         void CreateEntities_Girl(LevelMapBSPNode* room, int n, uint32_t prob);
         void CreateEntities_Gargoyle(LevelMapBSPNode* room, int n, uint32_t prob);
         void CreateEntities_BlackHands(LevelMapBSPNode* room, int n, uint32_t prob);
@@ -365,14 +365,27 @@ namespace SpookyAdulthood
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     struct EnemyBoss : public EntityEnemyBase
     {
+        enum eState { JUMPING=0, MOVING, JUMPINGBLACK, STATEMAX };
         EnemyBoss(const XMFLOAT3& pos);
 
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
         virtual void Render(RenderPass pass, const CameraFirstPerson& camera, SpriteManager& sprite);
+        virtual bool CanDie() { return true; }
 
         virtual void DoHit();
+        void Die();
+        void JumpRandom();
+        void Jump();
+        void SelectNextMovingPoint();
+        XMFLOAT3 GetRandomAdjacent();
 
+        eState m_state;
         LevelMapBSPNode* m_roomNode;
+        XMFLOAT3 m_nextTargetPoint;
+        float m_timeUntilShoot;
+        float m_timeUntilNextState;
+        float m_timeToNextJump;
+        float m_movingSpeed;
     };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

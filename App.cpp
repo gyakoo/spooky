@@ -34,9 +34,9 @@ App::App() :
 	m_windowClosed(false),
 	m_windowVisible(true)
 {
-    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
-    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchViewSize= Windows::Foundation::Size(1024,768);
-    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::PreferredLaunchViewSize;
+    Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::FullScreen;
+    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchViewSize= Windows::Foundation::Size(1024,768);
+    //Windows::UI::ViewManagement::ApplicationView::PreferredLaunchWindowingMode = Windows::UI::ViewManagement::ApplicationViewWindowingMode::PreferredLaunchViewSize;
 }
 
 // The first method called when the IFrameworkView is being created.

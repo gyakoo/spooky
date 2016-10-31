@@ -104,7 +104,8 @@
     <PackageCertificateKeyFile>SpookyAdulthood_TemporaryKey.pfx</PackageCertificateKeyFile>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <AppxBundle>Always</AppxBundle>
-    <AppxBundlePlatforms>x86|x64|arm</AppxBundlePlatforms>
+    <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
+    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
@@ -209,6 +210,7 @@
     <Image Include="Assets\sprites\gunshoot1.png" />
     <Image Include="Assets\sprites\gunshoot2.png" />
     <Image Include="Assets\sprites\heart.png" />
+    <Image Include="Assets\sprites\help.png" />
     <Image Include="Assets\sprites\hit00.png" />
     <Image Include="Assets\sprites\hit01.png" />
     <Image Include="Assets\sprites\hit10.png" />

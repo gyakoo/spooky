@@ -895,7 +895,7 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
     , m_invincibleTime(-1.0f), m_curDensityMult(0.45f), m_curRoomIndex(-1)
-    , m_bossIsReady(false), m_inMenu(true)
+    , m_bossIsReady(false), m_inMenu(true), m_deathMessage(0)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -1069,8 +1069,10 @@ void DX::GameResources::Update(const DX::StepTimer& timer, const CameraFirstPers
 
 void DX::GameResources::FlashScreen(float time, const XMFLOAT4& color)
 {
-    m_flashScreenTime = time;
-    m_flashColor = color;
+    {
+        m_flashScreenTime = time;
+        m_flashColor = color;
+    }
 }
 
 void DX::GameResources::SoundPlay(uint32_t index, bool loop) const
@@ -1159,6 +1161,10 @@ bool DX::GameResources::PlayerShoot()
     }
 
     --m_camera.m_bullets;
+    if (m_camera.m_bullets == 0) // if after shoot, we have empty , create some randomly for rooms
+    {
+        CreateAmmoRandomly();
+    }
 
     // sound play, animation, flash screen
     SoundPlay(DX::GameResources::SFX_SHOTGUN, false);
@@ -1255,6 +1261,7 @@ void DX::GameResources::KillPlayer()
     SoundStop(SFX_HEART);
     SoundStop(SFX_BREATH);
     m_camera.m_timeToNextShoot = 1.0f;
+    m_deathMessage = 2;// m_camera.m_bullets <= 0 ? 1 : 2;
 }
 
 void DX::GameResources::OpenCurrentRoom()
@@ -1283,7 +1290,7 @@ void DX::GameResources::TeleportToRoom(int targetRoom)
 void DX::GameResources::OnEnterRoom(int roomEntering)
 {
     m_entityMgr.PlayerEntersRoom(roomEntering);
-    m_invincibleTime = 2.0f;
+    m_invincibleTime = 1.0f;
 }
 
 void DX::GameResources::OnLeaveRoom(int roomLeaving)
@@ -1341,6 +1348,7 @@ void DX::GameResources::SpawnPlayer()
     SoundPlay(SFX_HEART);
     SoundVolume(SFX_HEART, -1);
     SoundPitch(SFX_HEART, -1);
+    m_deathMessage = 0;
 }
 
 void DX::GameResources::BossIsReady()
@@ -1385,4 +1393,16 @@ void DX::GameResources::GoBackMenu()
     m_entityMgr.Clear();
     m_flashColor = XMFLOAT4(0, 0, 0, 0);
     SoundPitch(SFX_HEART, -1);
+}
+
+void DX::GameResources::CreateAmmoRandomly()
+{
+    for (auto& r : m_map.GetRooms())
+    {
+        if (r->m_finished)
+        {
+            auto p = r->GetRandomXZWithClearance();
+            m_entityMgr.AddEntity(std::make_shared<EntityItem>(ITEM_CANDY, p, (float)m_random.Get(15, 30)), r->m_leafNdx);
+        }
+    }
 }
