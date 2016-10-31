@@ -251,6 +251,21 @@
     <Image Include="Assets\sprites\heart.png">
       <Filter>Assets\img\props</Filter>
     </Image>
+    <Image Include="Assets\sprites\scarejam.png">
+      <Filter>Assets\img\logos</Filter>
+    </Image>
+    <Image Include="Assets\sprites\micro.png">
+      <Filter>Assets\img\logos</Filter>
+    </Image>
+    <Image Include="Assets\sprites\splash.png">
+      <Filter>Assets\img\logos</Filter>
+    </Image>
+    <Image Include="Assets\sprites\splashspooky.png">
+      <Filter>Assets\img\logos</Filter>
+    </Image>
+    <Image Include="Assets\sprites\leftclick.png">
+      <Filter>Assets\img\logos</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest" />

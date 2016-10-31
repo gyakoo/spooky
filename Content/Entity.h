@@ -139,6 +139,7 @@ namespace SpookyAdulthood
     struct EntityRoomChecker_AllDead: public Entity
     {
         virtual void Update(float s, const CameraFirstPerson& camera);
+        virtual void PlayerEntersRoom(int roomIndex);
     };
     
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -206,3 +206,14 @@ inline const XMFLOAT4& XM4Zero()
     static XMFLOAT4 g_zero(0, 0, 0, 0);
     return g_zero;
 }
+
+inline XMFLOAT2 XM2Mul(const XMFLOAT2& v, float s)
+{
+    return XMFLOAT2(v.x*s, v.y*s);
+}
+
+inline void XM2Mul_inplace(XMFLOAT2& v, float s)
+{
+    v.x *= s;
+    v.y *= s;
+}

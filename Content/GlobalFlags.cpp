@@ -30,14 +30,17 @@ namespace SpookyAdulthood
     void GlobalFlags::Draw3D(const std::shared_ptr<DX::DeviceResources>& device)
     {
         static wchar_t buff[256];
+        auto dxCommon = device->GetGameResources();
+        XMFLOAT2 p = DrawGlobalsPos;
+        auto s = dxCommon->m_sprites.get();
+        auto f = dxCommon->m_fontConsole.get();
+        const float padY = XMVectorGetY(f->MeasureString(L"Test"));
+        const XMFLOAT3 cp = dxCommon->m_camera.GetPosition();
+
+
+#if defined(_DEBUG)
         if (DrawFlags)
-        {
-            auto dxCommon = device->GetGameResources();
-            XMFLOAT2 p = DrawGlobalsPos;
-            auto s = dxCommon->m_sprites.get();
-            auto f = dxCommon->m_fontConsole.get();
-            const float padY = XMVectorGetY(f->MeasureString(L"Test"));
-            const XMFLOAT3 cp = dxCommon->m_camera.GetPosition();
+        {            
             s->Begin();
             {
                 swprintf(buff, 256, L"Draw this(0)=%d", (int)DrawFlags);
@@ -82,6 +85,7 @@ namespace SpookyAdulthood
             }
             s->End();
         }
+#endif
     }
 
     void GlobalFlags::Update(const DX::StepTimer& timer)
@@ -90,13 +94,13 @@ namespace SpookyAdulthood
 
     void GlobalFlags::OnKeyDown(Windows::System::VirtualKey virtualKey)
     {
-#if GLOBALFLAGS_CAN_TWEAK == 1
         using namespace Windows::System;
         switch (virtualKey)
         {
-            case VirtualKey::Space: 
+            case VirtualKey::Tab: 
                 DrawThumbMap = (DrawThumbMap + 1) % 3;
             break;
+#if defined(_DEBUG)
             case VirtualKey::Number0:
                 DrawFlags = !DrawFlags;
             break;
@@ -132,8 +136,9 @@ namespace SpookyAdulthood
             case VirtualKey::Number9:
                 KillRoom = true;
             break;
+#endif
+
         }
     }
-#endif
 };
 

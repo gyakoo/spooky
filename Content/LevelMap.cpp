@@ -364,7 +364,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
     {
         if (tp.m_open)
         {
-            const uint32_t abgr = 0xff00ff00;
+            const uint32_t abgr = 0x7700ff00;
             for (int i = 0; i < 2; ++i)
             {
                 m_thumbTex.SetAt(tp.m_positions[i].x, tp.m_positions[i].y, abgr);
@@ -378,7 +378,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
         XMUINT2 pos = p.GetPortalPosition();
         for (int i = 0; i < 2; ++i)
         {
-            m_thumbTex.SetAt(pos.x, pos.y, 0xff000000);
+            m_thumbTex.SetAt(pos.x, pos.y, 0x77000000);
             switch (p.m_wallNode->m_type)
             {
             case LevelMapBSPNode::WALL_HORIZ: --pos.y; break;
@@ -389,7 +389,7 @@ void LevelMap::GenerateThumbTex(XMUINT2 tcount, const XMUINT2* playerPos)
 
     // character
     if ( playerPos)
-        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0x00ff00ff);
+        m_thumbTex.SetAt(playerPos->x, playerPos->y, 0x77ff00ff);
 
     // create DX resources for rendering
     m_thumbTex.CreateDeviceDependentResources(m_device);
@@ -776,22 +776,13 @@ void LevelMap::RenderMinimap(const CameraFirstPerson& camera)
     {
         auto sprites = m_device->GetGameResources()->m_sprites.get();
         sprites->Begin(DirectX::SpriteSortMode_Deferred, nullptr, m_device->GetGameResources()->m_commonStates->PointClamp());
+        XMFLOAT2 scale;
         switch (GlobalFlags::DrawThumbMap)
         {
-        case 1:
-            sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 400), nullptr, Colors::White, 0, XMFLOAT2(0, 0), XMFLOAT2(4, 4));
-            break;
-        case 2:
-        {
-            float dx = (float)m_thumbTex.m_dim.x;
-            float dy = (float)m_thumbTex.m_dim.y;
-            auto cp = camera.GetPosition();
-            XMFLOAT2 texPos(100, 100);
-            XMFLOAT2 rotOrig(dx*0.5f, dy*0.5f);
-            sprites->Draw(m_thumbTex.m_textureView.Get(), texPos, nullptr, Colors::White, -camera.m_pitchYaw.y, rotOrig, XMFLOAT2(2, 2));
+        case 1: scale = XMFLOAT2(4, 4); break;
+        case 2: scale = XMFLOAT2(8, 8); break;
         }
-        break;
-        }
+        sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 400), nullptr, Colors::White, 0, XMFLOAT2(0, 0), scale);
         sprites->End();
     }
 }
@@ -1013,7 +1004,7 @@ void LevelMap::ToggleRoomDoors(int roomIndex, bool open)
         return;
     
     m_cameraCurLeaf->m_finished = true;
-    m_cameraCurLeaf->m_tag = 0xffffffaa;
+    m_cameraCurLeaf->m_tag = 0xffffff77;
 
     // disable collision segments for this leaf
     std::vector<CollSegment> portalSegments; 

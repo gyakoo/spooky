@@ -117,7 +117,6 @@ bool SpookyAdulthoodMain::Draw3D()
         m_sceneRenderer->RenderUI();
         m_fpsTextRenderer->Render();
         GlobalFlags::Draw3D(m_deviceResources);
-
     }
 
 	return true;
@@ -143,7 +142,10 @@ void SpookyAdulthoodMain::OnKeyDown(Windows::System::VirtualKey virtualKey)
     switch (virtualKey)
     {
     case Windows::System::VirtualKey::Escape:
-        Windows::ApplicationModel::Core::CoreApplication::Exit();
+        if (DX::GameResources::instance->m_inMenu)
+            Windows::ApplicationModel::Core::CoreApplication::Exit();
+        else
+            DX::GameResources::instance->GoBackMenu();
         return;
     }
     GlobalFlags::OnKeyDown(virtualKey);

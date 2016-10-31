@@ -12,6 +12,7 @@ ouch.wav        - Under7dude        - http://freesound.org/people/Under7dude/sou
 die0.wav        - josepharaoh99     - http://freesound.org/people/josepharaoh99/sounds/364929/
 dash.wav        - LloydEvans09      - http://freesound.org/people/LloydEvans09/sounds/221495/
 buzz.wav        - PotatoHamburger   - http://freesound.org/people/PotatoHamburger/sounds/202229/
+tensebg.wav     - Speedenza         - http://freesound.org/people/Speedenza/sounds/207753/
 
 Rest of sounds were created using: 
 http://www.bfxr.net/

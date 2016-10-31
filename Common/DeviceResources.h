@@ -108,7 +108,8 @@ namespace DX
         float m_invincibleTime;
         float m_curDensityMult;
         int m_curRoomIndex;
-        bool m_bossIsReady;        
+        bool m_bossIsReady;
+        bool m_inMenu;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundAllStop()const;
@@ -123,7 +124,7 @@ namespace DX
         void Update(const DX::StepTimer& timer, const SpookyAdulthood::CameraFirstPerson& camera);
         void FlashScreen(float time, const XMFLOAT4& color);
         bool PlayerShoot();
-        void GenerateNewLevel();
+        void GenerateNewLevel(bool forMenu=false);
         void SpawnPlayer();
         bool HitPlayer(float amount, bool killer=false);
         void KillPlayer();
@@ -136,6 +137,7 @@ namespace DX
         inline bool IsPaused() { return m_entityMgr.IsPaused(); }
         void ConsiderSpawnItem(const XMFLOAT3& pos, float p=0.5f);
         void UpdateHeartVolumeAndPitch();
+        void GoBackMenu();
 
         static GameResources* instance; // added later in the project for simplicity on interfaces (will burn in hell I know)
 

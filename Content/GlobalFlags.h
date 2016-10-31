@@ -1,8 +1,5 @@
 ﻿#pragma once
 
-#ifndef GLOBALFLAGS_CAN_TWEAK
-#define GLOBALFLAGS_CAN_TWEAK 1
-#endif
 namespace DX { class DeviceResources; }
 namespace SpookyAdulthood
 {

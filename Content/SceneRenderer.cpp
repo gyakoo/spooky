@@ -19,7 +19,7 @@ SceneRenderer::SceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceR
     CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
     
-    deviceResources->GetGameResources()->GenerateNewLevel();
+    deviceResources->GetGameResources()->GenerateNewLevel(true);
 }
 
 // Initializes view parameters when the window size changes.
@@ -99,64 +99,8 @@ void SceneRenderer::Render()
     auto gameRes = m_deviceResources->GetGameResources();
     auto& map = gameRes->m_map;
     auto& cam = gameRes->m_camera;
-    map.Render(cam);
-    
-    /*
-    auto& sprite = m_deviceResources->GetGameResources()->m_sprite;
-
-    // SPRITEs rendering
-    sprite.Begin3D(m_camera);
-    sprite.Draw3D(0, XMFLOAT3(5, 0.45f, 6), XMFLOAT2(0.3, 0.3));
-    sprite.Draw3D(0, XMFLOAT3(6, 0.65f, 5), XMFLOAT2(0.3, 0.3));
-    sprite.Draw3D(0, XMFLOAT3(9, 0.75f, 4), XMFLOAT2(0.3, 0.3));
-    sprite.Draw3D(4, XMFLOAT3(7, 0.75f, 9), XMFLOAT2(0.7f, 1.5f));
-    sprite.Draw3D(5, XMFLOAT3(5, 0.95f, 2), XMFLOAT2(0.7f, 1.9f));
-    for ( int i = 0; i < 6; ++i )
-        sprite.Draw3D(6, XMFLOAT3(5, 0.25f, i+2), XMFLOAT2(0.5f,0.5f));
-    sprite.Draw3D(8, XMFLOAT3(2, 0.95f, 4.5f), XMFLOAT2(0.7f, 1.9f));
-    sprite.Draw3D(8, XMFLOAT3(3, 0.95f, 5.5f), XMFLOAT2(0.7f, 1.9f));
-    sprite.Draw3D(9, XMFLOAT3(7, 1.0f, 2), XMFLOAT2(0.5f, .35f));
-    sprite.Draw3D(11, XMFLOAT3(2, 0.3f, 7), XMFLOAT2(1.5f, 0.6f));
-    sprite.Draw3D(11, XMFLOAT3(2.35f, 0.3f, 7.34f), XMFLOAT2(1.5f, 0.6f));
-    sprite.Draw3D(12, XMFLOAT3(3.35f, 0.7f, 7.34f), XMFLOAT2(0.6f, 1.0f));
-
-    sprite.End3D();
-
-    sprite.CreateSprite(L"assets\\sprites\\puky.png"); // 0
-    sprite.CreateSprite(L"assets\\sprites\\hand.png"); // 1
-    sprite.CreateSprite(L"assets\\sprites\\gun0.png"); // 2
-    sprite.CreateSprite(L"assets\\sprites\\pointinghand.png"); // 3
-    sprite.CreateSprite(L"assets\\sprites\\anx1.png"); // 4
-    sprite.CreateSprite(L"assets\\sprites\\dep1.png"); // 5
-    sprite.CreateSprite(L"assets\\sprites\\grave1.png"); // 6
-    sprite.CreateSprite(L"assets\\sprites\\crosshair.png"); // 7
-    sprite.CreateSprite(L"assets\\sprites\\tree1.png"); // 8
-    sprite.CreateSprite(L"assets\\sprites\\msgdie.png"); // 9
-    sprite.CreateSprite(L"assets\\sprites\\garg1.png"); // 10
-    sprite.CreateSprite(L"assets\\sprites\\bodpile1.png"); // 11
-    sprite.CreateSprite(L"assets\\sprites\\girl1.png"); // 12
-    sprite.CreateSprite(L"assets\\sprites\\gunshoot0.png"); // 13
-    sprite.CreateSprite(L"assets\\sprites\\gunshoot1.png"); // 14
-    sprite.CreateSprite(L"assets\\sprites\\gunshoot2.png"); // 15
-    sprite.CreateSprite(L"assets\\sprites\\gun1.png"); // 16
-    sprite.CreateSprite(L"assets\\sprites\\gun2.png"); // 17
-    sprite.CreateSprite(L"assets\\sprites\\gun3.png"); // 18
-    sprite.CreateSprite(L"assets\\sprites\\proj0.png"); // 19
-    sprite.CreateSprite(L"assets\\sprites\\hit00.png"); // 20
-    sprite.CreateSprite(L"assets\\sprites\\hit01.png"); // 21
-    sprite.CreateSprite(L"assets\\sprites\\hit10.png"); // 22
-    sprite.CreateSprite(L"assets\\sprites\\hit11.png"); // 23
-    sprite.CreateSprite(L"assets\\sprites\\door0.png"); // 24
-    sprite.CreateSprite(L"assets\\sprites\\teleport0.png"); // 25
-    sprite.CreateSprite(L"assets\\sprites\\teleport1.png"); // 26
-    sprite.CreateSprite(L"assets\\sprites\\teleport2.png"); // 27
-    sprite.CreateSprite(L"assets\\sprites\\garg2.png"); // 28
-    sprite.CreateSprite(L"assets\\textures\\white.png"); // 29
-    sprite.CreateSprite(L"assets\\sprites\\pumpkin.png"); // 30
-    sprite.CreateSprite(L"assets\\sprites\\door1.png"); // 31
-
-    */
-    // some other input
+    if ( !gameRes->m_inMenu )
+        map.Render(cam);
 }
 
 void SceneRenderer::RenderUI()

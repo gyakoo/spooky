@@ -19,6 +19,7 @@ using namespace Windows::Graphics::Display;
 int main(Platform::Array<Platform::String^>^)
 {
 	auto direct3DApplicationSource = ref new Direct3DApplicationSource();
+    //Sleep(2000);
     CoreApplication::Run(direct3DApplicationSource);
 
 	return 0;

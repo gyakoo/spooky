@@ -895,7 +895,7 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
     , m_invincibleTime(-1.0f), m_curDensityMult(0.45f), m_curRoomIndex(-1)
-    , m_bossIsReady(false)
+    , m_bossIsReady(false), m_inMenu(true)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -1292,7 +1292,7 @@ void DX::GameResources::OnLeaveRoom(int roomLeaving)
 }
 
 
-void DX::GameResources::GenerateNewLevel()
+void DX::GameResources::GenerateNewLevel(bool forMenu)
 {
     m_mapSettings.m_tileCount = XMUINT2(35, 35);
     m_mapSettings.m_minTileCount = XMUINT2(4, 4);
@@ -1300,14 +1300,30 @@ void DX::GameResources::GenerateNewLevel()
     m_map.Generate(m_mapSettings);
     m_map.GenerateThumbTex(m_mapSettings.m_tileCount);
     SoundAllStop();
-    SpawnPlayer();
+    m_inMenu = forMenu;
+    if (!forMenu)
+    {
+        GlobalFlags::DrawThumbMap = 1;
+        SpawnPlayer();
+    }
+    else
+    {
+        GlobalFlags::DrawThumbMap = 0;
+        SoundPlay(SFX_HEART, true);
+        SoundPlay(SFX_BREATH, true);
+        SoundVolume(SFX_HEART, 0.1f);
+        SoundVolume(SFX_BREATH, 0.1f);
+    }
 
     m_entityMgr.Clear();
     m_entityMgr.ReserveAndCreateEntities((int)m_map.GetRooms().size());
     m_entityMgr.SetCurrentRoom(m_map.GetLeafIndexAt(m_camera.GetPosition()));
 
-    m_entityMgr.AddEntity(std::make_shared<EntityGun>(), EntityManager::ALL_ROOMS); // GUN
-    m_entityMgr.AddEntity(std::make_shared<EntityCheckBossReady>(), EntityManager::ALL_ROOMS); // Is boss ready?
+    if (!forMenu)
+    {
+        m_entityMgr.AddEntity(std::make_shared<EntityGun>(), EntityManager::ALL_ROOMS); // GUN
+        m_entityMgr.AddEntity(std::make_shared<EntityCheckBossReady>(), EntityManager::ALL_ROOMS); // Is boss ready?
+    }
 }
 
 void DX::GameResources::SpawnPlayer()
@@ -1360,5 +1376,13 @@ void DX::GameResources::ConsiderSpawnItem(const XMFLOAT3& pos, float p)
             m_entityMgr.AddEntity(std::make_shared<EntityItem>(ITEM_CANDY, pos, (float)m_random.Get(5, 20)));
         }
     }
-    
+}
+
+void DX::GameResources::GoBackMenu()
+{
+    GenerateNewLevel(true);
+    m_entityMgr.SetPause(true);
+    m_entityMgr.Clear();
+    m_flashColor = XMFLOAT4(0, 0, 0, 0);
+    SoundPitch(SFX_HEART, -1);
 }

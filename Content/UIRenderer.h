@@ -27,5 +27,6 @@ namespace SpookyAdulthood
 		Microsoft::WRL::ComPtr<ID2D1DrawingStateBlock1> m_stateBlock;
 		Microsoft::WRL::ComPtr<IDWriteTextLayout3>      m_textLayout;
 		Microsoft::WRL::ComPtr<IDWriteTextFormat2>      m_textFormat;
+        float m_time;
 	};
 }
