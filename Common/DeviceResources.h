@@ -111,6 +111,7 @@ namespace DX
         int m_deathMessage;
         bool m_bossIsReady;
         bool m_inMenu;
+        bool m_bossDefeated;
 
         void SoundPlay(uint32_t index, bool loop=true)const;
         void SoundAllStop()const;
@@ -190,7 +191,7 @@ namespace DX
 		D2D1::Matrix3x2F			GetOrientationTransform2D() const		{ return m_orientationTransform2D; }
 
         // GAME DX Common resources
-        GameResources*            GetGameResources() const                { return m_gameResources.get(); }
+        GameResources*              GetGameResources() const                { return m_gameResources.get(); }
 
 	private:
 		void CreateDeviceIndependentResources();

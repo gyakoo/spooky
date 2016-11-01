@@ -105,6 +105,10 @@ namespace SpookyAdulthood
                 GenerateNewLevel = true;
             break;
 
+            case VirtualKey::Space:
+                DX::GameResources::instance->SetPause(!DX::GameResources::instance->IsPaused());
+            break;
+
 #if defined(_DEBUG)
             case VirtualKey::Number0:
                 DrawFlags = !DrawFlags;

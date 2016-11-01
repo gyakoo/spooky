@@ -4,8 +4,6 @@ Manu Marin
 Please any question to:
 mmrom@microsoft.com
 This game is created for ScareJam2016, an initiative by Garage Gaming at Microsoft Inc.
-It was created at home in spare time.
-Ocasionally I worked on it a couple of lunch breaks at work.
 
 October 31st 2016
 
@@ -15,13 +13,20 @@ GAME
 * Kill all enemies with treats and candies, room-by-room to open it up
 * When the room opens, you can hear a sound and the doors turns green, you can pass thru.
 * When all rooms are open, a boss will appear (see the dark red room in the minimap) and 
-	you'll have to defeat it.
+	you'll have to defeat it. It's a bit hard!
+    
+INSTALL
+=======
+* This Appx bundle is not signed for Store, but for Test/Developer.
+* Right-click on Add-AppDevPackage.ps1 and "Run with Powershell" (Admin mode)
+* Or double-click on .appxbundle if you have certificates installed already
 	
 ASSETS
 ======
-- Code, design, sprites, texture, effects made by me.
-- Sounds created with Bfxr 
-- Other sounds from Freesounds.org (see authors.txt in Assets/Sounds/ folder)
+- Code, design, sprites, texture, effects by myself
+- Sounds created with Bfxr
+- Other sounds from Freesounds.org (see sounds.txt)
+- Main title font by http://www.fontspace.com/cloutierfontes
 
 
 CONTROLS
@@ -31,8 +36,9 @@ CONTROLS
 
 * F1 	- Help screen
 * F5 	- Toggle Fullscreen
-* Esc 	- Exit or Menu
 * Tab 	- Toggle Minimap
+* Esc 	- Exit or Menu
+
 
 ORIGINAL IDEAS
 ==============
@@ -45,7 +51,7 @@ TOOLS
 =====
 * Microsoft Visual Studio 2015 Community Edition
 * C++ / DirectX11 / DirectXTK (I started from scratch using the DX Sample)
-* The code does not use any lib or code from any other library, all was created from scratch
+* The code does not use any lib or code from any other library
 * GraphicsGale + Paint.net for sprites
 * https://twistedwave.com/online/# for sound editing
 
@@ -67,12 +73,10 @@ What was right:
 - Not data driven, all hardcoded. Iteration times were fast enough.
 
 What was wrong:
-- Everything from scratch (systems + gamepley)
-- Design changes during development
+- I made everything and spent more time on "engine" than gameplay
+- On-the-fly design changes during development
 - Random level generation. It took too much time specially make all rooms connected.
 	- Sometimes there are room clusters disconnected and some teleports are created
-
-
 
 KNOWN ISSUES
 ============
@@ -80,10 +84,11 @@ KNOWN ISSUES
 	- Algorithm to find disconnected clusters has some bug.
 	
 - Bad performance on Fullscreen on huge target sizes (4K)
-	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized		
-	UPDATE: This is solved last minute fix (clamping to 1920x1080) but haven't been tested much :()
+	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized
 
 	
+
+-Manu
 mmrom@microsoft.com
 
 

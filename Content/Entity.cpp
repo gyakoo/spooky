@@ -246,6 +246,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
     XMUINT2 decoProbs[DECORMAX];     
     for (auto& r : rooms)
     {
+        if (r->m_finished) continue;
         ZeroMemory(decoProbs, sizeof(XMUINT2)*DECORMAX);
         switch (r->m_profile)
         {
@@ -258,7 +259,7 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             if (r->m_leafNdx)
             {
                 CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
-                CreateEntities_Girl(r.get(), rnd.Get(0, 3), 80);
+                CreateEntities_Girl(r.get(), rnd.Get(0, 3), 60);
                 CreateEntities_BlackHands(r.get(), rnd.Get(0, 3), 80);
                 if (rnd.Get01(0.7f))
                     AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
@@ -270,9 +271,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             if (r->m_leafNdx)
             {
-                CreateEntities_Girl(r.get(), rnd.Get(0, 2), 70);
+                CreateEntities_Girl(r.get(), rnd.Get(0, 2), 60);
                 CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
-                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f), r->m_leafNdx);
+                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 8.0f, 30.0f), r->m_leafNdx);
                 if (rnd.Get01(0.4f))
                     AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             }break;
@@ -287,9 +288,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             if (r->m_leafNdx)
             {
                 CreateEntities_Girl(r.get(), rnd.Get(0, 3), 80);
-                CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
+                CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 50);
                 CreateEntities_Gargoyle(r.get(), rnd.Get(0, 2), 60);
-                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
+                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 8.0f, 30.0f), r->m_leafNdx);
                 for (int i = rnd.Get(0, 3); i > 0; --i)
                     if (rnd.Get01())
                         AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
@@ -304,9 +305,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             if (r->m_leafNdx)
             {
                 CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 80);
-                CreateEntities_Girl(r.get(), rnd.Get(0, 5), 70);
+                CreateEntities_Girl(r.get(), rnd.Get(0, 5), 60);
                 CreateEntities_Puky(r.get(), rnd.Get(0, 5), 60);
-                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
+                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 8.0f, 30.0f), r->m_leafNdx);
                 for (int i = rnd.Get(0, 3); i > 0; --i)
                     if (rnd.Get01())
                         AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
@@ -319,9 +320,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 80);
             if (r->m_leafNdx)
             {
-                CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 60);
+                CreateEntities_BlackHands(r.get(), rnd.Get(0, 2), 50);
                 CreateEntities_Puky(r.get(), rnd.Get(0, 3), 40);
-                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f), r->m_leafNdx);
+                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 8.0f, 30.0f), r->m_leafNdx);
                 if (rnd.Get01(0.3f))
                     AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             }break;
@@ -332,9 +333,9 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             CreateEntities_Pumpkin(r.get(), rnd.Get(0, 5), 70);
             if (r->m_leafNdx)
             {
-                CreateEntities_Gargoyle(r.get(), rnd.Get(1, 10), 80);
+                CreateEntities_Gargoyle(r.get(), rnd.Get(1, 10), 65);
                 CreateEntities_Girl(r.get(), rnd.Get(0, 3), 70);
-                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 12.0f, 30.0f), r->m_leafNdx);
+                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 8.0f, 30.0f), r->m_leafNdx);
                 for (int i = rnd.Get(0, 3); i > 0; --i)
                     if (rnd.Get01())
                         AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
@@ -344,10 +345,11 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[GREENHAND] = XMUINT2(rnd.Get(0, 10), 50);
             decoProbs[BLACKHAND] = XMUINT2(rnd.Get(0, 10), 50);
             decoProbs[SKULL] = XMUINT2(rnd.Get(2, 8), 80);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 8.0f, 30.0f), r->m_leafNdx);
             if (r->m_leafNdx)
             {
                 CreateEntities_Girl(r.get(), rnd.Get(0, 3), 50);
-                CreateEntities_BlackHands(r.get(), rnd.Get(1, 8), 60);
+                CreateEntities_BlackHands(r.get(), rnd.Get(1, 8), 40);
                 for (int i = rnd.Get(0, 3); i > 0; --i)
                     if (rnd.Get01())
                         AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
@@ -367,11 +369,12 @@ void EntityManager::ReserveAndCreateEntities(int roomCount)
             decoProbs[TREEBLACK] = XMUINT2(rnd.Get(5, 10), 80);
             decoProbs[SKULL] = XMUINT2(rnd.Get(2, 8), 80);
             CreateEntities_Pumpkin(r.get(), rnd.Get(5, 20), 80);
+            AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_CAT, 8.0f, 30.0f), r->m_leafNdx);
             if (r->m_leafNdx)
             {
                 CreateEntities_Girl(r.get(), rnd.Get(0, 3), 50);
-                CreateEntities_Puky(r.get(), rnd.Get(0, 5), 70);
-                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 12.0f, 30.0f), r->m_leafNdx);
+                CreateEntities_Puky(r.get(), rnd.Get(0, 5), 50);
+                AddEntity(std::make_shared<EntityRandomSound>(DX::GameResources::SFX_OWL, 8.0f, 30.0f), r->m_leafNdx);
                 if (rnd.Get01())
                     AddEntity(std::make_shared<EnemyGhost>(r->GetRandomXZWithClearance()), r->m_leafNdx);
             }break;
@@ -405,10 +408,11 @@ void EntityManager::SetCurrentRoom(int roomIndex)
 { 
     if (m_curRoomIndex != roomIndex)
     {
+        int old = m_curRoomIndex;
         m_curRoomIndex = roomIndex;
         auto gameRes = DX::GameResources::instance;
-        if (m_curRoomIndex != -1)
-            gameRes->OnLeaveRoom(m_curRoomIndex);
+        if (old != -1)
+            gameRes->OnLeaveRoom(old);
         
         if ( roomIndex != -1 )
             gameRes->OnEnterRoom(roomIndex);
@@ -472,10 +476,13 @@ void EntityManager::Update(const DX::StepTimer& stepTimer, const CameraFirstPers
         GlobalFlags::KillRoom = false;
         for (auto& e : m_rooms[m_curRoomIndex])
         {
-            e->m_life = -1.0f;
-            EntityEnemyBase* eb = dynamic_cast<EntityEnemyBase*>(e.get());
-            if (eb)
-                eb->DoHit();
+            if (e->CanDie())
+            {
+                e->m_life = -1.0f;
+                EntityEnemyBase* eb = dynamic_cast<EntityEnemyBase*>(e.get());
+                if (eb) eb->DoHit();
+                e->Invalidate(Entity::KILLED);
+            }
         }
     }
 #endif
@@ -1824,15 +1831,19 @@ void EntityCheckBossReady::Update(float stepTime, const CameraFirstPerson& camer
     if (gameRes->m_frameCount % 10 == 3)
     {
         const auto& rooms = gameRes->m_map.GetRooms();
+        size_t finished = 0;
         for (size_t i = 0; i < rooms.size(); ++i)
         {
-            if (!rooms[i]->m_finished)
-                return;
+            if (rooms[i]->m_finished)
+                ++finished;
         }
 
         // boss is ready
-        gameRes->BossIsReady();
-        Invalidate();
+        if (finished == rooms.size() || (m_totalTime > 300.0f && (rooms.size() - finished) < 3))
+        {
+            gameRes->BossIsReady();
+            Invalidate();
+        }
     }
 }
 
@@ -1856,7 +1867,7 @@ EnemyBoss::EnemyBoss(const XMFLOAT3& pos)
     m_roomNode->m_tag = 0x55000033;
     m_roomNode->m_finished = false;
     auto& rnd = gameRes->m_random;
-    const int n = rnd.Get(4, 10);
+    const int n = rnd.Get(5, 15);
     for (int i = 0; i < n; ++i)
     {
         auto decopos = m_roomNode->GetRandomXZWithClearance();
@@ -1960,6 +1971,8 @@ void EnemyBoss::Render(RenderPass pass, const CameraFirstPerson& camera, SpriteM
 void EnemyBoss::Die()
 {
     FadeOut(0.8f, true);
+    DX::GameResources::instance->GoBackMenu();
+    DX::GameResources::instance->m_bossDefeated = true;
 }
 
 void EnemyBoss::DoHit()
@@ -2073,29 +2086,32 @@ void EntityItem::Update(float stepTime, const CameraFirstPerson& camera)
     m_pos.y = m_size.y*0.5f + 0.1f + sin(m_totalTime*4.0f)*0.02f;
     if ( DistSqToPlayer() < camera.RadiusCollideSq() )
     {
-        Pickup();
-        Invalidate();
+        if ( Pickup() )
+            Invalidate();
     }
 }
 
-void EntityItem::Pickup()
+bool EntityItem::Pickup()
 {
     auto gameRes = DX::GameResources::instance;
-    if (gameRes->IsPaused()) return;
-    gameRes->SoundPlay(DX::GameResources::SFX_ITEMPICK,false);
-    gameRes->FlashScreen(0.5f, XMFLOAT4(0.7f, 0.7f, 1, 1));
-    gameRes->UpdateHeartVolumeAndPitch();
+    if (gameRes->IsPaused()) return false;    
     switch (m_type)
     {
     case ITEM_LIFE:
+        if (gameRes->m_camera.m_life >= 1.0f) return false; // won't pick if full
         gameRes->m_camera.AddLife(m_amount);
         gameRes->SoundPitch(DX::GameResources::SFX_ITEMPICK, -2.0f);
         break;
     case ITEM_CANDY:
+        if (gameRes->m_camera.m_bullets >= CAM_DEFAULT_MAXBULLETS) return false; // won't pick if full
         gameRes->m_camera.AddBullets((int)m_amount);
         gameRes->SoundPitch(DX::GameResources::SFX_ITEMPICK, -1.0f);
         break;
     }
+    gameRes->SoundPlay(DX::GameResources::SFX_ITEMPICK, false);
+    gameRes->FlashScreen(0.5f, XMFLOAT4(0.7f, 0.7f, 1, 1));
+    gameRes->UpdateHeartVolumeAndPitch();
+    return true;
 }
 
 #undef CAM

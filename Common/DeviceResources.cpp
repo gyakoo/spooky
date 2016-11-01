@@ -495,11 +495,12 @@ void DX::DeviceResources::UpdateRenderTargetSize()
         D3D11_TEXTURE2D_DESC textureDesc = { 0 };
         textureDesc.Width =(UINT)m_outputSize.Width;
         textureDesc.Height = (UINT)m_outputSize.Height;
-        if (textureDesc.Width*textureDesc.Height > (1920 * 1080))
+/*        if (textureDesc.Width*textureDesc.Height > (1920 * 1080))
         {
             textureDesc.Width = 1920u;
             textureDesc.Height= 1080u;
         }
+*/
         textureDesc.MipLevels = 1;
         textureDesc.ArraySize = 1;
         textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -859,7 +860,7 @@ static const float g_sndVolumes[] =
     0.8f,      // 16
     0.7f,      // 17
     0.4f,      // 18
-    0.2f,      // 19
+    0.1f,      // 19
     0.8f,      // 20
     1.0f,      // 21
     0.8f,      // 22
@@ -900,7 +901,7 @@ DX::GameResources::GameResources(const std::shared_ptr<DX::DeviceResources>& dev
     : m_readyToRender(false), m_levelTime(0.0f), m_sprite(device), m_entityMgr(device)
     , m_map(device), m_flashScreenTime(0.0f), m_flashColor(1,1,1,1)
     , m_invincibleTime(-1.0f), m_curDensityMult(0.45f), m_curRoomIndex(-1)
-    , m_bossIsReady(false), m_inMenu(true), m_deathMessage(0)
+    , m_bossIsReady(false), m_inMenu(true), m_deathMessage(0), m_bossDefeated(false)
 {   
     GameResources::instance = this;
     // vertex shader and input layout
@@ -1306,6 +1307,7 @@ void DX::GameResources::OnLeaveRoom(int roomLeaving)
 
 void DX::GameResources::GenerateNewLevel(bool forMenu)
 {
+    m_bossDefeated = false;
     m_mapSettings.m_tileCount = XMUINT2(35, 35);
     m_mapSettings.m_minTileCount = XMUINT2(4, 4);
     m_mapSettings.m_maxTileCount = XMUINT2(15, 15);
@@ -1315,7 +1317,7 @@ void DX::GameResources::GenerateNewLevel(bool forMenu)
     m_inMenu = forMenu;
     if (!forMenu)
     {
-        GlobalFlags::DrawThumbMap = 1;
+        GlobalFlags::DrawThumbMap = 2;
         SpawnPlayer();
     }
     else
@@ -1402,6 +1404,7 @@ void DX::GameResources::GoBackMenu()
 
 void DX::GameResources::CreateAmmoRandomly()
 {
+    // for all finished rooms
     for (auto& r : m_map.GetRooms())
     {
         if (r->m_finished)
@@ -1410,4 +1413,13 @@ void DX::GameResources::CreateAmmoRandomly()
             m_entityMgr.AddEntity(std::make_shared<EntityItem>(ITEM_CANDY, p, (float)m_random.Get(15, 30)), r->m_leafNdx);
         }
     }
+
+    // for current room
+    auto& r = m_map.GetLeafAtIndex(m_curRoomIndex);
+    for (int i = 0; i < 2; ++i)
+    {
+        auto p = r->GetRandomXZWithClearance();
+        m_entityMgr.AddEntity(std::make_shared<EntityItem>(ITEM_CANDY, p, (float)m_random.Get(15, 30)), r->m_leafNdx);
+    }
+    
 }

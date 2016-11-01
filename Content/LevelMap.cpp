@@ -42,13 +42,17 @@ struct SpookyAdulthood::VisMatrix
     }
 };
 
-// random element in a set
-template<typename T>
-static size_t RandomRoomInSet(const T& roomset, RandomProvider& rnd)
+// random element in a set (will get the first with no teleport already)
+template<typename T, typename R>
+static size_t RandomRoomInSet(const T& roomset, const R& leaves, RandomProvider& rnd)
 {
     T::const_iterator it = roomset.begin();
-    std::advance(it, rnd.Get(0, (uint32_t)roomset.size() - 1));
-    return *it;
+    for (; it != roomset.end(); ++it)
+    {
+        if (leaves[*it]->m_teleportNdx == -1)
+            return *it;
+    }
+    return *roomset.begin();
 }
 #pragma endregion
 
@@ -521,10 +525,12 @@ void LevelMap::VisGenerateTeleport(const LevelMapBSPNodePtr& roomA, const LevelM
 {
     DX::ThrowIfFailed(roomA->IsLeaf() && roomB->IsLeaf());
 
+    //DX::ThrowIfFalse(roomA->m_teleportNdx == -1 && roomB->m_teleportNdx == -1);
+    
     LevelMapBSPTeleport tport =
         {
             {roomA, roomB},
-            {GetRandomInArea(roomA->m_area), GetRandomInArea(roomB->m_area) },
+            {GetRandomInArea(roomA), GetRandomInArea(roomB) },
             false
         };
     const int ndx = (int)m_teleports.size();
@@ -549,10 +555,18 @@ bool LevelMap::HasNode(const LevelMapBSPNodePtr& node, const LevelMapBSPNodePtr&
     return false;
 }
 
-XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal/*=true*/)
+XMUINT2 LevelMap::GetRandomInArea(const LevelMapBSPNodePtr& node, bool checkNotInPortal/*=true*/)
 {
     auto& random = m_device->GetGameResources()->m_random;
-    XMUINT2 rndPos(random.Get(area.m_x0, area.m_x1), random.Get(area.m_y0, area.m_y1));
+    const auto& area = node->m_area;
+
+    XMUINT2 rndPos;
+    int iter = 0;
+    do
+    {
+        rndPos = XMUINT2(random.Get(area.m_x0, area.m_x1), random.Get(area.m_y0, area.m_y1));
+        ++iter;
+    } while (iter < 50 && node->IsPillar(rndPos)); // ugly but set a max iters!
     
     if (checkNotInPortal)
     {
@@ -632,10 +646,27 @@ void LevelMap::GenerateTeleports(const VisMatrix& visMatrix)
         const RoomSet& b = allRoomSets[i];
         
         // gets a random room in both sets
-        const size_t roomANdx = RandomRoomInSet(a, random);
-        const size_t roomBNdx = RandomRoomInSet(b, random);
+        const size_t roomANdx = RandomRoomInSet(a, m_leaves, random);
+        const size_t roomBNdx = RandomRoomInSet(b, m_leaves, random);
 
-        this->VisGenerateTeleport(m_leaves[roomANdx], m_leaves[roomBNdx]);
+        auto& roomA = m_leaves[roomANdx];
+        auto& roomB = m_leaves[roomBNdx];
+        //if (roomA->m_teleportNdx != -1) { roomA->m_finished = true; roomA->m_tag = 0xffffff22; }
+        //if (roomB->m_teleportNdx != -1) { roomB->m_finished = true; roomB->m_tag = 0xffffff22;}
+        if ( !roomA->m_finished && !roomB->m_finished )
+            this->VisGenerateTeleport(roomA, roomB);
+        int asdfi = 0;
+    }
+
+    // disconnected?
+    for (auto& r : m_leaves)
+    {
+        auto it = m_leafPortals.find(r.get());
+        if (r->m_teleportNdx == -1 && it == m_leafPortals.end())
+        {
+            int i = r->m_leafNdx;
+            i = i;
+        }
     }
 }
 
@@ -780,7 +811,7 @@ void LevelMap::RenderMinimap(const CameraFirstPerson& camera)
         switch (GlobalFlags::DrawThumbMap)
         {
         case 1: scale = XMFLOAT2(4, 4); break;
-        case 2: scale = XMFLOAT2(8, 8); break;
+        case 2: scale = XMFLOAT2(10, 10); break;
         }
         sprites->Draw(m_thumbTex.m_textureView.Get(), XMFLOAT2(10, 400), nullptr, Colors::White, 0, XMFLOAT2(0, 0), scale);
         sprites->End();
@@ -865,9 +896,6 @@ XMUINT2 LevelMap::GetRandomPosition()
     if (!m_root || m_leaves.empty())
         return XMUINT2(0, 0);
 
-    //auto& random = m_device->GetGameResources()->m_random;
-    //const auto& r = m_leaves[random.Get(0, (uint32_t)m_leaves.size()-1)];
-    //return GetRandomInArea(r->m_area, true);
     return XMUINT2(m_leaves.front()->m_area.m_x0, m_leaves.front()->m_area.m_y0);
 }
 

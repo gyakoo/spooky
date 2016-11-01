@@ -46,7 +46,7 @@ namespace SpookyAdulthood
     //* ***************************************************************** *//
     struct LevelMapBSPNode
     {
-        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(0x55555522), m_finished(false){}
+        LevelMapBSPNode() : m_type(NODE_UNKNOWN), m_teleportNdx(-1), m_leafNdx(-1), m_tag(0x22555522), m_finished(false){}
 
         enum NodeType{ NODE_UNKNOWN, NODE_ROOM, NODE_EMPTY, WALL_VERT, WALL_HORIZ };
         enum PortalDir { NONE, NORTH, SOUTH, WEST, EAST };
@@ -75,7 +75,7 @@ namespace SpookyAdulthood
         int m_leafNdx;
         uint32_t m_tag;
         uint32_t m_profile;
-        bool m_finished;
+        bool m_finished;        
     };
 
     struct NodeDXResources
@@ -226,7 +226,7 @@ namespace SpookyAdulthood
         void SplitNode(const LevelMapBSPTileArea& area, uint32_t at, LevelMapBSPNode::NodeType wallDir, LevelMapBSPTileArea* outAreas);
         bool CanBeRoom(const LevelMapBSPNodePtr& node, const LevelMapBSPTileArea& area, const LevelMapGenerationSettings& settings, uint32_t depth);
         void GenerateTeleports(const VisMatrix& visMatrix);
-        XMUINT2 GetRandomInArea(const LevelMapBSPTileArea& area, bool checkNotInPortal=true);
+        XMUINT2 GetRandomInArea(const LevelMapBSPNodePtr& node, bool checkNotInPortal=true);
         bool RenderSetCommonState(const CameraFirstPerson& camera);
 
     private:

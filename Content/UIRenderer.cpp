@@ -81,7 +81,7 @@ void UIRenderer::Update(DX::StepTimer const& timer)
 void UIRenderer::Render()
 {
 	ID2D1DeviceContext* context = m_deviceResources->GetD2DDeviceContext();
-	Windows::Foundation::Size logicalSize = m_deviceResources->GetLogicalSize();
+    Windows::Foundation::Size logicalSize = m_deviceResources->GetOutputSize();// m_deviceResources->GetLogicalSize();
     auto gameRes = DX::GameResources::instance;
 
 	context->SaveDrawingState(m_stateBlock.Get());
@@ -147,11 +147,10 @@ void UIRenderer::Render()
         spr.Draw2D(41, XMFLOAT2(0,-0.8f), s, 0); // left-click
         spr.End2D();
 
-        // MENU        
         {
             auto s = gameRes->m_sprites.get();
             auto f = gameRes->m_fontConsole.get();
-            const wchar_t* text = L"(F1) Help / (ESC) Exit";
+            const wchar_t* text = L"Congratulations, send a screenshot to mmrom@microsoft.com";
             auto measure = f->MeasureString(text);
             const float padY = XMVectorGetY(measure);
             const float padX = XMVectorGetX(measure);
@@ -163,6 +162,13 @@ void UIRenderer::Render()
             f->DrawString(s, L"mmrom@microsoft.com", p, DirectX::Colors::White);
             p.y += padY;
             f->DrawString(s, L"(F1) Help / (ESC) Exit", p, DirectX::Colors::White);
+
+            if (gameRes->m_bossDefeated)
+            {
+                p.x = logicalSize.Width *0.5f - padX*0.5f;
+                p.y = padY*4.0f;
+                f->DrawString(s, text, p, DirectX::Colors::Green);
+            }
             s->End();
         }        
     }

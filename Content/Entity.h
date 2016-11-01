@@ -418,7 +418,7 @@ namespace SpookyAdulthood
     {
         EntityItem(ItemType type, const XMFLOAT3& pos, float amount);
         virtual void Update(float stepTime, const CameraFirstPerson& camera);
-        void Pickup();
+        bool Pickup();
 
         ItemType m_type;
         float m_amount;
