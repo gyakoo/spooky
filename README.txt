@@ -1,9 +1,7 @@
-Spooky Adulthood
-================
+Spooky 
+=======
 Manu Marin
-Please any question to:
-mmrom@microsoft.com
-This game is created for ScareJam2016, an initiative by Garage Gaming at Microsoft Inc.
+Game from scratch in c++/uwp for a one-month game jam, halloween themed.
 
 October 31st 2016
 
@@ -27,7 +25,6 @@ ASSETS
 - Sounds created with Bfxr
 - Other sounds from Freesounds.org (see sounds.txt)
 - Main title font by http://www.fontspace.com/cloutierfontes
-
 
 CONTROLS
 ========
@@ -84,11 +81,8 @@ KNOWN ISSUES
 	- Algorithm to find disconnected clusters has some bug.
 	
 - Bad performance on Fullscreen on huge target sizes (4K)
-	- Because the game RenderTarget is created out of actual Target and the PS is unoptimized
+	- Because the game RenderTarget is created out of actual Target and the Pixel Shader is unoptimized
 
 	
-
 -Manu
-mmrom@microsoft.com
-
-
+gyakoo@gmail.com
